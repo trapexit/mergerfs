@@ -22,6 +22,8 @@ def build(git_repo,
         args += ['--build-arg=GIT_REPO=file:///tmp/mergerfs.git']
     else:
         args += [f'--build-arg=GIT_REPO={git_repo}']
+    os.makedirs(pkgdirpath,exist_ok=True)
+    args += ['-v',f'{os.path.realpath(pkgdirpath)}:/pkgs:ro']
     args += ['-o',pkgdirpath,
              '-f',containerfile,
              f'--build-arg=BRANCH={branch}',
@@ -30,8 +32,6 @@ def build(git_repo,
     # TODO: Capture output and write to log
     print(args)
     rv = subprocess.run(args)
-
-    os.makedirs(pkgdirpath,exist_ok=True)
     report_filepath = os.path.join(pkgdirpath,"build-report.txt")
     with open(report_filepath,"a+") as f:
         build = os.path.basename(containerfile)
@@ -66,6 +66,30 @@ def setup():
         sys.exit(1)
     print(args)
     subprocess.run(args)
+    setup_binfmt()
+
+
+def setup_binfmt():
+    """Register qemu-user-static binfmt handlers (needed on Arch, etc.)."""
+    binfmt_conf = """\
+:qemu-aarch64:M::\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\xb7\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-aarch64-static:F
+:qemu-arm:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-arm-static:F
+:qemu-armeb:M::\\x7fELF\\x01\\x02\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff:/usr/bin/qemu-armeb-static:F
+:qemu-riscv64:M::\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\xf3\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-riscv64-static:F
+:qemu-i386:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-i386-static:F
+"""
+    conf_path = '/etc/binfmt.d/qemu-static.conf'
+    print(f"Writing {conf_path}")
+    try:
+        with open(conf_path, 'w') as f:
+            f.write(binfmt_conf)
+    except PermissionError:
+        print(f"Permission denied writing {conf_path}; trying with sudo...")
+        subprocess.run(['sudo', 'tee', conf_path],
+                       input=binfmt_conf.encode(), check=True)
+
+    print("Restarting systemd-binfmt...")
+    subprocess.run(['sudo', 'systemctl', 'restart', 'systemd-binfmt'])
 
 
 def podman_cleanup():
@@ -92,7 +116,7 @@ def parse_args():
                    required=False,
                    action='store_true')
     p.add_argument('--git-repo',
-                   required=True,
+                   required=False,
                    type=str)
 
     return p.parse_args()
@@ -111,6 +135,10 @@ def main():
     if args.setup:
         setup()
         sys.exit(0)
+
+    if not args.git_repo:
+        print("error: the following arguments are required: --git-repo")
+        sys.exit(1)
 
     containerfiles = []
     basepath = 'buildtools/containerfiles'
