@@ -64,7 +64,12 @@ _realpath_mountpoint(const char *path_,
   // If it looks like a disconnected fuse mount try to umount it
   if((not rv) && (errno == ENOTCONN))
     {
+#if defined __FreeBSD__
+      unmount(path_,0);
+#else
       umount(path_);
+#endif
+
       rv = realpath(path_,resolved_path_);
     }
 
