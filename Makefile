@@ -37,7 +37,7 @@ TOUCH 	  ?= touch
 BUILDDIR := build
 GITHUB_REPO ?= "https://github.com/trapexit/mergerfs"
 
-DEFAULT_RELEASE := debian:13.amd64
+DEFAULT_TARGET := debian:13.amd64
 
 ifndef GIT_REPO
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
@@ -48,11 +48,7 @@ endif
 endif
 
 USE_XATTR ?= 1
-UGID_USE_RWLOCK ?= 0
 
-ifdef NDEBUG
-OPT_FLAGS := -O2 -DNDEBUG
-else
 ifdef SANITIZE
 ifeq ($(SANITIZE),1)
   override SANITIZE := -fsanitize=address,undefined,leak
@@ -60,14 +56,22 @@ else ifeq ($(filter -fsanitize=%,$(SANITIZE)),)
   override SANITIZE := -fsanitize=$(SANITIZE)
 endif
 endif
-OPT_FLAGS := -O0 \
-	     -g \
-	     -fno-omit-frame-pointer \
-	     $(SANITIZE) \
-	     -fstack-protector-strong \
-             -Wextra \
-	     -Wno-unused-parameter \
-             -DDEBUG
+
+COMMON_OPT_FLAGS += \
+    -fstack-protector-strong \
+    -Wextra \
+    -Wno-unused-parameter
+
+DEBUG_OPT_FLAGS += \
+    -O0 \
+    -g3 \
+    -fno-omit-frame-pointer \
+    $(SANITIZE)
+
+ifdef RELEASE
+OPT_FLAGS := -O3 $(COMMON_OPT_FLAGS)
+else
+OPT_FLAGS ?= $(DEBUG_OPT_FLAGS) $(COMMON_OPT_FLAGS)
 endif
 
 ifdef STATIC
@@ -125,8 +129,7 @@ override INC_FLAGS := \
 	-Ivendored \
 	-Ivendored/libfuse/include
 override MFS_FLAGS  := \
-	-DUSE_XATTR=$(USE_XATTR) \
-	-DUGID_USE_RWLOCK=$(UGID_USE_RWLOCK)
+	-DUSE_XATTR=$(USE_XATTR)
 override TESTS_FLAGS := \
 	-Isrc \
 	-Ivendored \
@@ -198,7 +201,7 @@ libfuse: $(LIBFUSE)
 	$(MAKE) -C vendored/libfuse
 
 $(LIBFUSE):
-	$(MAKE) -C vendored/libfuse $(BUILDDIR)/libfuse.a
+	$(MAKE) -C vendored/libfuse $(BUILDDIR)/libfuse.a RELEASE=$(RELEASE)
 
 tests: $(BUILDDIR)/tests
 
@@ -362,14 +365,16 @@ define build_release
 		--branch=$(GITREF)
 endef
 
-.PHONY: release
+.PHONY: release release-all
 .PHONY: release-amd64 release-arm64 release-armhf release-riscv64
-.PHONY: release-sample release-static release-tarball
+.PHONY: release-sample release-static release-tarball release-installer
 release:
+	$(MAKE) RELEASE=1 CPPFLAGS=-DNDEBUG all
+release-all:
 	$(call build_release,"all")
 release-sample:
-	$(if $(RELEASE),,$(eval RELEASE := $(shell ./buildtools/detect-local-target 2>/dev/null)))
-	$(call build_release,$(if $(RELEASE),$(RELEASE),$(DEFAULT_RELEASE)))
+	$(if $(TARGET),,$(eval TARGET := $(shell ./buildtools/detect-local-target 2>/dev/null)))
+	$(call build_release,$(if $(TARGET),$(TARGET),$(DEFAULT_TARGET)))
 release-amd64:
 	$(call build_release,"amd64")
 release-arm64:
@@ -382,6 +387,8 @@ release-static:
 	$(call build_release,"static")
 release-tarball:
 	$(call build_release,"tarball")
+release-installer:
+	$(call build_release,"installer")
 
 container:
 	$(eval GITREF ?= $(shell git describe --exact-match --tags HEAD 2>/dev/null || git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD))

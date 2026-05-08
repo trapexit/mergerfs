@@ -18,7 +18,7 @@ def build(git_repo,
             '--force-rm']
     if os.path.exists(git_repo):
         git_repo = os.path.realpath(git_repo)
-        args += ['-v',f'{git_repo}:/tmp/mergerfs.git:ro']
+        args += ['-v',f'{git_repo}:/tmp/mergerfs.git:ro:z']
         args += ['--build-arg=GIT_REPO=file:///tmp/mergerfs.git']
     else:
         args += [f'--build-arg=GIT_REPO={git_repo}']
