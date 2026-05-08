@@ -6,6 +6,9 @@ export DH_VERBOSE=1
 %:
 	dh $@
 
+override_dh_auto_build:
+	$(MAKE) release
+
 override_dh_auto_install:
 	$(MAKE) \
 		DESTDIR=$(CURDIR)/debian/mergerfs \

@@ -32,9 +32,6 @@ UTILS :=
 INSTALLUTILS :=
 endif
 
-ifeq ($(NDEBUG),1)
-OPT_FLAGS := -O2 -DNDEBUG
-else
 ifdef SANITIZE
 ifeq ($(SANITIZE),1)
   override SANITIZE := -fsanitize=address,undefined,leak
@@ -42,15 +39,22 @@ else ifeq ($(filter -fsanitize=%,$(SANITIZE)),)
   override SANITIZE := -fsanitize=$(SANITIZE)
 endif
 endif
-OPT_FLAGS := -O0 \
-	     -g \
-	     -fno-omit-frame-pointer \
-	     $(SANITIZE) \
-	     -fstack-protector-strong \
-             -Wextra \
-	     -Werror \
-	     -Wno-unused-parameter \
-             -DDEBUG
+
+COMMON_OPT_FLAGS += \
+    -fstack-protector-strong \
+    -Wextra \
+    -Wno-unused-parameter
+
+DEBUG_OPT_FLAGS += \
+    -O0 \
+    -g3 \
+    -fno-omit-frame-pointer \
+    $(SANITIZE)
+
+ifdef RELEASE
+OPT_FLAGS := -O3 $(COMMON_OPT_FLAGS)
+else
+OPT_FLAGS ?= $(DEBUG_OPT_FLAGS) $(COMMON_OPT_FLAGS)
 endif
 
 ifeq ($(LTO),1)
@@ -151,10 +155,10 @@ $(BUILDDIR)/mount.mergerfs: $(BUILDDIR)/libfuse.a util/mount.mergerfs.cpp
 mount.mergerfs: $(BUILDDIR)/mount.mergerfs
 
 $(BUILDDIR)/.objs/%.c.o: lib/%.c | $(BUILDDIR)/stamp
-	$(CC) $(CFLAGS) $(FUSE_FLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
 $(BUILDDIR)/.objs/%.cpp.o: lib/%.cpp | $(BUILDDIR)/stamp
-	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(FUSE_FLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
@@ -175,6 +179,10 @@ install-utils: mergerfs-fusermount mount.mergerfs strip
 	$(CHMOD) u+s "$(INSTALLBINDIR)/mergerfs-fusermount"
 
 install: $(INSTALLUTILS)
+
+.PHONY: release
+release:
+	$(MAKE) RELEASE=1 NDEBUG=1 CPPFLAGS="$(CPPFLAGS) -DNDEBUG" all
 
 .PHONY: objects strip utils install install-utils
 
