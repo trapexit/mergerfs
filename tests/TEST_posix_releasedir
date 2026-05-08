@@ -8,6 +8,7 @@ import tempfile
 from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -49,31 +50,30 @@ def close_and_dirfd_errno(path):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_releasedir <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_dir = join(merge_base, "dir")
+                    native_dir = join(native_base, "dir")
+                    touch(join(merge_dir, "a"), b"x")
+                    touch(join(native_dir, "a"), b"x")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    m_err = close_and_dirfd_errno(merge_dir)
+                    n_err = close_and_dirfd_errno(native_dir)
+                    if m_err != n_err:
+                        return fail(f"releasedir EBADF parity mismatch mergerfs_errno={m_err} native_errno={n_err}")
 
-            merge_dir = join(merge_base, "dir")
-            native_dir = join(native_base, "dir")
-            touch(join(merge_dir, "a"), b"x")
-            touch(join(native_dir, "a"), b"x")
-
-            m_err = close_and_dirfd_errno(merge_dir)
-            n_err = close_and_dirfd_errno(native_dir)
-            if m_err != n_err:
-                return fail(f"releasedir EBADF parity mismatch mergerfs_errno={m_err} native_errno={n_err}")
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

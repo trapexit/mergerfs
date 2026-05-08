@@ -8,6 +8,7 @@ import tempfile
 from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -23,41 +24,39 @@ def poll_mask(fd, timeout_ms=25):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_poll <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    touch(merge_file, b"abcdef")
+                    touch(native_file, b"abcdef")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    mfd = os.open(merge_file, os.O_RDONLY)
+                    nfd = os.open(native_file, os.O_RDONLY)
+                    try:
+                        mmask = poll_mask(mfd)
+                        nmask = poll_mask(nfd)
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            touch(merge_file, b"abcdef")
-            touch(native_file, b"abcdef")
+                        if bool(mmask & select.POLLIN) != bool(nmask & select.POLLIN):
+                            return fail(f"poll POLLIN mismatch mergerfs_mask=0x{mmask:x} native_mask=0x{nmask:x}")
+                        if bool(mmask & select.POLLOUT) != bool(nmask & select.POLLOUT):
+                            return fail(f"poll POLLOUT mismatch mergerfs_mask=0x{mmask:x} native_mask=0x{nmask:x}")
+                    finally:
+                        os.close(mfd)
+                        os.close(nfd)
 
-            mfd = os.open(merge_file, os.O_RDONLY)
-            nfd = os.open(native_file, os.O_RDONLY)
-            try:
-                mmask = poll_mask(mfd)
-                nmask = poll_mask(nfd)
-
-                # For regular files POLLIN and POLLOUT are typically ready.
-                if bool(mmask & select.POLLIN) != bool(nmask & select.POLLIN):
-                    return fail(f"poll POLLIN mismatch mergerfs_mask=0x{mmask:x} native_mask=0x{nmask:x}")
-                if bool(mmask & select.POLLOUT) != bool(nmask & select.POLLOUT):
-                    return fail(f"poll POLLOUT mismatch mergerfs_mask=0x{mmask:x} native_mask=0x{nmask:x}")
-            finally:
-                os.close(mfd)
-                os.close(nfd)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

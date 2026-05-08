@@ -8,6 +8,7 @@ from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 
 
@@ -22,38 +23,37 @@ def statvfs_cmp(lhs, rhs):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_statfs <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    err = compare_calls(
+                        "statvfs mount parity",
+                        lambda: os.statvfs(mount),
+                        lambda: os.statvfs(native),
+                        statvfs_cmp,
+                    )
+                    if err:
+                        return fail(err)
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    err = compare_calls(
+                        "statvfs ENOENT",
+                        lambda: os.statvfs(join(merge_base, "missing")),
+                        lambda: os.statvfs(join(native_base, "missing")),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "statvfs mount parity",
-                lambda: os.statvfs(mount),
-                lambda: os.statvfs(native),
-                statvfs_cmp,
-            )
-            if err:
-                return fail(err)
-
-            err = compare_calls(
-                "statvfs ENOENT",
-                lambda: os.statvfs(join(merge_base, "missing")),
-                lambda: os.statvfs(join(native_base, "missing")),
-            )
-            if err:
-                return fail(err)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

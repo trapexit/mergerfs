@@ -1,101 +1,103 @@
 #!/usr/bin/env python3
 
+import tempfile
 import os
 import sys
-import tempfile
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_io_passthrough_create_open <mountpoint>", file=sys.stderr)
-        return 1
-
-    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
-
     try:
-        test_data = b"passthrough io test data for create\n" * 100
+        from posix_parity import mergerfs_mount
+        with mergerfs_mount() as (mount, _):
+            (fd, filepath) = tempfile.mkstemp(dir=mount)
 
-        bytes_written = os.write(fd, test_data)
-        if bytes_written != len(test_data):
-            print("create write failed: expected {} bytes, wrote {}".format(len(test_data), bytes_written))
-            return 1
+            try:
+                test_data = b"passthrough io test data for create\n" * 100
 
-        os.lseek(fd, 0, os.SEEK_SET)
-        read_data = os.read(fd, len(test_data))
-        if read_data != test_data:
-            print("create read failed: data mismatch")
-            return 1
+                bytes_written = os.write(fd, test_data)
+                if bytes_written != len(test_data):
+                    print("create write failed: expected {} bytes, wrote {}".format(len(test_data), bytes_written))
+                    return 1
 
-        os.close(fd)
-        fd = -1
+                os.lseek(fd, 0, os.SEEK_SET)
+                read_data = os.read(fd, len(test_data))
+                if read_data != test_data:
+                    print("create read failed: data mismatch")
+                    return 1
 
-        fd = os.open(filepath, os.O_RDWR)
+                os.close(fd)
+                fd = -1
 
-        os.lseek(fd, 0, os.SEEK_SET)
-        read_data = os.read(fd, len(test_data))
-        if read_data != test_data:
-            print("open read failed: data mismatch")
-            return 1
+                fd = os.open(filepath, os.O_RDWR)
 
-        os.lseek(fd, 0, os.SEEK_END)
-        more_data = b"additional passthrough data for open\n" * 50
-        bytes_written = os.write(fd, more_data)
-        if bytes_written != len(more_data):
-            print("open write failed: expected {} bytes, wrote {}".format(len(more_data), bytes_written))
-            return 1
+                os.lseek(fd, 0, os.SEEK_SET)
+                read_data = os.read(fd, len(test_data))
+                if read_data != test_data:
+                    print("open read failed: data mismatch")
+                    return 1
 
-        os.lseek(fd, 0, os.SEEK_SET)
-        all_data = os.read(fd, len(test_data) + len(more_data))
-        if all_data != test_data + more_data:
-            print("open final read failed: data mismatch")
-            return 1
+                os.lseek(fd, 0, os.SEEK_END)
+                more_data = b"additional passthrough data for open\n" * 50
+                bytes_written = os.write(fd, more_data)
+                if bytes_written != len(more_data):
+                    print("open write failed: expected {} bytes, wrote {}".format(len(more_data), bytes_written))
+                    return 1
 
-        fd2 = os.open(filepath, os.O_RDWR)
+                os.lseek(fd, 0, os.SEEK_SET)
+                all_data = os.read(fd, len(test_data) + len(more_data))
+                if all_data != test_data + more_data:
+                    print("open final read failed: data mismatch")
+                    return 1
 
-        try:
-            os.lseek(fd2, 0, os.SEEK_SET)
-            read_data2 = os.read(fd2, len(test_data) + len(more_data))
-            if read_data2 != test_data + more_data:
-                print("second open read failed: data mismatch")
-                return 1
+                fd2 = os.open(filepath, os.O_RDWR)
 
-            os.lseek(fd2, 0, os.SEEK_END)
-            extra_data = b"data from second file descriptor\n" * 25
-            bytes_written = os.write(fd2, extra_data)
-            if bytes_written != len(extra_data):
-                print("second open write failed: expected {} bytes, wrote {}".format(len(extra_data), bytes_written))
-                return 1
+                try:
+                    os.lseek(fd2, 0, os.SEEK_SET)
+                    read_data2 = os.read(fd2, len(test_data) + len(more_data))
+                    if read_data2 != test_data + more_data:
+                        print("second open read failed: data mismatch")
+                        return 1
 
-            os.lseek(fd, 0, os.SEEK_SET)
-            combined_data = os.read(fd, len(test_data) + len(more_data) + len(extra_data))
-            expected_data = test_data + more_data + extra_data
-            if combined_data != expected_data:
-                print("cross-fd read failed: data mismatch (writes from fd2 not visible on fd)")
-                return 1
-        finally:
-            os.close(fd2)
+                    os.lseek(fd2, 0, os.SEEK_END)
+                    extra_data = b"data from second file descriptor\n" * 25
+                    bytes_written = os.write(fd2, extra_data)
+                    if bytes_written != len(extra_data):
+                        print("second open write failed: expected {} bytes, wrote {}".format(len(extra_data), bytes_written))
+                        return 1
 
-        fd3 = os.open(filepath, os.O_RDONLY)
-        try:
-            os.lseek(fd3, 0, os.SEEK_SET)
-            read_data3 = os.read(fd3, len(expected_data))
-            if read_data3 != expected_data:
-                print("third open read failed: data mismatch")
-                return 1
-        finally:
-            os.close(fd3)
+                    os.lseek(fd, 0, os.SEEK_SET)
+                    combined_data = os.read(fd, len(test_data) + len(more_data) + len(extra_data))
+                    expected_data = test_data + more_data + extra_data
+                    if combined_data != expected_data:
+                        print("cross-fd read failed: data mismatch (writes from fd2 not visible on fd)")
+                        return 1
+                finally:
+                    os.close(fd2)
 
-        os.close(fd)
-        fd = -1
+                fd3 = os.open(filepath, os.O_RDONLY)
+                try:
+                    os.lseek(fd3, 0, os.SEEK_SET)
+                    read_data3 = os.read(fd3, len(expected_data))
+                    if read_data3 != expected_data:
+                        print("third open read failed: data mismatch")
+                        return 1
+                finally:
+                    os.close(fd3)
 
-        return 0
-    finally:
-        if fd >= 0:
-            os.close(fd)
-        try:
-            os.unlink(filepath)
-        except FileNotFoundError:
-            pass
+                os.close(fd)
+                fd = -1
+
+                return 0
+            finally:
+                if fd >= 0:
+                    os.close(fd)
+                try:
+                    os.unlink(filepath)
+                except FileNotFoundError:
+                    pass
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

@@ -8,10 +8,6 @@ import subprocess
 SKIP = 77
 
 
-if len(sys.argv) != 2:
-    print('usage: run-tests <mountpoint>\n', file=sys.stderr)
-    sys.exit(1)
-
 test_path = os.path.realpath(sys.argv[0])
 test_path = os.path.dirname(test_path)
 
@@ -22,9 +18,9 @@ for entry in os.scandir(test_path):
         continue
 
     try:
-        print(entry.name + ': ', end='')
+        print(entry.name + ': ', end='', flush=True)
         fullpath = os.path.join(test_path, entry.name)
-        args = [fullpath, sys.argv[1]]
+        args = [fullpath]
         rv = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output, _ = rv.communicate(timeout=120)
         if rv.returncode == SKIP:

@@ -1,40 +1,45 @@
 #!/usr/bin/env python3
 
+import tempfile
 import os
 import sys
-import tempfile
+
+from posix_parity import mergerfs_mount
 
 
 def main():
-    atime = 1234
-    mtime = 5678
-    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
+    try:
+        with mergerfs_mount() as (mount, _):
+            (fd, filepath) = tempfile.mkstemp(dir=mount)
 
-    os.utime(fd, (atime, mtime))
+            times = (1234567890, 9876543210)
+            os.utime(fd, times=times)
 
-    st1 = os.fstat(fd)
-    if st1.st_atime != atime or st1.st_mtime != mtime:
-        os.close(fd)
-        os.unlink(filepath)
-        print("futimens before unlink: expected atime={} mtime={}, got atime={} mtime={}".format(
-            atime, mtime, st1.st_atime, st1.st_mtime), end='')
-        return 1
+            st1 = os.fstat(fd)
+            if st1.st_atime != times[0] or st1.st_mtime != times[1]:
+                os.close(fd)
+                os.unlink(filepath)
+                print("futimens before unlink: expected atime={} mtime={}, got atime={} mtime={}".format(
+                    times[0], times[1], st1.st_atime, st1.st_mtime), end='')
+                return 1
 
-    os.unlink(filepath)
+            os.unlink(filepath)
 
-    atime2 = 9999
-    mtime2 = 8888
-    os.utime(fd, (atime2, mtime2))
+            times2 = (1111111111, 2222222222)
+            os.utime(fd, times=times2)
 
-    st2 = os.fstat(fd)
-    if st2.st_atime != atime2 or st2.st_mtime != mtime2:
-        os.close(fd)
-        print("futimens after unlink: expected atime={} mtime={}, got atime={} mtime={}".format(
-            atime2, mtime2, st2.st_atime, st2.st_mtime), end='')
-        return 1
+            st2 = os.fstat(fd)
+            if st2.st_atime != times2[0] or st2.st_mtime != times2[1]:
+                os.close(fd)
+                print("futimens after unlink: expected atime={} mtime={}, got atime={} mtime={}".format(
+                    times2[0], times2[1], st2.st_atime, st2.st_mtime), end='')
+                return 1
 
-    os.close(fd)
-    return 0
+            os.close(fd)
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

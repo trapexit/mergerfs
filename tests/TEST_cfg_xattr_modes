@@ -9,6 +9,7 @@ from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
 from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_mount
 from posix_parity import mergerfs_set_option
 from posix_parity import temp_dir
 from posix_parity import touch
@@ -23,58 +24,54 @@ def get_errno(func):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_cfg_xattr_modes <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-    merge_base = temp_dir(mount)
-
     try:
-        path = join(merge_base, "file")
-        xname = "user.mergerfs.cfg.test"
-        xval = b"v"
+        with mergerfs_mount() as (mount, _):
+            merge_base = temp_dir(mount)
 
-        touch(path, b"x")
-
-        try:
-            orig = mergerfs_get_option(mount, "xattr")
-        except (PermissionError, FileNotFoundError):
-            return 0
-
-        try:
-            mergerfs_set_option(mount, "xattr", "passthrough")
-            set_err = get_errno(lambda: os.setxattr(path, xname, xval))
-            get_err = get_errno(lambda: os.getxattr(path, xname))
-            if set_err != 0:
-                return fail(f"xattr=passthrough setxattr expected success got errno={set_err}")
-            if get_err == errno.ENODATA:
-                return fail(f"xattr=passthrough getxattr returned ENODATA (known bug): this masks a parity violation")
-            if get_err != 0:
-                return fail(f"xattr=passthrough getxattr unexpected errno={get_err}")
-
-            mergerfs_set_option(mount, "xattr", "noattr")
-            err = get_errno(lambda: os.getxattr(path, xname))
-            if err != errno.ENODATA:
-                return fail(f"xattr=noattr getxattr expected ENODATA got errno={err}")
-            err = get_errno(lambda: os.setxattr(path, xname, xval))
-            if err != errno.ENODATA:
-                return fail(f"xattr=noattr setxattr expected ENODATA got errno={err}")
-
-            # xattr=nosys is intentionally not tested here. It disables the
-            # xattr API, including the runtime interface this test uses to
-            # restore options safely.
-        except (PermissionError, FileNotFoundError):
-            return 0
-        finally:
             try:
-                mergerfs_set_option(mount, "xattr", orig)
-            except OSError:
-                pass
+                path = join(merge_base, "file")
+                xname = "user.test"
+                xval = b"v"
 
-        return 0
-    finally:
-        cleanup_dir(merge_base)
+                touch(path, b"x")
+
+                try:
+                    orig = mergerfs_get_option(mount, "xattr")
+                except (PermissionError, FileNotFoundError):
+                    return 0
+
+                try:
+                    mergerfs_set_option(mount, "xattr", "passthrough")
+                    set_err = get_errno(lambda: os.setxattr(path, xname, xval))
+                    get_err = get_errno(lambda: os.getxattr(path, xname))
+                    if set_err != 0:
+                        return fail(f"xattr=passthrough setxattr expected success got errno={set_err}")
+                    if get_err == errno.ENODATA:
+                        return fail(f"xattr=passthrough getxattr returned ENODATA, expected success")
+                    if get_err != 0:
+                        return fail(f"xattr=passthrough getxattr unexpected errno={get_err}")
+
+                    mergerfs_set_option(mount, "xattr", "noattr")
+                    err = get_errno(lambda: os.getxattr(path, xname))
+                    if err != errno.ENODATA:
+                        return fail(f"xattr=noattr getxattr expected ENODATA got errno={err}")
+                    err = get_errno(lambda: os.setxattr(path, xname, xval))
+                    if err != errno.ENODATA:
+                        return fail(f"xattr=noattr setxattr expected ENODATA got errno={err}")
+                except (PermissionError, FileNotFoundError):
+                    return 0
+                finally:
+                    try:
+                        mergerfs_set_option(mount, "xattr", orig)
+                    except OSError:
+                        pass
+
+                return 0
+            finally:
+                cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

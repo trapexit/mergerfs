@@ -9,6 +9,7 @@ from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -28,40 +29,39 @@ def syncfs_fd(fd):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_syncfs <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    touch(merge_file, b"x")
+                    touch(native_file, b"x")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    mfd = os.open(merge_file, os.O_RDONLY)
+                    nfd = os.open(native_file, os.O_RDONLY)
+                    try:
+                        err = compare_calls("syncfs success", lambda: syncfs_fd(mfd), lambda: syncfs_fd(nfd))
+                        if err:
+                            return fail(err)
+                    finally:
+                        os.close(mfd)
+                        os.close(nfd)
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            touch(merge_file, b"x")
-            touch(native_file, b"x")
+                    err = compare_calls("syncfs EBADF", lambda: syncfs_fd(-1), lambda: syncfs_fd(-1))
+                    if err:
+                        return fail(err)
 
-            mfd = os.open(merge_file, os.O_RDONLY)
-            nfd = os.open(native_file, os.O_RDONLY)
-            try:
-                err = compare_calls("syncfs success", lambda: syncfs_fd(mfd), lambda: syncfs_fd(nfd))
-                if err:
-                    return fail(err)
-            finally:
-                os.close(mfd)
-                os.close(nfd)
-
-            err = compare_calls("syncfs EBADF", lambda: syncfs_fd(-1), lambda: syncfs_fd(-1))
-            if err:
-                return fail(err)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

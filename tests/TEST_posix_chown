@@ -9,75 +9,76 @@ from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_chown <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            uid = os.getuid()
+            gid = os.getgid()
 
-    mount = sys.argv[1]
-    uid = os.getuid()
-    gid = os.getgid()
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    merge_missing = join(merge_base, "missing")
+                    native_missing = join(native_base, "missing")
+                    merge_notdir = join(merge_base, "notdir")
+                    native_notdir = join(native_base, "notdir")
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            merge_missing = join(merge_base, "missing")
-            native_missing = join(native_base, "missing")
-            merge_notdir = join(merge_base, "notdir")
-            native_notdir = join(native_base, "notdir")
+                    cleanup_paths([merge_file, merge_notdir])
 
-            cleanup_paths([merge_file, merge_notdir])
+                    touch(merge_file, b"x", 0o644)
+                    touch(native_file, b"x", 0o644)
+                    touch(merge_notdir, b"x", 0o644)
+                    touch(native_notdir, b"x", 0o644)
 
-            touch(merge_file, b"x", 0o644)
-            touch(native_file, b"x", 0o644)
-            touch(merge_notdir, b"x", 0o644)
-            touch(native_notdir, b"x", 0o644)
+                    err = compare_calls(
+                        "chown self",
+                        lambda: os.chown(merge_file, uid, gid),
+                        lambda: os.chown(native_file, uid, gid),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chown self",
-                lambda: os.chown(merge_file, uid, gid),
-                lambda: os.chown(native_file, uid, gid),
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "chown ENOENT",
+                        lambda: os.chown(merge_missing, uid, gid),
+                        lambda: os.chown(native_missing, uid, gid),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chown ENOENT",
-                lambda: os.chown(merge_missing, uid, gid),
-                lambda: os.chown(native_missing, uid, gid),
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "chown ENOTDIR",
+                        lambda: os.chown(join(merge_notdir, "child"), uid, gid),
+                        lambda: os.chown(join(native_notdir, "child"), uid, gid),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chown ENOTDIR",
-                lambda: os.chown(join(merge_notdir, "child"), uid, gid),
-                lambda: os.chown(join(native_notdir, "child"), uid, gid),
-            )
-            if err:
-                return fail(err)
+                    if os.geteuid() != 0:
+                        err = compare_calls(
+                            "chown EPERM foreign uid",
+                            lambda: os.chown(merge_file, 0, gid),
+                            lambda: os.chown(native_file, 0, gid),
+                        )
+                        if err:
+                            return fail(err)
 
-            if os.geteuid() != 0:
-                err = compare_calls(
-                    "chown EPERM foreign uid",
-                    lambda: os.chown(merge_file, 0, gid),
-                    lambda: os.chown(native_file, 0, gid),
-                )
-                if err:
-                    return fail(err)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

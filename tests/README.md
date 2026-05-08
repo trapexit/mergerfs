@@ -6,10 +6,13 @@ and compare behavior against equivalent native syscalls on a local filesystem.
 The suite is "soft POSIX": it focuses on practical parity for return values,
 `errno`, and key side effects, including common error paths.
 
+Each test mounts its own ephemeral mergerfs instance with random temporary
+branches and cleans everything up automatically.
+
 Run with:
 
 ```bash
-python3 tests/run-tests /mnt/mergerfs/
+python3 tests/run-tests
 ```
 
 ## Coverage Matrix
@@ -69,3 +72,6 @@ Across tests, parity checks include combinations of:
 - Tests that cannot exercise a behavior in the current environment may exit 77
   and are reported as `SKIP` by `tests/run-tests`.
 - The xattr test uses a `user.*` key and assumes user xattrs are enabled.
+- Tests mount their own ephemeral mergerfs instances using the `mergerfs_mount`
+  context manager in `posix_parity.py`. Random directories are created and
+  cleaned up automatically.

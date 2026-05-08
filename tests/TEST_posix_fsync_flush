@@ -8,76 +8,75 @@ from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_fsync_flush <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    merge_dir = join(merge_base, "dir")
+                    native_dir = join(native_base, "dir")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    touch(merge_file, b"abc")
+                    touch(native_file, b"abc")
+                    os.makedirs(merge_dir, exist_ok=True)
+                    os.makedirs(native_dir, exist_ok=True)
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            merge_dir = join(merge_base, "dir")
-            native_dir = join(native_base, "dir")
+                    mfd = os.open(merge_file, os.O_RDWR)
+                    nfd = os.open(native_file, os.O_RDWR)
+                    try:
+                        os.lseek(mfd, 0, os.SEEK_END)
+                        os.lseek(nfd, 0, os.SEEK_END)
+                        os.write(mfd, b"-appended")
+                        os.write(nfd, b"-appended")
 
-            touch(merge_file, b"abc")
-            touch(native_file, b"abc")
-            os.makedirs(merge_dir, exist_ok=True)
-            os.makedirs(native_dir, exist_ok=True)
+                        err = compare_calls("fsync file", lambda: os.fsync(mfd), lambda: os.fsync(nfd))
+                        if err:
+                            return fail(err)
+                    finally:
+                        os.close(mfd)
+                        os.close(nfd)
 
-            mfd = os.open(merge_file, os.O_RDWR)
-            nfd = os.open(native_file, os.O_RDWR)
-            try:
-                os.lseek(mfd, 0, os.SEEK_END)
-                os.lseek(nfd, 0, os.SEEK_END)
-                os.write(mfd, b"-appended")
-                os.write(nfd, b"-appended")
+                    mdirfd = os.open(merge_dir, os.O_RDONLY | os.O_DIRECTORY)
+                    ndirfd = os.open(native_dir, os.O_RDONLY | os.O_DIRECTORY)
+                    try:
+                        err = compare_calls("fsync dir", lambda: os.fsync(mdirfd), lambda: os.fsync(ndirfd))
+                        if err:
+                            return fail(err)
+                    finally:
+                        os.close(mdirfd)
+                        os.close(ndirfd)
 
-                err = compare_calls("fsync file", lambda: os.fsync(mfd), lambda: os.fsync(nfd))
-                if err:
-                    return fail(err)
-            finally:
-                os.close(mfd)
-                os.close(nfd)
+                    bad_m = os.open(merge_file, os.O_RDONLY)
+                    bad_n = os.open(native_file, os.O_RDONLY)
+                    os.close(bad_m)
+                    os.close(bad_n)
+                    err = compare_calls("fsync EBADF", lambda: os.fsync(bad_m), lambda: os.fsync(bad_n))
+                    if err:
+                        return fail(err)
 
-            mdirfd = os.open(merge_dir, os.O_RDONLY | os.O_DIRECTORY)
-            ndirfd = os.open(native_dir, os.O_RDONLY | os.O_DIRECTORY)
-            try:
-                err = compare_calls("fsync dir", lambda: os.fsync(mdirfd), lambda: os.fsync(ndirfd))
-                if err:
-                    return fail(err)
-            finally:
-                os.close(mdirfd)
-                os.close(ndirfd)
+                    with open(merge_file, "rb") as mf, open(native_file, "rb") as nf:
+                        mdata = mf.read()
+                        ndata = nf.read()
+                    if mdata != ndata:
+                        return fail(f"flush content mismatch mergerfs={mdata!r} native={ndata!r}")
 
-            bad_m = os.open(merge_file, os.O_RDONLY)
-            bad_n = os.open(native_file, os.O_RDONLY)
-            os.close(bad_m)
-            os.close(bad_n)
-            err = compare_calls("fsync EBADF", lambda: os.fsync(bad_m), lambda: os.fsync(bad_n))
-            if err:
-                return fail(err)
-
-            # Close-to-flush parity check: both paths should preserve appended payload.
-            with open(merge_file, "rb") as mf, open(native_file, "rb") as nf:
-                mdata = mf.read()
-                ndata = nf.read()
-            if mdata != ndata:
-                return fail(f"flush content mismatch mergerfs={mdata!r} native={ndata!r}")
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

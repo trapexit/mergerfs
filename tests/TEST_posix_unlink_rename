@@ -9,70 +9,70 @@ from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_unlink_rename <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_a = join(merge_base, "a")
+                    native_a = join(native_base, "a")
+                    merge_b = join(merge_base, "b")
+                    native_b = join(native_base, "b")
+                    merge_missing = join(merge_base, "missing")
+                    native_missing = join(native_base, "missing")
+                    merge_notdir = join(merge_base, "notdir")
+                    native_notdir = join(native_base, "notdir")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    cleanup_paths([merge_a, merge_b, merge_notdir])
+                    touch(merge_a, b"a")
+                    touch(native_a, b"a")
 
-            merge_a = join(merge_base, "a")
-            native_a = join(native_base, "a")
-            merge_b = join(merge_base, "b")
-            native_b = join(native_base, "b")
-            merge_missing = join(merge_base, "missing")
-            native_missing = join(native_base, "missing")
-            merge_notdir = join(merge_base, "notdir")
-            native_notdir = join(native_base, "notdir")
+                    err = compare_calls("unlink success", lambda: os.unlink(merge_a), lambda: os.unlink(native_a))
+                    if err:
+                        return fail(err)
 
-            cleanup_paths([merge_a, merge_b, merge_notdir])
-            touch(merge_a, b"a")
-            touch(native_a, b"a")
+                    err = compare_calls("unlink ENOENT", lambda: os.unlink(merge_missing), lambda: os.unlink(native_missing))
+                    if err:
+                        return fail(err)
 
-            err = compare_calls("unlink success", lambda: os.unlink(merge_a), lambda: os.unlink(native_a))
-            if err:
-                return fail(err)
+                    touch(merge_a, b"a")
+                    touch(native_a, b"a")
+                    touch(merge_b, b"b")
+                    touch(native_b, b"b")
 
-            err = compare_calls("unlink ENOENT", lambda: os.unlink(merge_missing), lambda: os.unlink(native_missing))
-            if err:
-                return fail(err)
+                    err = compare_calls("rename overwrite", lambda: os.rename(merge_a, merge_b), lambda: os.rename(native_a, native_b))
+                    if err:
+                        return fail(err)
 
-            touch(merge_a, b"a")
-            touch(native_a, b"a")
-            touch(merge_b, b"b")
-            touch(native_b, b"b")
+                    err = compare_calls("rename ENOENT", lambda: os.rename(merge_missing, merge_a), lambda: os.rename(native_missing, native_a))
+                    if err:
+                        return fail(err)
 
-            err = compare_calls("rename overwrite", lambda: os.rename(merge_a, merge_b), lambda: os.rename(native_a, native_b))
-            if err:
-                return fail(err)
+                    touch(merge_notdir, b"x")
+                    touch(native_notdir, b"x")
+                    err = compare_calls(
+                        "rename ENOTDIR",
+                        lambda: os.rename(join(merge_notdir, "child"), merge_a),
+                        lambda: os.rename(join(native_notdir, "child"), native_a),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls("rename ENOENT", lambda: os.rename(merge_missing, merge_a), lambda: os.rename(native_missing, native_a))
-            if err:
-                return fail(err)
-
-            touch(merge_notdir, b"x")
-            touch(native_notdir, b"x")
-            err = compare_calls(
-                "rename ENOTDIR",
-                lambda: os.rename(join(merge_notdir, "child"), merge_a),
-                lambda: os.rename(join(native_notdir, "child"), native_a),
-            )
-            if err:
-                return fail(err)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

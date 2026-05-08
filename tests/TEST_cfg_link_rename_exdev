@@ -10,6 +10,7 @@ from posix_parity import fail
 from posix_parity import join
 from posix_parity import mergerfs_branches
 from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_mount
 from posix_parity import mergerfs_set_option
 from posix_parity import touch
 
@@ -56,96 +57,92 @@ def setup_paths(branches, mount, rel_base, name):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_cfg_link_rename_exdev <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-    rel_base = f".mergerfs_exdev_test_{os.getpid()}_{uuid.uuid4().hex}"
-    branches = mergerfs_branches(mount)
-    if len(branches) < 2:
-        print("EXDEV fallback test requires at least 2 branches", end="")
-        return SKIP
-    branches = branches[:2]
-    if os.stat(branches[0]).st_dev == os.stat(branches[1]).st_dev:
-        print("EXDEV fallback test requires branches on different devices", end="")
-        return SKIP
-
     try:
-        try:
-            orig_create = mergerfs_get_option(mount, "category.create")
-            orig_link = mergerfs_get_option(mount, "link-exdev")
-            orig_rename = mergerfs_get_option(mount, "rename-exdev")
-        except (PermissionError, FileNotFoundError, OSError):
-            print("EXDEV fallback runtime options unavailable", end="")
-            return SKIP
-
-        try:
-            # Maximize chance of EXDEV path by path-preserving create policy.
-            mergerfs_set_option(mount, "category.create", "epmfs")
-
-            # link-exdev passthrough => EXDEV when cross-device path preserving applies.
-            src, dst, src_base = setup_paths(branches, mount, rel_base, "link_pass")
-            mergerfs_set_option(mount, "link-exdev", "passthrough")
-            err = get_errno(lambda: os.link(src, dst + ".link.pass"))
-            if err != errno.EXDEV:
-                print(f"link-exdev passthrough did not exercise EXDEV, errno={err}", end="")
+        with mergerfs_mount(num_branches=2) as (mount, branches):
+            rel_base = f".mergerfs_exdev_test_{os.getpid()}_{uuid.uuid4().hex}"
+            if len(branches) < 2:
+                print("EXDEV fallback test requires at least 2 branches", end="")
+                return SKIP
+            branches = branches[:2]
+            if os.stat(branches[0]).st_dev == os.stat(branches[1]).st_dev:
+                print("EXDEV fallback test requires branches on different devices", end="")
                 return SKIP
 
-            for mode in ("rel-symlink", "abs-base-symlink", "abs-pool-symlink"):
-                src, dst, src_base = setup_paths(branches, mount, rel_base, f"link_{mode}")
-                mergerfs_set_option(mount, "link-exdev", mode)
-                link_path = dst + ".link"
-                err = get_errno(lambda: os.link(src, link_path))
-                if err != 0:
-                    return fail(f"link-exdev={mode} returned errno={err}")
-                err_msg = require_symlink(link_path, f"link-exdev={mode}")
-                if err_msg:
-                    return fail(err_msg)
-                resolved = symlink_resolves(link_path)
-                if mode == "abs-base-symlink" and resolved != os.path.realpath(src_base):
-                    return fail(f"link-exdev={mode}: target {resolved!r} != {os.path.realpath(src_base)!r}")
-                if mode != "abs-base-symlink" and resolved != os.path.realpath(src):
-                    return fail(f"link-exdev={mode}: target {resolved!r} != {os.path.realpath(src)!r}")
-
-            # rename-exdev passthrough => EXDEV in cross-device path preserving case.
-            src_ren, dst_ren, _ = setup_paths(branches, mount, rel_base, "rename_pass")
-            mergerfs_set_option(mount, "rename-exdev", "passthrough")
-            err = get_errno(lambda: os.rename(src_ren, dst_ren + ".ren.pass"))
-            if err != errno.EXDEV:
-                print(f"rename-exdev passthrough did not exercise EXDEV, errno={err}", end="")
-                return SKIP
-
-            for mode in ("rel-symlink", "abs-symlink"):
-                src_ren, dst_ren, _ = setup_paths(branches, mount, rel_base, f"rename_{mode}")
-                mergerfs_set_option(mount, "rename-exdev", mode)
-                ren_path = dst_ren + ".ren"
-                err = get_errno(lambda: os.rename(src_ren, ren_path))
-                if err != 0:
-                    return fail(f"rename-exdev={mode} returned errno={err}")
-                err_msg = require_symlink(ren_path, f"rename-exdev={mode}")
-                if err_msg:
-                    return fail(err_msg)
-                target = symlink_resolves(ren_path)
-                if ".mergerfs_rename_exdev" not in target:
-                    return fail(f"rename-exdev={mode}: target not moved under .mergerfs_rename_exdev: {target!r}")
-                with open(ren_path, "rb") as fp:
-                    if fp.read() != b"src":
-                        return fail(f"rename-exdev={mode}: symlink target content mismatch")
-        except (PermissionError, FileNotFoundError, OSError):
-            return SKIP
-        finally:
             try:
-                mergerfs_set_option(mount, "category.create", orig_create)
-                mergerfs_set_option(mount, "link-exdev", orig_link)
-                mergerfs_set_option(mount, "rename-exdev", orig_rename)
-            except OSError:
-                pass
+                try:
+                    orig_create = mergerfs_get_option(mount, "category.create")
+                    orig_link = mergerfs_get_option(mount, "link-exdev")
+                    orig_rename = mergerfs_get_option(mount, "rename-exdev")
+                except (PermissionError, FileNotFoundError, OSError):
+                    print("EXDEV fallback runtime options unavailable", end="")
+                    return SKIP
 
-        return 0
-    finally:
-        for branch in branches:
-            cleanup_dir(join(branch, rel_base))
+                try:
+                    mergerfs_set_option(mount, "category.create", "epmfs")
+
+                    src, dst, src_base = setup_paths(branches, mount, rel_base, "link_pass")
+                    mergerfs_set_option(mount, "link-exdev", "passthrough")
+                    err = get_errno(lambda: os.link(src, dst + ".link.pass"))
+                    if err != errno.EXDEV:
+                        print(f"link-exdev passthrough did not exercise EXDEV, errno={err}", end="")
+                        return SKIP
+
+                    for mode in ("rel-symlink", "abs-base-symlink", "abs-pool-symlink"):
+                        src, dst, src_base = setup_paths(branches, mount, rel_base, f"link_{mode}")
+                        mergerfs_set_option(mount, "link-exdev", mode)
+                        link_path = dst + ".link"
+                        err = get_errno(lambda: os.link(src, link_path))
+                        if err != 0:
+                            return fail(f"link-exdev={mode} returned errno={err}")
+                        err_msg = require_symlink(link_path, f"link-exdev={mode}")
+                        if err_msg:
+                            return fail(err_msg)
+                        resolved = symlink_resolves(link_path)
+                        if mode == "abs-base-symlink" and resolved != os.path.realpath(src_base):
+                            return fail(f"link-exdev={mode}: target {resolved!r} != {os.path.realpath(src_base)!r}")
+                        if mode != "abs-base-symlink" and resolved != os.path.realpath(src):
+                            return fail(f"link-exdev={mode}: target {resolved!r} != {os.path.realpath(src)!r}")
+
+                    src_ren, dst_ren, _ = setup_paths(branches, mount, rel_base, "rename_pass")
+                    mergerfs_set_option(mount, "rename-exdev", "passthrough")
+                    err = get_errno(lambda: os.rename(src_ren, dst_ren + ".ren.pass"))
+                    if err != errno.EXDEV:
+                        print(f"rename-exdev passthrough did not exercise EXDEV, errno={err}", end="")
+                        return SKIP
+
+                    for mode in ("rel-symlink", "abs-symlink"):
+                        src_ren, dst_ren, _ = setup_paths(branches, mount, rel_base, f"rename_{mode}")
+                        mergerfs_set_option(mount, "rename-exdev", mode)
+                        ren_path = dst_ren + ".ren"
+                        err = get_errno(lambda: os.rename(src_ren, ren_path))
+                        if err != 0:
+                            return fail(f"rename-exdev={mode} returned errno={err}")
+                        err_msg = require_symlink(ren_path, f"rename-exdev={mode}")
+                        if err_msg:
+                            return fail(err_msg)
+                        target = symlink_resolves(ren_path)
+                        if ".mergerfs_rename_exdev" not in target:
+                            return fail(f"rename-exdev={mode}: target not moved under .mergerfs_rename_exdev: {target!r}")
+                        with open(ren_path, "rb") as fp:
+                            if fp.read() != b"src":
+                                return fail(f"rename-exdev={mode}: symlink target content mismatch")
+                except (PermissionError, FileNotFoundError, OSError):
+                    return SKIP
+                finally:
+                    try:
+                        mergerfs_set_option(mount, "category.create", orig_create)
+                        mergerfs_set_option(mount, "link-exdev", orig_link)
+                        mergerfs_set_option(mount, "rename-exdev", orig_rename)
+                    except OSError:
+                        pass
+
+                return 0
+            finally:
+                for branch in branches:
+                    cleanup_dir(join(branch, rel_base))
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":
