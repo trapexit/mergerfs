@@ -1,26 +1,33 @@
 #!/usr/bin/env python3
 
+import tempfile
 import os
 import sys
-import tempfile
+
+from posix_parity import mergerfs_mount
 
 
 def main():
-    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
+    try:
+        with mergerfs_mount() as (mount, _):
+            (fd, filepath) = tempfile.mkstemp(dir=mount)
 
-    os.unlink(filepath)
+            os.unlink(filepath)
 
-    found = False
-    for entry in os.scandir(sys.argv[1]):
-        if entry.name.startswith(".fuse_hidden"):
-            print("found .fuse_hidden file {}".format(entry.name), end='')
-            found = True
+            found = False
+            for entry in os.scandir(mount):
+                if entry.name.startswith(".fuse_hidden"):
+                    print("found .fuse_hidden file {}".format(entry.name), end='')
+                    found = True
 
-    os.close(fd)
+            os.close(fd)
 
-    if found:
-        return 1
-    return 0
+            if found:
+                return 1
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

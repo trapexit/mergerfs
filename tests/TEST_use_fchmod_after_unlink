@@ -1,35 +1,42 @@
 #!/usr/bin/env python3
 
+import tempfile
 import os
 import stat
 import sys
-import tempfile
+
+from posix_parity import mergerfs_mount
 
 
 def main():
-    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
+    try:
+        with mergerfs_mount() as (mount, _):
+            (fd, filepath) = tempfile.mkstemp(dir=mount)
 
-    os.fchmod(fd, 0o700)
+            os.fchmod(fd, 0o700)
 
-    st1 = os.fstat(fd)
-    if stat.S_IMODE(st1.st_mode) != 0o700:
-        os.close(fd)
-        os.unlink(filepath)
-        print("fchmod before unlink: expected mode 0o700, got 0o{:o}".format(stat.S_IMODE(st1.st_mode)), end='')
-        return 1
+            st1 = os.fstat(fd)
+            if stat.S_IMODE(st1.st_mode) != 0o700:
+                os.close(fd)
+                os.unlink(filepath)
+                print("fchmod before unlink: expected mode 0o700, got 0o{:o}".format(stat.S_IMODE(st1.st_mode)), end='')
+                return 1
 
-    os.unlink(filepath)
+            os.unlink(filepath)
 
-    os.fchmod(fd, 0o755)
+            os.fchmod(fd, 0o755)
 
-    st2 = os.fstat(fd)
-    if stat.S_IMODE(st2.st_mode) != 0o755:
-        os.close(fd)
-        print("fchmod after unlink: expected mode 0o755, got 0o{:o}".format(stat.S_IMODE(st2.st_mode)), end='')
-        return 1
+            st2 = os.fstat(fd)
+            if stat.S_IMODE(st2.st_mode) != 0o755:
+                os.close(fd)
+                print("fchmod after unlink: expected mode 0o755, got 0o{:o}".format(stat.S_IMODE(st2.st_mode)), end='')
+                return 1
 
-    os.close(fd)
-    return 0
+            os.close(fd)
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

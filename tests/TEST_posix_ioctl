@@ -11,6 +11,7 @@ from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -22,47 +23,46 @@ def fionread(fd):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_ioctl <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    touch(merge_file, b"hello-world")
+                    touch(native_file, b"hello-world")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    mfd = os.open(merge_file, os.O_RDONLY)
+                    nfd = os.open(native_file, os.O_RDONLY)
+                    try:
+                        err = compare_calls("ioctl FIONREAD", lambda: fionread(mfd), lambda: fionread(nfd), lambda a, b: a == b)
+                        if err:
+                            return fail(err)
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            touch(merge_file, b"hello-world")
-            touch(native_file, b"hello-world")
+                        os.lseek(mfd, 5, os.SEEK_SET)
+                        os.lseek(nfd, 5, os.SEEK_SET)
+                        err = compare_calls(
+                            "ioctl FIONREAD after seek",
+                            lambda: fionread(mfd),
+                            lambda: fionread(nfd),
+                            lambda a, b: a == b,
+                        )
+                        if err:
+                            return fail(err)
+                    finally:
+                        os.close(mfd)
+                        os.close(nfd)
 
-            mfd = os.open(merge_file, os.O_RDONLY)
-            nfd = os.open(native_file, os.O_RDONLY)
-            try:
-                err = compare_calls("ioctl FIONREAD", lambda: fionread(mfd), lambda: fionread(nfd), lambda a, b: a == b)
-                if err:
-                    return fail(err)
-
-                os.lseek(mfd, 5, os.SEEK_SET)
-                os.lseek(nfd, 5, os.SEEK_SET)
-                err = compare_calls(
-                    "ioctl FIONREAD after seek",
-                    lambda: fionread(mfd),
-                    lambda: fionread(nfd),
-                    lambda a, b: a == b,
-                )
-                if err:
-                    return fail(err)
-            finally:
-                os.close(mfd)
-                os.close(nfd)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

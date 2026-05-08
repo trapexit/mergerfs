@@ -8,6 +8,7 @@ import tempfile
 from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -88,155 +89,154 @@ def lremovexattr(path, name):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_xattr_matrix <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    root_m = merge_base
+                    root_n = native_base
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    file_m = join(root_m, "file")
+                    file_n = join(root_n, "file")
+                    dir_m = join(root_m, "dir")
+                    dir_n = join(root_n, "dir")
+                    link_m = join(root_m, "link")
+                    link_n = join(root_n, "link")
 
-            root_m = merge_base
-            root_n = native_base
+                    touch(file_m, b"x")
+                    touch(file_n, b"x")
+                    os.makedirs(dir_m, exist_ok=True)
+                    os.makedirs(dir_n, exist_ok=True)
+                    try:
+                        os.unlink(link_m)
+                    except FileNotFoundError:
+                        pass
+                    try:
+                        os.unlink(link_n)
+                    except FileNotFoundError:
+                        pass
+                    os.symlink("file", link_m)
+                    os.symlink("file", link_n)
 
-            file_m = join(root_m, "file")
-            file_n = join(root_n, "file")
-            dir_m = join(root_m, "dir")
-            dir_n = join(root_n, "dir")
-            link_m = join(root_m, "link")
-            link_n = join(root_n, "link")
+                    objs = [
+                        ("file", file_m, file_n),
+                        ("dir", dir_m, dir_n),
+                    ]
 
-            touch(file_m, b"x")
-            touch(file_n, b"x")
-            os.makedirs(dir_m, exist_ok=True)
-            os.makedirs(dir_n, exist_ok=True)
-            try:
-                os.unlink(link_m)
-            except FileNotFoundError:
-                pass
-            try:
-                os.unlink(link_n)
-            except FileNotFoundError:
-                pass
-            os.symlink("file", link_m)
-            os.symlink("file", link_n)
+                    xbase = "user.xattr_matrix"
 
-            objs = [
-                ("file", file_m, file_n),
-                ("dir", dir_m, dir_n),
-            ]
+                    for obj_name, path_m, path_n in objs:
+                        xname = f"{xbase}.{obj_name}"
 
-            xbase = "user.xattr_matrix"
+                        err = compare(
+                            f"setxattr default {obj_name}",
+                            lambda p=path_m, n=xname: os.setxattr(p, n, b"v1"),
+                            lambda p=path_n, n=xname: os.setxattr(p, n, b"v1"),
+                        )
+                        if err:
+                            return fail(err)
 
-            for obj_name, path_m, path_n in objs:
-                xname = f"{xbase}.{obj_name}"
+                        err = getxattr_cmp(path_m, path_n, xname)
+                        if err:
+                            return fail(err)
 
-                err = compare(
-                    f"setxattr default {obj_name}",
-                    lambda p=path_m, n=xname: os.setxattr(p, n, b"v1"),
-                    lambda p=path_n, n=xname: os.setxattr(p, n, b"v1"),
-                )
-                if err:
-                    return fail(err)
+                        err = list_has_cmp(path_m, path_n, xname)
+                        if err:
+                            return fail(err)
 
-                err = getxattr_cmp(path_m, path_n, xname)
-                if err:
-                    return fail(err)
+                        if hasattr(os, "XATTR_CREATE"):
+                            err = compare(
+                                f"setxattr CREATE existing {obj_name}",
+                                lambda p=path_m, n=xname: os.setxattr(p, n, b"v2", os.XATTR_CREATE),
+                                lambda p=path_n, n=xname: os.setxattr(p, n, b"v2", os.XATTR_CREATE),
+                            )
+                            if err:
+                                return fail(err)
 
-                err = list_has_cmp(path_m, path_n, xname)
-                if err:
-                    return fail(err)
+                        if hasattr(os, "XATTR_REPLACE"):
+                            err = compare(
+                                f"setxattr REPLACE existing {obj_name}",
+                                lambda p=path_m, n=xname: os.setxattr(p, n, b"v3", os.XATTR_REPLACE),
+                                lambda p=path_n, n=xname: os.setxattr(p, n, b"v3", os.XATTR_REPLACE),
+                            )
+                            if err:
+                                return fail(err)
 
-                if hasattr(os, "XATTR_CREATE"):
+                            err = getxattr_cmp(path_m, path_n, xname)
+                            if err:
+                                return fail(err)
+
+                        missing_name = f"{xname}.missing"
+                        if hasattr(os, "XATTR_REPLACE"):
+                            err = compare(
+                                f"setxattr REPLACE missing {obj_name}",
+                                lambda p=path_m, n=missing_name: os.setxattr(p, n, b"v", os.XATTR_REPLACE),
+                                lambda p=path_n, n=missing_name: os.setxattr(p, n, b"v", os.XATTR_REPLACE),
+                            )
+                            if err:
+                                return fail(err)
+
+                        err = compare(
+                            f"removexattr existing {obj_name}",
+                            lambda p=path_m, n=xname: os.removexattr(p, n),
+                            lambda p=path_n, n=xname: os.removexattr(p, n),
+                        )
+                        if err:
+                            return fail(err)
+
+                        err = compare(
+                            f"removexattr missing {obj_name}",
+                            lambda p=path_m, n=xname: os.removexattr(p, n),
+                            lambda p=path_n, n=xname: os.removexattr(p, n),
+                        )
+                        if err:
+                            return fail(err)
+
+                    lxname = f"{xbase}.link"
                     err = compare(
-                        f"setxattr CREATE existing {obj_name}",
-                        lambda p=path_m, n=xname: os.setxattr(p, n, b"v2", os.XATTR_CREATE),
-                        lambda p=path_n, n=xname: os.setxattr(p, n, b"v2", os.XATTR_CREATE),
+                        "lsetxattr symlink default",
+                        lambda: lsetxattr(link_m, lxname, b"lv1"),
+                        lambda: lsetxattr(link_n, lxname, b"lv1"),
                     )
                     if err:
                         return fail(err)
 
-                if hasattr(os, "XATTR_REPLACE"):
                     err = compare(
-                        f"setxattr REPLACE existing {obj_name}",
-                        lambda p=path_m, n=xname: os.setxattr(p, n, b"v3", os.XATTR_REPLACE),
-                        lambda p=path_n, n=xname: os.setxattr(p, n, b"v3", os.XATTR_REPLACE),
+                        "lgetxattr symlink",
+                        lambda: lgetxattr(link_m, lxname),
+                        lambda: lgetxattr(link_n, lxname),
+                        lambda a, b: a == b,
                     )
                     if err:
                         return fail(err)
 
-                    err = getxattr_cmp(path_m, path_n, xname)
-                    if err:
-                        return fail(err)
-
-                missing_name = f"{xname}.missing"
-                if hasattr(os, "XATTR_REPLACE"):
                     err = compare(
-                        f"setxattr REPLACE missing {obj_name}",
-                        lambda p=path_m, n=missing_name: os.setxattr(p, n, b"v", os.XATTR_REPLACE),
-                        lambda p=path_n, n=missing_name: os.setxattr(p, n, b"v", os.XATTR_REPLACE),
+                        "llistxattr has symlink key",
+                        lambda: llistxattr(link_m),
+                        lambda: llistxattr(link_n),
+                        lambda a, b: ((lxname in a) == (lxname in b)),
                     )
                     if err:
                         return fail(err)
 
-                err = compare(
-                    f"removexattr existing {obj_name}",
-                    lambda p=path_m, n=xname: os.removexattr(p, n),
-                    lambda p=path_n, n=xname: os.removexattr(p, n),
-                )
-                if err:
-                    return fail(err)
+                    err = compare(
+                        "lremovexattr symlink",
+                        lambda: lremovexattr(link_m, lxname),
+                        lambda: lremovexattr(link_n, lxname),
+                    )
+                    if err:
+                        return fail(err)
 
-                err = compare(
-                    f"removexattr missing {obj_name}",
-                    lambda p=path_m, n=xname: os.removexattr(p, n),
-                    lambda p=path_n, n=xname: os.removexattr(p, n),
-                )
-                if err:
-                    return fail(err)
-
-            lxname = f"{xbase}.link"
-            err = compare(
-                "lsetxattr symlink default",
-                lambda: lsetxattr(link_m, lxname, b"lv1"),
-                lambda: lsetxattr(link_n, lxname, b"lv1"),
-            )
-            if err:
-                return fail(err)
-
-            err = compare(
-                "lgetxattr symlink",
-                lambda: lgetxattr(link_m, lxname),
-                lambda: lgetxattr(link_n, lxname),
-                lambda a, b: a == b,
-            )
-            if err:
-                return fail(err)
-
-            err = compare(
-                "llistxattr has symlink key",
-                lambda: llistxattr(link_m),
-                lambda: llistxattr(link_n),
-                lambda a, b: ((lxname in a) == (lxname in b)),
-            )
-            if err:
-                return fail(err)
-
-            err = compare(
-                "lremovexattr symlink",
-                lambda: lremovexattr(link_m, lxname),
-                lambda: lremovexattr(link_n, lxname),
-            )
-            if err:
-                return fail(err)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

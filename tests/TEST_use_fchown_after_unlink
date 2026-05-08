@@ -1,36 +1,46 @@
 #!/usr/bin/env python3
 
+import tempfile
 import os
 import sys
-import tempfile
+
+from posix_parity import mergerfs_mount
 
 
 def main():
-    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
+    try:
+        with mergerfs_mount() as (mount, _):
+            (fd, filepath) = tempfile.mkstemp(dir=mount)
 
-    os.fchown(fd, os.getuid(), os.getgid())
+            uid = os.getuid()
+            gid = os.getgid()
 
-    st1 = os.fstat(fd)
-    if st1.st_uid != os.getuid() or st1.st_gid != os.getgid():
-        os.close(fd)
-        os.unlink(filepath)
-        print("fchown before unlink: expected uid={} gid={}, got uid={} gid={}".format(
-            os.getuid(), os.getgid(), st1.st_uid, st1.st_gid), end='')
-        return 1
+            os.fchown(fd, uid, gid)
 
-    os.unlink(filepath)
+            st1 = os.fstat(fd)
+            if st1.st_uid != uid or st1.st_gid != gid:
+                os.close(fd)
+                os.unlink(filepath)
+                print("fchown before unlink: expected uid={} gid={}, got uid={} gid={}".format(
+                    uid, gid, st1.st_uid, st1.st_gid), end='')
+                return 1
 
-    os.fchown(fd, os.getuid(), os.getgid())
+            os.unlink(filepath)
 
-    st2 = os.fstat(fd)
-    if st2.st_uid != os.getuid() or st2.st_gid != os.getgid():
-        os.close(fd)
-        print("fchown after unlink: expected uid={} gid={}, got uid={} gid={}".format(
-            os.getuid(), os.getgid(), st2.st_uid, st2.st_gid), end='')
-        return 1
+            os.fchown(fd, uid, gid)
 
-    os.close(fd)
-    return 0
+            st2 = os.fstat(fd)
+            if st2.st_uid != uid or st2.st_gid != gid:
+                os.close(fd)
+                print("fchown after unlink: expected uid={} gid={}, got uid={} gid={}".format(
+                    uid, gid, st2.st_uid, st2.st_gid), end='')
+                return 1
+
+            os.close(fd)
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

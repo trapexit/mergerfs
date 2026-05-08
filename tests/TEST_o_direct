@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+import tempfile
 import ctypes
 import mmap
 import os
 import resource
 import sys
-import tempfile
+
+from posix_parity import mergerfs_mount
 
 
 libc = ctypes.CDLL(None, use_errno=True)
@@ -28,38 +30,43 @@ def aligned_read(fd, size):
 
 
 def main():
-    (fd, filepath) = tempfile.mkstemp(dir=sys.argv[1])
-
-    os.close(fd)
-
-    fd = os.open(filepath, os.O_RDWR|os.O_DIRECT|os.O_TRUNC)
-
-    os.unlink(filepath)
-
-    size = resource.getpagesize()
-    pattern = (b"mergerfs-o-direct" * ((size // 16) + 1))[:size]
-    buf = mmap.mmap(-1, size)
-    buf.write(pattern)
-    buf.seek(0)
-
     try:
-        written = os.write(fd, buf)
-        if written != size:
-            print(f"O_DIRECT short write: wrote {written}, expected {size}", end="")
-            return 1
-        os.lseek(fd, 0, os.SEEK_SET)
-        data = aligned_read(fd, size)
-        if len(data) != size:
-            print(f"O_DIRECT short read: read {len(data)}, expected {size}", end="")
-            return 1
-        if data != pattern:
-            print("O_DIRECT data mismatch", end="")
-            return 1
-    finally:
-        buf.close()
-        os.close(fd)
+        with mergerfs_mount() as (mount, _):
+            (fd, filepath) = tempfile.mkstemp(dir=mount)
 
-    return 0
+            os.close(fd)
+
+            fd = os.open(filepath, os.O_RDWR|os.O_DIRECT|os.O_TRUNC)
+
+            os.unlink(filepath)
+
+            size = resource.getpagesize()
+            pattern = (b"mergerfs-o-direct" * ((size // 16) + 1))[:size]
+            buf = mmap.mmap(-1, size)
+            buf.write(pattern)
+            buf.seek(0)
+
+            try:
+                written = os.write(fd, buf)
+                if written != size:
+                    print(f"O_DIRECT short write: wrote {written}, expected {size}", end="")
+                    return 1
+                os.lseek(fd, 0, os.SEEK_SET)
+                data = aligned_read(fd, size)
+                if len(data) != size:
+                    print(f"O_DIRECT short read: read {len(data)}, expected {size}", end="")
+                    return 1
+                if data != pattern:
+                    print("O_DIRECT data mismatch", end="")
+                    return 1
+            finally:
+                buf.close()
+                os.close(fd)
+
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

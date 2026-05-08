@@ -8,6 +8,7 @@ from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
 from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_mount
 from posix_parity import mergerfs_set_option
 from posix_parity import temp_dir
 from posix_parity import touch
@@ -24,54 +25,51 @@ def list_and_stat(dirpath):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_readdir_plus <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
-
-            merge_dir = join(merge_base, "dir")
-            native_dir = join(native_base, "dir")
-
-            for i in range(40):
-                touch(join(merge_dir, f"f{i:03d}"), bytes(str(i), "ascii"))
-                touch(join(native_dir, f"f{i:03d}"), bytes(str(i), "ascii"))
-
-            # Exercise mapping from readdir entries to immediate getattr calls.
-            m_map = list_and_stat(merge_dir)
-            n_map = list_and_stat(native_dir)
-            if m_map != n_map:
-                return fail("readdir+getattr map mismatch between mergerfs and native")
-
-            # Optionally toggle readdir policy and ensure semantic output stays stable.
-            try:
-                orig = mergerfs_get_option(mount, "func.readdir")
-            except (PermissionError, FileNotFoundError, OSError):
-                return 0
-
-            try:
-                for mode in ("seq", "cosr:2:2", "cor:2:2"):
-                    mergerfs_set_option(mount, "func.readdir", mode)
-                    got = list_and_stat(merge_dir)
-                    if got != m_map:
-                        return fail(f"func.readdir={mode} changed readdir+getattr semantic output")
-            except (PermissionError, FileNotFoundError, OSError):
-                return 0
-            finally:
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
                 try:
-                    mergerfs_set_option(mount, "func.readdir", orig)
-                except OSError:
-                    pass
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    merge_dir = join(merge_base, "dir")
+                    native_dir = join(native_base, "dir")
+
+                    for i in range(40):
+                        touch(join(merge_dir, f"f{i:03d}"), bytes(str(i), "ascii"))
+                        touch(join(native_dir, f"f{i:03d}"), bytes(str(i), "ascii"))
+
+                    m_map = list_and_stat(merge_dir)
+                    n_map = list_and_stat(native_dir)
+                    if m_map != n_map:
+                        return fail("readdir+getattr map mismatch between mergerfs and native")
+
+                    try:
+                        orig = mergerfs_get_option(mount, "func.readdir")
+                    except (PermissionError, FileNotFoundError, OSError):
+                        return 0
+
+                    try:
+                        for mode in ("seq", "cosr:2:2", "cor:2:2"):
+                            mergerfs_set_option(mount, "func.readdir", mode)
+                            got = list_and_stat(merge_dir)
+                            if got != m_map:
+                                return fail(f"func.readdir={mode} changed readdir+getattr semantic output")
+                    except (PermissionError, FileNotFoundError, OSError):
+                        return 0
+                    finally:
+                        try:
+                            mergerfs_set_option(mount, "func.readdir", orig)
+                        except OSError:
+                            pass
+
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

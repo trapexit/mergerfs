@@ -11,6 +11,7 @@ from posix_parity import cleanup_paths
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import should_compare_inode
 from posix_parity import stat_cmp_basic
 from posix_parity import temp_dir
@@ -22,80 +23,80 @@ def stat_cmp_basic_with_inode(lhs, rhs):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_chmod <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            stcmp = stat_cmp_basic_with_inode if should_compare_inode(mount) else stat_cmp_basic
 
-    mount = sys.argv[1]
-    stcmp = stat_cmp_basic_with_inode if should_compare_inode(mount) else stat_cmp_basic
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    merge_missing = join(merge_base, "missing")
+                    native_missing = join(native_base, "missing")
+                    merge_notdir = join(merge_base, "notdir")
+                    native_notdir = join(native_base, "notdir")
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            merge_missing = join(merge_base, "missing")
-            native_missing = join(native_base, "missing")
-            merge_notdir = join(merge_base, "notdir")
-            native_notdir = join(native_base, "notdir")
+                    cleanup_paths([merge_file, merge_notdir])
 
-            cleanup_paths([merge_file, merge_notdir])
+                    touch(merge_file, b"x", 0o644)
+                    touch(native_file, b"x", 0o644)
+                    touch(merge_notdir, b"x", 0o644)
+                    touch(native_notdir, b"x", 0o644)
 
-            touch(merge_file, b"x", 0o644)
-            touch(native_file, b"x", 0o644)
-            touch(merge_notdir, b"x", 0o644)
-            touch(native_notdir, b"x", 0o644)
+                    err = compare_calls(
+                        "chmod success",
+                        lambda: os.chmod(merge_file, 0o600),
+                        lambda: os.chmod(native_file, 0o600),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chmod success",
-                lambda: os.chmod(merge_file, 0o600),
-                lambda: os.chmod(native_file, 0o600),
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "chmod stat parity",
+                        lambda: os.lstat(merge_file),
+                        lambda: os.lstat(native_file),
+                        stcmp,
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chmod stat parity",
-                lambda: os.lstat(merge_file),
-                lambda: os.lstat(native_file),
-                stcmp,
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "chmod ENOENT",
+                        lambda: os.chmod(merge_missing, 0o600),
+                        lambda: os.chmod(native_missing, 0o600),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chmod ENOENT",
-                lambda: os.chmod(merge_missing, 0o600),
-                lambda: os.chmod(native_missing, 0o600),
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "chmod ENOTDIR",
+                        lambda: os.chmod(join(merge_notdir, "child"), 0o600),
+                        lambda: os.chmod(join(native_notdir, "child"), 0o600),
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_calls(
-                "chmod ENOTDIR",
-                lambda: os.chmod(join(merge_notdir, "child"), 0o600),
-                lambda: os.chmod(join(native_notdir, "child"), 0o600),
-            )
-            if err:
-                return fail(err)
+                    if os.geteuid() != 0:
+                        err = compare_calls(
+                            "chmod setuid parity",
+                            lambda: os.chmod(merge_file, stat.S_ISUID | 0o644),
+                            lambda: os.chmod(native_file, stat.S_ISUID | 0o644),
+                        )
+                        if err:
+                            return fail(err)
+                    else:
+                        _ = errno.EPERM
 
-            if os.geteuid() != 0:
-                err = compare_calls(
-                    "chmod setuid parity",
-                    lambda: os.chmod(merge_file, stat.S_ISUID | 0o644),
-                    lambda: os.chmod(native_file, stat.S_ISUID | 0o644),
-                )
-                if err:
-                    return fail(err)
-            else:
-                _ = errno.EPERM
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

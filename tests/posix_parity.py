@@ -5,12 +5,85 @@ import errno
 import os
 import shutil
 import stat
+import subprocess
+import sys
 import tempfile
+import time
+from contextlib import contextmanager
 
 
 libc = ctypes.CDLL(None, use_errno=True)
 libc.access.argtypes = [ctypes.c_char_p, ctypes.c_int]
 libc.access.restype = ctypes.c_int
+
+
+def find_mergerfs():
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    build_path = os.path.join(script_dir, "..", "build", "mergerfs")
+    if os.path.isfile(build_path):
+        return os.path.realpath(build_path)
+    return shutil.which("mergerfs")
+
+
+def find_fusermount():
+    return shutil.which("fusermount3") or shutil.which("fusermount")
+
+
+def has_tool(name):
+    return shutil.which(name) is not None
+
+
+def mount_mergerfs(branches, mountpoint, options=None):
+    mergerfs_bin = find_mergerfs()
+    if mergerfs_bin is None:
+        raise RuntimeError("mergerfs binary not found")
+    if options is None:
+        options = "defaults,use_ino,category.create=mfs"
+    if os.geteuid() == 0:
+        options += ",allow_other"
+    branch_arg = ":".join(branches)
+    cmd = [mergerfs_bin, branch_arg, mountpoint, "-o", options]
+    subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def unmount_mergerfs(mountpoint):
+    um = find_fusermount()
+    if um is None:
+        raise RuntimeError("fusermount3/fusermount not found")
+    for attempt in range(3):
+        u = subprocess.run([um, "-u", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if u.returncode == 0:
+            return
+        time.sleep(1)
+    subprocess.run([um, "-z", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+@contextmanager
+def mergerfs_mount(num_branches=2, options=None):
+    mergerfs_bin = find_mergerfs()
+    if mergerfs_bin is None:
+        raise RuntimeError("mergerfs binary not found")
+    if find_fusermount() is None:
+        raise RuntimeError("fusermount3/fusermount not found")
+
+    tests_dir = os.path.dirname(os.path.realpath(__file__))
+    tmp_parent = os.path.join(tests_dir, ".test_tmp")
+    os.makedirs(tmp_parent, exist_ok=True)
+    tmpdir = tempfile.mkdtemp(prefix="mergerfs_test_", dir=tmp_parent)
+    try:
+        branches = [os.path.join(tmpdir, f"branch{i}") for i in range(num_branches)]
+        for b in branches:
+            os.makedirs(b, exist_ok=True)
+        mountpoint = os.path.join(tmpdir, "mp")
+        os.makedirs(mountpoint, exist_ok=True)
+        mount_mergerfs(branches, mountpoint, options)
+        yield mountpoint, branches
+    finally:
+        try:
+            unmount_mergerfs(mountpoint)
+        except Exception:
+            pass
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def temp_dir(root):

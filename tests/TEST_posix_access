@@ -10,70 +10,70 @@ from posix_parity import cleanup_paths
 from posix_parity import compare_access
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_access <mountpoint>", file=sys.stderr)
-        return 1
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
+                try:
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-    mount = sys.argv[1]
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    merge_notdir = join(merge_base, "notdir")
+                    native_notdir = join(native_base, "notdir")
+                    merge_missing = join(merge_base, "missing")
+                    native_missing = join(native_base, "missing")
 
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
+                    cleanup_paths([merge_file, merge_notdir])
 
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            merge_notdir = join(merge_base, "notdir")
-            native_notdir = join(native_base, "notdir")
-            merge_missing = join(merge_base, "missing")
-            native_missing = join(native_base, "missing")
+                    touch(merge_file, b"ok", 0o644)
+                    touch(native_file, b"ok", 0o644)
+                    touch(merge_notdir, b"x", 0o644)
+                    touch(native_notdir, b"x", 0o644)
 
-            cleanup_paths([merge_file, merge_notdir])
+                    err = compare_access("F_OK existing", merge_file, native_file, os.F_OK)
+                    if err:
+                        return fail(err)
 
-            touch(merge_file, b"ok", 0o644)
-            touch(native_file, b"ok", 0o644)
-            touch(merge_notdir, b"x", 0o644)
-            touch(native_notdir, b"x", 0o644)
+                    err = compare_access(
+                        "F_OK missing", merge_missing, native_missing, os.F_OK, errno.ENOENT
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_access("F_OK existing", merge_file, native_file, os.F_OK)
-            if err:
-                return fail(err)
+                    err = compare_access(
+                        "X_OK non-directory prefix",
+                        join(merge_notdir, "child"),
+                        join(native_notdir, "child"),
+                        os.X_OK,
+                        errno.ENOTDIR,
+                    )
+                    if err:
+                        return fail(err)
 
-            err = compare_access(
-                "F_OK missing", merge_missing, native_missing, os.F_OK, errno.ENOENT
-            )
-            if err:
-                return fail(err)
+                    os.chmod(merge_file, 0)
+                    os.chmod(native_file, 0)
 
-            err = compare_access(
-                "X_OK non-directory prefix",
-                join(merge_notdir, "child"),
-                join(native_notdir, "child"),
-                os.X_OK,
-                errno.ENOTDIR,
-            )
-            if err:
-                return fail(err)
+                    err = compare_access("R_OK unreadable", merge_file, native_file, os.R_OK)
+                    if err:
+                        return fail(err)
 
-            os.chmod(merge_file, 0)
-            os.chmod(native_file, 0)
+                    os.chmod(merge_file, 0o644)
+                    os.chmod(native_file, 0o644)
 
-            err = compare_access("R_OK unreadable", merge_file, native_file, os.R_OK)
-            if err:
-                return fail(err)
-
-            os.chmod(merge_file, 0o644)
-            os.chmod(native_file, 0o644)
-
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

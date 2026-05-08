@@ -10,6 +10,7 @@ from posix_parity import fail
 from posix_parity import join
 from posix_parity import mergerfs_branches
 from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -23,40 +24,39 @@ def get_errno(func):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_rmdir_enotempty_priority <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-    merge_base = temp_dir(mount)
-
     try:
-        branches = mergerfs_branches(mount)
-        if len(branches) < 2:
-            return 0
+        with mergerfs_mount(num_branches=2) as (mount, branches):
+            merge_base = temp_dir(mount)
 
-        merge_dir = join(merge_base, "nonempty_dir")
-        os.makedirs(merge_dir)
+            try:
+                if len(branches) < 2:
+                    return 0
 
-        child_file = join(merge_dir, "child.txt")
-        branch0 = branches[0]
-        native_child = join(branch0, os.path.relpath(child_file, mount))
-        touch(child_file, b"prevents rmdir")
+                merge_dir = join(merge_base, "nonempty_dir")
+                os.makedirs(merge_dir)
 
-        err = get_errno(lambda: os.rmdir(merge_dir))
-        if err != errno.ENOTEMPTY:
-            return fail(f"rmdir non-empty dir: expected ENOTEMPTY({errno.ENOTEMPTY}), got {err}")
+                child_file = join(merge_dir, "child.txt")
+                branch0 = branches[0]
+                native_child = join(branch0, os.path.relpath(child_file, mount))
+                touch(child_file, b"prevents rmdir")
 
-        os.unlink(child_file)
-        err = get_errno(lambda: os.rmdir(merge_dir))
-        if err != 0:
-            return fail(f"rmdir empty dir after removing child: expected success, got errno={err}")
+                err = get_errno(lambda: os.rmdir(merge_dir))
+                if err != errno.ENOTEMPTY:
+                    return fail(f"rmdir non-empty dir: expected ENOTEMPTY({errno.ENOTEMPTY}), got {err}")
 
-        return 0
-    except Exception as exc:
-        return fail(str(exc))
-    finally:
-        cleanup_dir(merge_base)
+                os.unlink(child_file)
+                err = get_errno(lambda: os.rmdir(merge_dir))
+                if err != 0:
+                    return fail(f"rmdir empty dir after removing child: expected success, got errno={err}")
+
+                return 0
+            except Exception as exc:
+                return fail(str(exc))
+            finally:
+                cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

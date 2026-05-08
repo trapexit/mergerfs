@@ -5,60 +5,59 @@ import sys
 
 from posix_parity import fail
 from posix_parity import mergerfs_get_option
+from posix_parity import mergerfs_mount
 from posix_parity import mergerfs_set_option
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_cfg_statfs_ignore <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-
     try:
-        orig_statfs = mergerfs_get_option(mount, "statfs")
-        orig_ignore = mergerfs_get_option(mount, "statfs-ignore")
-    except (PermissionError, FileNotFoundError, OSError):
-        return 0
+        with mergerfs_mount() as (mount, _):
+            try:
+                orig_statfs = mergerfs_get_option(mount, "statfs")
+                orig_ignore = mergerfs_get_option(mount, "statfs-ignore")
+            except (PermissionError, FileNotFoundError, OSError):
+                return 0
 
-    try:
-        mergerfs_set_option(mount, "statfs", "base")
+            try:
+                mergerfs_set_option(mount, "statfs", "base")
 
-        mergerfs_set_option(mount, "statfs-ignore", "none")
-        s_none = os.statvfs(mount)
+                mergerfs_set_option(mount, "statfs-ignore", "none")
+                s_none = os.statvfs(mount)
 
-        mergerfs_set_option(mount, "statfs-ignore", "nc")
-        s_nc = os.statvfs(mount)
+                mergerfs_set_option(mount, "statfs-ignore", "nc")
+                s_nc = os.statvfs(mount)
 
-        mergerfs_set_option(mount, "statfs-ignore", "ro")
-        s_ro = os.statvfs(mount)
+                mergerfs_set_option(mount, "statfs-ignore", "ro")
+                s_ro = os.statvfs(mount)
 
-        # Ignoring additional branch classes should never increase available blocks.
-        if s_nc.f_bavail > s_none.f_bavail:
-            return fail(
-                f"statfs-ignore=nc increased bavail unexpectedly nc={s_nc.f_bavail} none={s_none.f_bavail}"
-            )
-        if s_ro.f_bavail > s_nc.f_bavail:
-            return fail(
-                f"statfs-ignore=ro increased bavail unexpectedly ro={s_ro.f_bavail} nc={s_nc.f_bavail}"
-            )
+                if s_nc.f_bavail > s_none.f_bavail:
+                    return fail(
+                        f"statfs-ignore=nc increased bavail unexpectedly nc={s_nc.f_bavail} none={s_none.f_bavail}"
+                    )
+                if s_ro.f_bavail > s_nc.f_bavail:
+                    return fail(
+                        f"statfs-ignore=ro increased bavail unexpectedly ro={s_ro.f_bavail} nc={s_nc.f_bavail}"
+                    )
 
-        mergerfs_set_option(mount, "statfs", "full")
-        s_full = os.statvfs(mount)
-        if s_full.f_bsize <= 0 or s_full.f_frsize <= 0:
-            return fail(
-                f"statfs=full invalid block sizes bsize={s_full.f_bsize} frsize={s_full.f_frsize}"
-            )
-    except (PermissionError, FileNotFoundError, OSError):
-        return 0
-    finally:
-        try:
-            mergerfs_set_option(mount, "statfs", orig_statfs)
-            mergerfs_set_option(mount, "statfs-ignore", orig_ignore)
-        except OSError:
-            pass
+                mergerfs_set_option(mount, "statfs", "full")
+                s_full = os.statvfs(mount)
+                if s_full.f_bsize <= 0 or s_full.f_frsize <= 0:
+                    return fail(
+                        f"statfs=full invalid block sizes bsize={s_full.f_bsize} frsize={s_full.f_frsize}"
+                    )
+            except (PermissionError, FileNotFoundError, OSError):
+                return 0
+            finally:
+                try:
+                    mergerfs_set_option(mount, "statfs", orig_statfs)
+                    mergerfs_set_option(mount, "statfs-ignore", orig_ignore)
+                except OSError:
+                    pass
 
-    return 0
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

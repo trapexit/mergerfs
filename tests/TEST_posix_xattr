@@ -9,6 +9,7 @@ from posix_parity import cleanup_dir
 from posix_parity import compare_calls
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
@@ -31,135 +32,135 @@ def has_attr(name):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_posix_xattr <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-    xname = "user.posix_parity"
-    xvalue = b"parity-check"
-
-    with tempfile.TemporaryDirectory() as native:
-        merge_base = temp_dir(mount)
-        try:
-            native_base = join(native, os.path.basename(merge_base))
-            os.makedirs(native_base, exist_ok=True)
-
-            merge_file = join(merge_base, "file")
-            native_file = join(native_base, "file")
-            merge_missing = join(merge_base, "missing")
-            native_missing = join(native_base, "missing")
-            merge_notdir = join(merge_base, "notdir")
-            native_notdir = join(native_base, "notdir")
-
-            touch(merge_file, b"x")
-            touch(native_file, b"x")
-            touch(merge_notdir, b"x")
-            touch(native_notdir, b"x")
-
-            err = compare_calls(
-                "setxattr success",
-                lambda: os.setxattr(merge_file, xname, xvalue),
-                lambda: os.setxattr(native_file, xname, xvalue),
-            )
-            if err:
+    try:
+        with mergerfs_mount() as (mount, _):
+            with tempfile.TemporaryDirectory() as native:
+                merge_base = temp_dir(mount)
                 try:
-                    os.setxattr(merge_file, xname, xvalue)
-                except OSError as exc:
-                    err += " | " + format_oserror("mergerfs setxattr", exc)
-                try:
-                    os.setxattr(native_file, xname, xvalue)
-                except OSError as exc:
-                    err += " | " + format_oserror("native setxattr", exc)
-                return fail(err)
+                    native_base = join(native, os.path.basename(merge_base))
+                    os.makedirs(native_base, exist_ok=True)
 
-            err = compare_calls(
-                "getxattr success",
-                lambda: os.getxattr(merge_file, xname),
-                lambda: os.getxattr(native_file, xname),
-                lambda lhs, rhs: lhs == rhs,
-            )
-            if err:
-                try:
-                    os.getxattr(merge_file, xname)
-                except OSError as exc:
-                    err += " | " + format_oserror("mergerfs getxattr", exc)
-                try:
-                    os.getxattr(native_file, xname)
-                except OSError as exc:
-                    err += " | " + format_oserror("native getxattr", exc)
-                return fail(err)
+                    merge_file = join(merge_base, "file")
+                    native_file = join(native_base, "file")
+                    merge_missing = join(merge_base, "missing")
+                    native_missing = join(native_base, "missing")
+                    merge_notdir = join(merge_base, "notdir")
+                    native_notdir = join(native_base, "notdir")
 
-            err = compare_calls(
-                "listxattr includes key",
-                lambda: os.listxattr(merge_file),
-                lambda: os.listxattr(native_file),
-                has_attr(xname),
-            )
-            if err:
-                try:
-                    m_list = os.listxattr(merge_file)
-                    err += f" | mergerfs list={m_list!r}"
-                except OSError as exc:
-                    err += " | " + format_oserror("mergerfs listxattr", exc)
-                try:
-                    n_list = os.listxattr(native_file)
-                    err += f" | native list={n_list!r}"
-                except OSError as exc:
-                    err += " | " + format_oserror("native listxattr", exc)
-                return fail(err)
+                    touch(merge_file, b"x")
+                    touch(native_file, b"x")
+                    touch(merge_notdir, b"x")
+                    touch(native_notdir, b"x")
 
-            err = compare_calls(
-                "removexattr success",
-                lambda: os.removexattr(merge_file, xname),
-                lambda: os.removexattr(native_file, xname),
-            )
-            if err:
-                try:
-                    os.removexattr(merge_file, xname)
-                except OSError as exc:
-                    err += " | " + format_oserror("mergerfs removexattr", exc)
-                try:
-                    os.removexattr(native_file, xname)
-                except OSError as exc:
-                    err += " | " + format_oserror("native removexattr", exc)
-                return fail(err)
+                    xname = "user.posix_parity"
+                    xvalue = b"parity-check"
 
-            err = compare_calls(
-                "getxattr missing attr",
-                lambda: os.getxattr(merge_file, xname),
-                lambda: os.getxattr(native_file, xname),
-            )
-            if err:
-                try:
-                    os.getxattr(merge_file, xname)
-                except OSError as exc:
-                    err += " | " + format_oserror("mergerfs getxattr missing", exc)
-                try:
-                    os.getxattr(native_file, xname)
-                except OSError as exc:
-                    err += " | " + format_oserror("native getxattr missing", exc)
-                return fail(err)
+                    err = compare_calls(
+                        "setxattr success",
+                        lambda: os.setxattr(merge_file, xname, xvalue),
+                        lambda: os.setxattr(native_file, xname, xvalue),
+                    )
+                    if err:
+                        try:
+                            os.setxattr(merge_file, xname, xvalue)
+                        except OSError as exc:
+                            err += " | " + format_oserror("mergerfs setxattr", exc)
+                        try:
+                            os.setxattr(native_file, xname, xvalue)
+                        except OSError as exc:
+                            err += " | " + format_oserror("native setxattr", exc)
+                        return fail(err)
 
-            err = compare_calls(
-                "setxattr ENOENT",
-                lambda: os.setxattr(merge_missing, xname, xvalue),
-                lambda: os.setxattr(native_missing, xname, xvalue),
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "getxattr success",
+                        lambda: os.getxattr(merge_file, xname),
+                        lambda: os.getxattr(native_file, xname),
+                        lambda lhs, rhs: lhs == rhs,
+                    )
+                    if err:
+                        try:
+                            os.getxattr(merge_file, xname)
+                        except OSError as exc:
+                            err += " | " + format_oserror("mergerfs getxattr", exc)
+                        try:
+                            os.getxattr(native_file, xname)
+                        except OSError as exc:
+                            err += " | " + format_oserror("native getxattr", exc)
+                        return fail(err)
 
-            err = compare_calls(
-                "getxattr ENOTDIR",
-                lambda: os.getxattr(join(merge_notdir, "child"), xname),
-                lambda: os.getxattr(join(native_notdir, "child"), xname),
-            )
-            if err:
-                return fail(err)
+                    err = compare_calls(
+                        "listxattr includes key",
+                        lambda: os.listxattr(merge_file),
+                        lambda: os.listxattr(native_file),
+                        has_attr(xname),
+                    )
+                    if err:
+                        try:
+                            m_list = os.listxattr(merge_file)
+                            err += f" | mergerfs list={m_list!r}"
+                        except OSError as exc:
+                            err += " | " + format_oserror("mergerfs listxattr", exc)
+                        try:
+                            n_list = os.listxattr(native_file)
+                            err += f" | native list={n_list!r}"
+                        except OSError as exc:
+                            err += " | " + format_oserror("native listxattr", exc)
+                        return fail(err)
 
-            return 0
-        finally:
-            cleanup_dir(merge_base)
+                    err = compare_calls(
+                        "removexattr success",
+                        lambda: os.removexattr(merge_file, xname),
+                        lambda: os.removexattr(native_file, xname),
+                    )
+                    if err:
+                        try:
+                            os.removexattr(merge_file, xname)
+                        except OSError as exc:
+                            err += " | " + format_oserror("mergerfs removexattr", exc)
+                        try:
+                            os.removexattr(native_file, xname)
+                        except OSError as exc:
+                            err += " | " + format_oserror("native removexattr", exc)
+                        return fail(err)
+
+                    err = compare_calls(
+                        "getxattr missing attr",
+                        lambda: os.getxattr(merge_file, xname),
+                        lambda: os.getxattr(native_file, xname),
+                    )
+                    if err:
+                        try:
+                            os.getxattr(merge_file, xname)
+                        except OSError as exc:
+                            err += " | " + format_oserror("mergerfs getxattr missing", exc)
+                        try:
+                            os.getxattr(native_file, xname)
+                        except OSError as exc:
+                            err += " | " + format_oserror("native getxattr missing", exc)
+                        return fail(err)
+
+                    err = compare_calls(
+                        "setxattr ENOENT",
+                        lambda: os.setxattr(merge_missing, xname, xvalue),
+                        lambda: os.setxattr(native_missing, xname, xvalue),
+                    )
+                    if err:
+                        return fail(err)
+
+                    err = compare_calls(
+                        "getxattr ENOTDIR",
+                        lambda: os.getxattr(join(merge_notdir, "child"), xname),
+                        lambda: os.getxattr(join(native_notdir, "child"), xname),
+                    )
+                    if err:
+                        return fail(err)
+
+                    return 0
+                finally:
+                    cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

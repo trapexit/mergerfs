@@ -2,66 +2,66 @@
 
 import os
 import sys
-import tempfile
 
 from posix_parity import cleanup_dir
 from posix_parity import fail
 from posix_parity import join
+from posix_parity import mergerfs_mount
 from posix_parity import temp_dir
 from posix_parity import touch
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_open_after_unlink <mountpoint>", file=sys.stderr)
-        return 1
-
-    mount = sys.argv[1]
-    merge_base = temp_dir(mount)
-
     try:
-        merge_file = join(merge_base, "testfile")
-        touch(merge_file, b"hello world")
+        with mergerfs_mount() as (mount, _):
+            merge_base = temp_dir(mount)
 
-        fd = os.open(merge_file, os.O_RDWR)
-
-        try:
-            data = os.read(fd, 4096)
-            if data != b"hello world":
-                return fail("read before unlink: expected 'hello world', got {!r}".format(data))
-
-            os.unlink(merge_file)
-
-            fd2 = os.dup(fd)
             try:
-                os.lseek(fd2, 0, os.SEEK_SET)
-                data2 = os.read(fd2, 4096)
-                if data2 != b"hello world":
-                    return fail("read after unlink via dup: expected 'hello world', got {!r}".format(data2))
+                merge_file = join(merge_base, "testfile")
+                touch(merge_file, b"hello world")
 
-                os.lseek(fd, 0, os.SEEK_SET)
-                written = os.write(fd, b"modified")
-                if written != len(b"modified"):
-                    return fail("write after unlink: wrote {}, expected {}".format(written, len(b"modified")))
+                fd = os.open(merge_file, os.O_RDWR)
 
-                os.lseek(fd, 0, os.SEEK_SET)
-                data3 = os.read(fd, 4096)
-                if not data3.startswith(b"modified"):
-                    return fail("read back written data: got {!r} after writing 'modified'".format(data3))
+                try:
+                    data = os.read(fd, 4096)
+                    if data != b"hello world":
+                        return fail("read before unlink: expected 'hello world', got {!r}".format(data))
+
+                    os.unlink(merge_file)
+
+                    fd2 = os.dup(fd)
+                    try:
+                        os.lseek(fd2, 0, os.SEEK_SET)
+                        data2 = os.read(fd2, 4096)
+                        if data2 != b"hello world":
+                            return fail("read after unlink via dup: expected 'hello world', got {!r}".format(data2))
+
+                        os.lseek(fd, 0, os.SEEK_SET)
+                        written = os.write(fd, b"modified")
+                        if written != len(b"modified"):
+                            return fail("write after unlink: wrote {}, expected {}".format(written, len(b"modified")))
+
+                        os.lseek(fd, 0, os.SEEK_SET)
+                        data3 = os.read(fd, 4096)
+                        if not data3.startswith(b"modified"):
+                            return fail("read back written data: got {!r} after writing 'modified'".format(data3))
+                    finally:
+                        os.close(fd2)
+                finally:
+                    os.close(fd)
+
+                return 0
+            except Exception as exc:
+                return fail(str(exc))
             finally:
-                os.close(fd2)
-        finally:
-            os.close(fd)
-
-        return 0
-    except Exception as exc:
-        return fail(str(exc))
-    finally:
-        try:
-            os.unlink(join(merge_base, "testfile"))
-        except FileNotFoundError:
-            pass
-        cleanup_dir(merge_base)
+                try:
+                    os.unlink(join(merge_base, "testfile"))
+                except FileNotFoundError:
+                    pass
+                cleanup_dir(merge_base)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":

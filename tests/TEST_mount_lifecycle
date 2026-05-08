@@ -1,69 +1,33 @@
 #!/usr/bin/env python3
 
 import os
-import shutil
-import subprocess
 import sys
-import tempfile
-import time
 
 from posix_parity import fail
-
-
-def has_tool(name):
-    return shutil.which(name) is not None
+from posix_parity import find_fusermount
+from posix_parity import find_mergerfs
+from posix_parity import mergerfs_mount
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: TEST_mount_lifecycle <mountpoint>", file=sys.stderr)
-        return 1
-
-    # This is a soft integration harness check for init/destroy wiring.
-    # Skip when environment is not prepared for nested mount tests.
     if os.geteuid() != 0:
         return 0
-    if not has_tool("mergerfs"):
+    if find_mergerfs() is None:
         return 0
-    if not has_tool("fusermount") and not has_tool("fusermount3"):
+    if find_fusermount() is None:
         return 0
 
-    with tempfile.TemporaryDirectory() as td:
-        b1 = os.path.join(td, "b1")
-        b2 = os.path.join(td, "b2")
-        mp = os.path.join(td, "mp")
-        os.makedirs(b1, exist_ok=True)
-        os.makedirs(b2, exist_ok=True)
-        os.makedirs(mp, exist_ok=True)
-
-        cmd = [
-            "mergerfs",
-            f"{b1}:{b2}",
-            mp,
-            "-o",
-            "defaults,allow_other,use_ino,category.create=mfs",
-        ]
-
-        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if p.returncode != 0:
-            return fail(f"mount lifecycle: mergerfs mount failed: {p.stderr.decode(errors='replace')}")
-
-        try:
-            with open(os.path.join(mp, "lifecycle-file"), "wb") as fp:
+    try:
+        with mergerfs_mount() as (mount, _):
+            with open(os.path.join(mount, "lifecycle-file"), "wb") as fp:
                 fp.write(b"ok")
-            if not os.path.exists(os.path.join(mp, "lifecycle-file")):
+            if not os.path.exists(os.path.join(mount, "lifecycle-file")):
                 return fail("mount lifecycle: expected created file to exist")
-        finally:
-            um = shutil.which("fusermount3") or shutil.which("fusermount")
-            for attempt in range(3):
-                u = subprocess.run([um, "-u", mp], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                if u.returncode == 0:
-                    break
-                time.sleep(1)
-            if u.returncode != 0:
-                subprocess.run([um, "-z", mp], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        return 0
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
 
 
 if __name__ == "__main__":
