@@ -37,7 +37,7 @@ TOUCH 	  ?= touch
 BUILDDIR := build
 GITHUB_REPO ?= "https://github.com/trapexit/mergerfs"
 
-DEFAULT_RELEASE_SAMPLE := debian:13.amd64
+DEFAULT_RELEASE := debian:13.amd64
 
 ifndef GIT_REPO
 ifneq ($(shell $(GIT) --version 2> /dev/null),)
@@ -368,8 +368,8 @@ endef
 release:
 	$(call build_release,"all")
 release-sample:
-	$(if $(RELEASE_SAMPLE),,$(eval RELEASE_SAMPLE := $(shell ./buildtools/detect-local-target 2>/dev/null)))
-	$(call build_release,$(if $(RELEASE_SAMPLE),$(RELEASE_SAMPLE),$(DEFAULT_RELEASE_SAMPLE)))
+	$(if $(RELEASE),,$(eval RELEASE := $(shell ./buildtools/detect-local-target 2>/dev/null)))
+	$(call build_release,$(if $(RELEASE),$(RELEASE),$(DEFAULT_RELEASE)))
 release-amd64:
 	$(call build_release,"amd64")
 release-arm64:
