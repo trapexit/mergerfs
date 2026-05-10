@@ -369,7 +369,7 @@ endef
 .PHONY: release-amd64 release-arm64 release-armhf release-riscv64
 .PHONY: release-sample release-static release-tarball release-installer
 release:
-	$(MAKE) RELEASE=1 CPPFLAGS=-DNDEBUG all
+	$(MAKE) RELEASE=1 CPPFLAGS="$(CPPFLAGS) -DNDEBUG" all
 release-all:
 	$(call build_release,"all")
 release-sample:
