@@ -1191,7 +1191,7 @@ fuse_syslog_fuse_init_in(const struct fuse_init_in *arg_)
   output.pop_back();
   output += ");";
 
-  SysLog::info(output);
+  SysLog::info("{}",output);
 }
 
 void
@@ -1239,7 +1239,7 @@ fuse_syslog_fuse_init_out(const struct fuse_init_out *arg_)
   output.pop_back();
   output += ");";
 
-  SysLog::info(output);
+  SysLog::info("{}",output);
 }
 
 

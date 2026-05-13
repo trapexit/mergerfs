@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+if [ -e /tmp/build-env ]; then
+    . /tmp/build-env
+fi
+
 if [ $# -ne 2 ]; then
     echo "usage: $0 <branch> <git_repo>"
     echo "argv: $@"
@@ -30,7 +34,6 @@ if [ -e /usr/bin/apt-get ]; then
 elif [ -e /usr/bin/dnf ]; then
     make rpm
 elif [ -e /usr/bin/yum ]; then
-    . /opt/rh/devtoolset-9/enable
     make rpm
 elif [ -e /sbin/apk ]; then
     echo "NOT YET SUPPORTED"

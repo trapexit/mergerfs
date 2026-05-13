@@ -114,7 +114,7 @@ CXXFLAGS ?= \
 	-Wall \
 	-pipe
 override CXXFLAGS += \
-	-std=c++17 \
+	-std=c++20 \
 	-MMD \
 	-MP
 FUSERMOUNT_DIR := $(BINDIR)

@@ -1,6 +1,9 @@
 ARG BUILD_TIMESTAMP=0
 FROM --platform=linux/amd64 ubuntu:latest as build
-RUN apt-get update && apt-get install -y makeself
+COPY install-build-pkgs /tmp/
+RUN /tmp/install-build-pkgs && \
+    DEBIAN_FRONTEND=noninteractive apt-get -qy --no-install-suggests --no-install-recommends install \
+        makeself
 RUN mkdir -p /tmp/mergerfs/
 RUN ls -lhd /pkgs
 RUN cp -v /pkgs/*static*.gz /tmp/mergerfs/
