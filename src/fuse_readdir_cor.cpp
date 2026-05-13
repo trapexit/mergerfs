@@ -43,6 +43,12 @@ FUSE::ReadDirCOR::~ReadDirCOR()
 #include "fuse_readdir_cor_readdir.icpp"
 #endif
 
+// Uses a per-call mutex. Lifetime is one readdir operation. It
+// serializes the dirent-merge step (dedup'ing of names + append to
+// dirents list) across at-most-branches-worth of parallel worker
+// tasks. Per-branch opendir + getdents64 run fully outside the
+// critical section, so the lock holds only long enough to merge each
+// batch.
 static
 inline
 int
