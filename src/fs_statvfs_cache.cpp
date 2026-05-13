@@ -21,8 +21,8 @@
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
-#include "mutex.hpp"
-
+#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 
@@ -38,9 +38,11 @@ struct Element
 
 typedef std::unordered_map<std::string,Element> statvfs_cache;
 
-static u64           g_timeout = 0;
-static statvfs_cache g_cache;
-static Mutex         g_cache_lock;
+// Cache is read heavy. Use a shared mutex so concurrent reads can
+// work in parallel and only inserts or refreshes take a unique lock.
+static std::shared_mutex g_cache_mutex;
+static u64               g_timeout = 0;
+static statvfs_cache     g_cache;
 
 
 static
@@ -70,29 +72,35 @@ int
 fs::statvfs_cache(const std::string &path_,
                   struct statvfs    *st_)
 {
-  int rv;
-  Element *e;
   u64 now;
 
   if(g_timeout == 0)
     return fs::statvfs(path_,st_);
 
-  rv = 0;
   now = ::_get_time();
 
-  mutex_lock(g_cache_lock);
+  {
+    std::shared_lock<std::shared_mutex> lk(g_cache_mutex);
 
-  e = &g_cache[path_];
+    auto it = g_cache.find(path_);
+    if((it != g_cache.end()) && ((now - it->second.time) <= g_timeout))
+      {
+        *st_ = it->second.st;
+        return 0;
+      }
+  }
 
-  if((now - e->time) > g_timeout)
+  int rv = 0;
+  std::unique_lock<std::shared_mutex> lk(g_cache_mutex);
+
+  Element &e = g_cache[path_];
+  if((now - e.time) > g_timeout)
     {
-      e->time = now;
-      rv = fs::statvfs(path_,&e->st);
+      e.time = now;
+      rv = fs::statvfs(path_,&e.st);
     }
 
-  *st_ = e->st;
-
-  mutex_unlock(g_cache_lock);
+  *st_ = e.st;
 
   return rv;
 }
