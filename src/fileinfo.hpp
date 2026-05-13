@@ -48,9 +48,9 @@
 #include "fh.hpp"
 #include "fs_path.hpp"
 
-#include "mutex.hpp"
-
 #include "base_types.h"
+
+#include <shared_mutex>
 
 
 class FileInfo : public FH
@@ -97,7 +97,16 @@ public:
   int fd;
   Branch branch;
   u32 direct_io:1;
-  Mutex mutex;
+  // Serializes the fd state across concurrent writes on the same open
+  // file. Concurrent writes happen with:
+  // 1) writeback-cache + page-cache mode
+  // 2) parallel_direct_writes + direct_io=true
+  //
+  // Common case (plain pwrite on stable fd) only needs a shared lock
+  // since the kernel already serializes fd mutations. The danger is
+  // the fs::dup2() rebinding when moveonenospc activates. Writers
+  // take shared lock; move takes unique.
+  std::shared_mutex mutex;
 };
 
 inline

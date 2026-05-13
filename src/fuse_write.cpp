@@ -33,6 +33,9 @@
 
 #include "fuse.h"
 
+#include <mutex>
+#include <shared_mutex>
+
 
 static
 bool
@@ -117,47 +120,11 @@ _move_and_pwriten(char const    *buf_,
 // N bytes written (short writes included)
 // -errno on error
 // See libfuse/include/fuse.h for more details
-static
-int
-_write_direct_io(const char   *buf_,
-                 const size_t  count_,
-                 const off_t   offset_,
-                 FileInfo     *fi_)
-{
-  ssize_t rv;
-
-  rv = fs::pwrite(fi_->fd,buf_,count_,offset_);
-  if(::_out_of_space(rv))
-    rv = ::_move_and_pwrite(buf_,count_,offset_,fi_,rv);
-
-  return rv;
-}
-
 // When not in direct_io mode write's return value is more complex.
 // 0 or less than `count` on EOF
 // `count` on non-errors
 // -errno on error
 // See libfuse/include/fuse.h for more details
-static
-int
-_write_cached(const char   *buf_,
-              const size_t  count_,
-              const off_t   offset_,
-              FileInfo     *fi_)
-{
-  int err;
-  ssize_t rv;
-
-  rv = fs::pwriten(fi_->fd,buf_,count_,offset_,&err);
-  if(err == 0)
-    return rv;
-  if(err && !::_out_of_space(err))
-    return err;
-
-  rv = ::_move_and_pwriten(buf_,count_,offset_,fi_,err,rv);
-
-  return rv;
-}
 
 static
 int
@@ -175,19 +142,56 @@ _write(const fuse_req_ctx_t   *ctx_,
 
   // Concurrent writes can only happen if:
   // 1) writeback-cache is enabled and using page caching
-  // 2) parallel_direct_writes is enabled and file has `direct_io=true`
-  // Will look into selectively locking in the future
-  // A reader/writer lock would probably be the best option given
-  // the expense of the write itself in comparison. Alternatively,
-  // could change the move file behavior to use a known target file
-  // and have threads use O_EXCL and back off and wait for the
-  // transfer to complete before retrying.
-  mutex_lockguard(fi->mutex);
+  // 2) parallel_direct_writes is enabled and file has
+  // `direct_io=true`
+
+  ssize_t rv;
 
   if(fi->direct_io)
-    return ::_write_direct_io(buf_,count_,offset_,fi);
+    {
+      {
+        std::shared_lock<std::shared_mutex> slk(fi->mutex);
+        rv = fs::pwrite(fi->fd,buf_,count_,offset_);
+      }
 
-  return ::_write_cached(buf_,count_,offset_,fi);
+      if(not ::_out_of_space(rv))
+        return rv;
+
+      std::unique_lock<std::shared_mutex> ulk(fi->mutex);
+      // Re-check under exclusive lock: another writer may have
+      // already moved the file and retired. If so the pwrite should
+      // now succeed without our own move call.
+      rv = fs::pwrite(fi->fd,buf_,count_,offset_);
+      if(::_out_of_space(rv))
+        rv = ::_move_and_pwrite(buf_,count_,offset_,fi,rv);
+      return rv;
+    }
+  else
+    {
+      int err;
+      ssize_t written;
+
+      {
+        std::shared_lock<std::shared_mutex> slk(fi->mutex);
+        written = fs::pwriten(fi->fd,buf_,count_,offset_,&err);
+      }
+
+      if(err == 0)
+        return written;
+      if(err && not ::_out_of_space(err))
+        return err;
+
+      std::unique_lock<std::shared_mutex> ulk(fi->mutex);
+      // Re-check under exclusive lock as another move may have
+      // already run.
+      written = fs::pwriten(fi->fd,buf_,count_,offset_,&err);
+      if(err == 0)
+        return written;
+      if(err && not ::_out_of_space(err))
+        return err;
+
+      return ::_move_and_pwriten(buf_,count_,offset_,fi,err,written);
+    }
 }
 
 int
