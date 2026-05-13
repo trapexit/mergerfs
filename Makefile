@@ -29,6 +29,8 @@ MKDIR     ?= mkdir
 MKTEMP    ?= mktemp
 MV        ?= mv
 RM 	  ?= rm
+RPMBUILD  ?= rpmbuild
+RPMBUILD_FLAGS ?=
 SED       ?= sed
 STRIP     ?= strip
 TAR 	  ?= tar
@@ -343,7 +345,7 @@ rpm: tarball
 	$(SED) 's/__VERSION__/$(VERSION)/g' mergerfs.spec > \
 		rpmbuild/SOURCES/mergerfs.spec
 	cp -ar mergerfs-$(VERSION).tar.gz rpmbuild/SOURCES
-	rpmbuild -ba rpmbuild/SOURCES/mergerfs.spec \
+	$(RPMBUILD) $(RPMBUILD_FLAGS) -ba rpmbuild/SOURCES/mergerfs.spec \
 		--define "_topdir $(CURDIR)/rpmbuild"
 
 .PHONY: install-build-pkgs
