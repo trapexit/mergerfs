@@ -2543,7 +2543,11 @@ fuse_lib_releasedir(fuse_req_t            *req_,
   f.ops.releasedir(&req_->ctx,
                    &ffi);
 
-  /* Done to keep race condition between last readdir reply and the unlock */
+  // Acquire/release barrier: not a real critical section. A
+  // concurrent readdir may still hold dh->lock at this point. This
+  // lock+unlock pair blocks until the last readdir drops the lock
+  // guaranteeing that the subsequent destroy/free sees no in-flight
+  // readdir accessing dh->d. Do NOT remove.
   mutex_lock(dh->lock);
   mutex_unlock(dh->lock);
   mutex_destroy(dh->lock);
