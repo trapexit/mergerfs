@@ -5,6 +5,15 @@ if [ -e /tmp/build-env ]; then
     . /tmp/build-env
 fi
 
+rpmbuild_flags()
+{
+    case "$(command -v "${CXX:-g++}")" in
+        /opt/rh/*)
+            printf '%s' '--undefine _annotated_build'
+            ;;
+    esac
+}
+
 if [ $# -ne 2 ]; then
     echo "usage: $0 <branch> <git_repo>"
     echo "argv: $@"
@@ -32,9 +41,9 @@ mkdir "/build"
 if [ -e /usr/bin/apt-get ]; then
     make deb
 elif [ -e /usr/bin/dnf ]; then
-    make rpm
+    make RPMBUILD_FLAGS="$(rpmbuild_flags)" rpm
 elif [ -e /usr/bin/yum ]; then
-    make rpm
+    make RPMBUILD_FLAGS="$(rpmbuild_flags)" rpm
 elif [ -e /sbin/apk ]; then
     echo "NOT YET SUPPORTED"
     exit 1
