@@ -103,8 +103,12 @@ public:
     {
     }
 
+    // Move constructor runs during initial insertion into the
+    // concurrent_flat_map before the new entry is reachable by the
+    // other threads. There is no concurrent observer of the moved
+    // value at this point so relaxed load is sufficient.
     OpenFile(OpenFile &&o_) noexcept
-      : ref_count(o_.ref_count.load()),
+      : ref_count(o_.ref_count.load(std::memory_order_relaxed)),
         backing_id(o_.backing_id),
         fi(o_.fi)
     {
