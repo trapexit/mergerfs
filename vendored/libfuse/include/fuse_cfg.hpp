@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdio>
 #include <memory>
+#include <shared_mutex>
 #include <string>
 
 #define FUSE_CFG_INVALID_ID    -1
@@ -33,6 +34,7 @@ struct fuse_cfg_t
   std::shared_ptr<std::string> log_filepath() const;
   void log_filepath(const std::string &);
 private:
+  mutable std::shared_mutex    _log_mutex;
   std::shared_ptr<FILE>        _log_file     = sp<FILE>(stderr,[](FILE*){});
   std::shared_ptr<std::string> _log_filepath = sp<std::string>();
 
