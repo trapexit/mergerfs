@@ -367,10 +367,19 @@ _open(const fuse_req_ctx_t *ctx_,
 
       // The ref increment keeps fuse_release.cpp from erasing and
       // freeing the canonical entry while we duplicate its fd.
+      //
+      // memory_order_relaxed is sufficient for the increment. The
+      // concurrent_flat_map bucket lock held inside visit() already
+      // provides the happens-before relationship with other mutators
+      // of the same key (the release() erase_if() callback and other
+      // open() visitors.) The lock's release/acquire semantics
+      // publish the ref_count update to subsequent observers of the
+      // same entry, so we only need atomicity from the fetch_add
+      // itself.
       of.visit(ctx_->nodeid,
                [&](auto &v_)
                {
-                 v_.second.ref_count++;
+                 v_.second.ref_count.fetch_add(1,std::memory_order_relaxed);
                  fi = v_.second.fi;
                  backing_id = v_.second.backing_id;
                });

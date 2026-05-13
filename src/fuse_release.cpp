@@ -81,11 +81,21 @@ FUSE::release(cu64             nodeid_,
   FileInfo *canonical_fi  = nullptr;
   FileInfo *fh_fi_to_free = nullptr;
 
+  // memory_order_acq_rel on the decrement gives us the canonical
+  // refcount-publication pattern:
+  //   - release: prior writes to the OpenFile by this thread are
+  //     visible to whichever thread observes the final 0.
+  //   - acquire: the thread that drops the last ref acquires every
+  //     prior ref holder's writes before tearing down the entry.
+  // The concurrent_flat_map bucket lock already serializes concurrent
+  // visitors of this key so the acq_rel is good for any observer that
+  // might examine ref_count outside a visit().
   of.erase_if(nodeid_,
               [&](auto &v_)
               {
-                v_.second.ref_count--;
-                if(v_.second.ref_count > 0)
+                const int prev =
+                  v_.second.ref_count.fetch_sub(1,std::memory_order_acq_rel);
+                if(prev > 1)
                   {
                     if(fi_ != v_.second.fi)
                       fh_fi_to_free = fi_;
