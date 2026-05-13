@@ -121,7 +121,7 @@ CXXFLAGS ?= \
 	-Wno-unused-result \
 	-pipe
 override CXXFLAGS += \
-	-std=c++17 \
+	-std=c++20 \
 	-MMD \
 	-MP
 override INC_FLAGS := \

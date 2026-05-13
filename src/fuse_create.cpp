@@ -334,7 +334,7 @@ _create(const fuse_req_ctx_t *ctx_,
       delete fi;
       ffi_->fh = 0;
 
-      SysLog::crit(msg);
+      SysLog::crit("{}",msg);
       fmt::println(stderr,"{}",msg);
 
       return -EIO;

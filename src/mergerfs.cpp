@@ -301,7 +301,7 @@ _warn_if_not_root()
     "mergerfs is not running as root"
     " and may not work correctly";
   fmt::println(stderr,"* WARNING: {}",s);
-  SysLog::warning(s);
+  SysLog::warning("{}",s);
 }
 
 int

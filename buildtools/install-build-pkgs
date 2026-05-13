@@ -1,39 +1,162 @@
 #!/bin/sh
 
+set -e
+
+BUILD_ENV=/tmp/build-env
+
+write_gcc_env()
+{
+    {
+        printf 'export CC=%s\n' "$1"
+        printf 'export CXX=%s\n' "$2"
+    } > "$BUILD_ENV"
+}
+
+write_toolset_env()
+{
+    {
+        printf '. %s\n' "$1"
+        printf 'export CC=gcc\n'
+        printf 'export CXX=g++\n'
+    } > "$BUILD_ENV"
+}
+
+latest_apt_gxx()
+{
+    apt-cache --names-only search '^g[+][+]-[0-9]' \
+        | sed -n 's/^\(g++-[0-9][0-9]*\) .*/\1/p' \
+        | sort -t- -k2,2V \
+        | tail -n 1
+}
+
+latest_dnf_toolset()
+{
+    dnf -q list --showduplicates 'gcc-toolset-*-gcc-c++' 2>/dev/null \
+        | sed -n 's/^gcc-toolset-\([0-9][0-9]*\)-gcc-c++\..*/\1/p' \
+        | sort -V \
+        | tail -n 1
+}
+
+latest_yum_toolset()
+{
+    yum -q list available 'devtoolset-*-gcc-c++' 2>/dev/null \
+        | sed -n 's/^devtoolset-\([0-9][0-9]*\)-gcc-c++\..*/\1/p' \
+        | sort -V \
+        | tail -n 1
+}
+
+version_gt()
+{
+    highest="$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1)"
+    [ "$highest" = "$1" ] && [ "$1" != "$2" ]
+}
+
+check_cxx20()
+{
+    cxx="${CXX:-g++}"
+    test_src=/tmp/mergerfs-cxx20-check.cpp
+    test_bin=/tmp/mergerfs-cxx20-check
+
+    cat > "$test_src" <<'EOF'
+template <typename T>
+concept Incrementable = requires(T value) { value + 1; };
+
+static_assert(Incrementable<int>);
+
+int main()
+{
+    return 0;
+}
+EOF
+
+    if ! "$cxx" -std=c++20 "$test_src" -o "$test_bin" >/dev/null 2>&1; then
+        echo "error: $cxx does not support C++20" >&2
+        exit 1
+    fi
+
+    rm -f "$test_src" "$test_bin"
+}
+
+: > "$BUILD_ENV"
+
 if [ -e /usr/bin/apt-get ]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get -qy update
+    cxx_pkg="$(latest_apt_gxx)"
+    if [ -n "$cxx_pkg" ]; then
+        gcc_pkg="gcc-${cxx_pkg#g++-}"
+        compiler_pkgs="$gcc_pkg $cxx_pkg"
+        write_gcc_env "$gcc_pkg" "$cxx_pkg"
+    else
+        compiler_pkgs="g++"
+        write_gcc_env gcc g++
+    fi
     apt-get -qy --force-yes --no-install-suggests --no-install-recommends \
 	    install \
             ca-certificates \
             build-essential \
             dpkg-dev \
             git \
-            g++ \
+            $compiler_pkgs \
             debhelper \
             lsb-release \
             fakeroot
+    . "$BUILD_ENV"
+    check_cxx20
 elif [ -e /usr/bin/dnf ]; then
     dnf -y update
+    toolset="$(latest_dnf_toolset)"
     dnf -y install \
         git rpm-build gcc-c++ make which libatomic
+    default_gxx_major="$(g++ -dumpversion | cut -f1 -d.)"
+    if [ -n "$toolset" ] && version_gt "$toolset" "$default_gxx_major"; then
+        dnf -y install \
+            "gcc-toolset-${toolset}-gcc" \
+            "gcc-toolset-${toolset}-gcc-c++"
+        write_toolset_env "/opt/rh/gcc-toolset-${toolset}/enable"
+    else
+        write_gcc_env gcc g++
+    fi
+    . "$BUILD_ENV"
+    check_cxx20
 elif [ -e /usr/bin/yum ]; then
     yum -y update
     yum -y install \
         git rpm-build gcc-c++ make which
-    yum -y install centos-release-scl
-    yum -y install devtoolset-9-gcc\*
+    yum -y install centos-release-scl || true
+    yum -y update
+    toolset="$(latest_yum_toolset)"
+    default_gxx_major="$(g++ -dumpversion | cut -f1 -d.)"
+    if [ -n "$toolset" ] && version_gt "$toolset" "$default_gxx_major"; then
+        yum -y install \
+            "devtoolset-${toolset}-gcc" \
+            "devtoolset-${toolset}-gcc-c++"
+        write_toolset_env "/opt/rh/devtoolset-${toolset}/enable"
+    else
+        write_gcc_env gcc g++
+    fi
+    . "$BUILD_ENV"
+    check_cxx20
 elif [ -e /usr/bin/zypper ]; then
     zypper update -y
     zypper install -y \
            git rpm-build gcc-c++ make which
+    write_gcc_env gcc g++
+    . "$BUILD_ENV"
+    check_cxx20
 elif [ -e /sbin/apk ]; then
     apk add \
         abuild git gcc g++ make \
         linux-headers
+    write_gcc_env gcc g++
+    . "$BUILD_ENV"
+    check_cxx20
 elif [ -e /usr/sbin/pkg ]; then
     pkg install \
         git gmake gcc
 elif [ -e /usr/bin/pacman ]; then
     pacman -Sy --noconfirm base-devel git fakeroot
+    write_gcc_env gcc g++
+    . "$BUILD_ENV"
+    check_cxx20
 fi
