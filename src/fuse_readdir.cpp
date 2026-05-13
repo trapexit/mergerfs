@@ -48,30 +48,29 @@ FUSE::ReadDir::ReadDir(const std::string_view s_)
 std::string
 FUSE::ReadDir::to_string() const
 {
-  std::shared_ptr<std::string> str;
+  std::shared_lock<std::shared_mutex> lk(_mutex);
 
-  str = std::atomic_load(&_str);
-
-  return (*str);
+  return _str;
 }
 
 int
 FUSE::ReadDir::from_string(const std::string_view str_)
 {
-  std::shared_ptr<std::string> tmp_str;
   std::shared_ptr<FUSE::ReadDirBase> tmp_readdir;
 
   tmp_readdir = FUSE::ReadDirFactory::make(str_);
   if(!tmp_readdir)
     return -EINVAL;
 
-  tmp_str = std::make_shared<std::string>(str_);
-  std::atomic_store(&_str,tmp_str);
+  {
+    std::unique_lock<std::shared_mutex> lk(_mutex);
 
-  if(_initialized == false)
-    return 0;
+    _str = str_;
+    if(_initialized == false)
+      return 0;
 
-  std::atomic_store(&_impl,tmp_readdir);
+    _impl = std::move(tmp_readdir);
+  }
 
   return 0;
 }
@@ -114,7 +113,10 @@ FUSE::ReadDir::operator()(const fuse_req_ctx_t   *ctx_,
   int rv;
   std::shared_ptr<FUSE::ReadDirBase> readdir;
 
-  readdir = std::atomic_load(&_impl);
+  {
+    std::shared_lock<std::shared_mutex> lk(_mutex);
+    readdir = _impl;
+  }
   if(!readdir)
     fatal::abort("readdir impl is null");
 
@@ -128,10 +130,14 @@ FUSE::ReadDir::operator()(const fuse_req_ctx_t   *ctx_,
 void
 FUSE::ReadDir::initialize()
 {
-  std::shared_ptr<std::string> str;
+  std::string str;
 
-  str = std::atomic_load(&_str);
-  _initialized = true;
+  {
+    std::unique_lock<std::shared_mutex> lk(_mutex);
 
-  from_string(*str);
+    str = _str;
+    _initialized = true;
+  }
+
+  from_string(str);
 }
