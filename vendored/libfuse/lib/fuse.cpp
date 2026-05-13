@@ -1066,11 +1066,87 @@ free_path_wrlock(uint64_t  nodeid,
 
 static
 void
+update_stat(node_t            *node_,
+            const struct stat *stnew_)
+{
+  uint32_t crc32b;
+
+  // This function can only invalidate an existing fingerprint; it
+  // never arms a new one. Arming (writing a non-zero CRC into
+  // state_crc32b) happens exclusively in open_auto_cache(), which is
+  // the single point that decides a file's page cache is worth
+  // retaining across opens. If stat_crc32b is 0 here the cache is
+  // already considered invalid and we have nothing to compare
+  // against.
+  if(node_->stat_crc32b == 0)
+    return;
+
+  crc32b = stat_crc32b(stnew_);
+
+  if(crc32b != node_->stat_crc32b)
+    node_->stat_crc32b = 0;
+}
+
+static
+void
 free_path(uint64_t  nodeid,
           char     *path)
 {
   if(path)
     free_path_wrlock(nodeid,NULL,path);
+}
+
+static
+node_t*
+free_path_and_inc_open(u64   free_nodeid_,
+                       char *path_,
+                       u64   inc_open_ino_,
+                       bool  remember_too_)
+{
+  node_t *node;
+
+  mutex_lock(f.lock);
+
+  unlock_path(free_nodeid_,NULL,NULL);
+  node = get_node(inc_open_ino_);
+  if(node)
+    {
+      if(remember_too_ && remember_nodes())
+        remember_node(node);
+      node->open_count++;
+    }
+  if(f.lockq)
+    wake_up_queued();
+
+  mutex_unlock(f.lock);
+  free(path_);
+
+  return node;
+}
+
+static
+bool
+free_path_and_update_stat(u64                nodeid_,
+                          char              *path_,
+                          const struct stat *stnew_)
+{
+  bool ok;
+  node_t *node;
+
+  mutex_lock(f.lock);
+
+  unlock_path(nodeid_,NULL,NULL);
+  node = get_node(nodeid_);
+  ok = (node != NULL);
+  if(ok)
+    update_stat(node,stnew_);
+  if(f.lockq)
+    wake_up_queued();
+
+  mutex_unlock(f.lock);
+  free(path_);
+
+  return ok;
 }
 
 static
@@ -1209,51 +1285,64 @@ node_open(const node_t *node_)
 }
 
 static
-void
-update_stat(node_t       *node_,
-            const struct stat *stnew_)
-{
-  uint32_t crc32b;
-
-  // This function can only invalidate an existing fingerprint; it
-  // never arms a new one. Arming (writing a non-zero CRC into
-  // state_crc32b) happens exclusively in open_auto_cache(), which is
-  // the single point that decides a file's page cache is worth
-  // retaining across opens. If stat_crc32b is 0 here the cache is
-  // already considered invalid and we have nothing to compare
-  // against.
-  if(node_->stat_crc32b == 0)
-    return;
-
-  crc32b = stat_crc32b(stnew_);
-
-  if(crc32b != node_->stat_crc32b)
-    node_->stat_crc32b = 0;
-}
-
-static
 int
-set_path_info(uint64_t                 nodeid,
-              const char              *name,
-              struct fuse_entry_param *e,
-              bool                     remember = true)
+set_path_info(uint64_t                 nodeid_,
+              const char              *name_,
+              struct fuse_entry_param *e_,
+              bool                     remember_ = true)
 {
   node_t *node;
 
-  node = find_node(nodeid,name,remember);
-  if(node == NULL)
-    return -ENOMEM;
-
-  e->ino        = node->nodeid;
-  e->generation = ((e->ino == FUSE_ROOT_ID) ? 0 : f.nodeid_gen.generation);
-
   mutex_lock(f.lock);
-  update_stat(node,&e->attr);
+
+  if(!name_)
+    {
+      node = get_node(nodeid_);
+      if(node == NULL)
+        goto out_unlock;
+    }
+  else
+    {
+      node = lookup_node(nodeid_,name_);
+    }
+
+  if(node == NULL)
+    {
+      node = node_alloc();
+      if(node == NULL)
+        goto out_unlock;
+
+      node->nodeid = generate_nodeid(&f.nodeid_gen);
+      if(remember_ && remember_nodes())
+        remember_node(node);
+
+      if(hash_name(node,nodeid_,name_) == -1)
+        {
+          free_node(node);
+          node = NULL;
+          goto out_unlock;
+        }
+
+      hash_id(node);
+    }
+
+  inc_nlookup(node);
+
+  e_->ino        = node->nodeid;
+  e_->generation = ((e_->ino == FUSE_ROOT_ID) ? 0 : f.nodeid_gen.generation);
+
+  update_stat(node,&e_->attr);
+
   mutex_unlock(f.lock);
 
-  set_stat(e->ino,&e->attr);
+  set_stat(e_->ino,&e_->attr);
 
   return 0;
+
+ out_unlock:
+  mutex_unlock(f.lock);
+
+  return -ENOMEM;
 }
 
 /*
@@ -1474,26 +1563,37 @@ fuse_lib_getattr(fuse_req_t            *req_,
 
   if(!err)
     {
+      bool node_ok = true;
       if(fusepath != NULL)
-        err = f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts);
+        {
+          err = f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts);
+          if(!err)
+            node_ok = free_path_and_update_stat(hdr_->nodeid,fusepath,&buf);
+          else
+            free_path(hdr_->nodeid,fusepath);
+        }
       else
-        err = f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts);
+        {
+          err = f.ops.fgetattr(&req_->ctx,fh,&buf,&timeouts);
+          if(!err)
+            {
+              mutex_lockguard(f.lock);
+              node = get_node(hdr_->nodeid);
+              node_ok = (node != NULL);
+              if(node_ok)
+                update_stat(node,&buf);
+            }
+        }
 
-      free_path(hdr_->nodeid,fusepath);
+      if(!err && !node_ok)
+        {
+          fuse_reply_err(req_,ESTALE);
+          return;
+        }
     }
 
   if(!err)
     {
-      {
-        mutex_lockguard(f.lock);
-        node = get_node(hdr_->nodeid);
-        if(node == NULL)
-          {
-            fuse_reply_err(req_,ESTALE);
-            return;
-          }
-        update_stat(node,&buf);
-      }
       set_stat(hdr_->nodeid,&buf);
       fuse_reply_attr(req_,&buf,timeouts.attr);
     }
@@ -1663,28 +1763,50 @@ fuse_lib_setattr(fuse_req_t            *req_,
                f.ops.getattr(&req_->ctx,&fusepath[1],&stbuf,&timeouts) :
                f.ops.fgetattr(&req_->ctx,fh,&stbuf,&timeouts));
 
-      free_path(hdr_->nodeid,fusepath);
+      bool stat_updated = false;
+      if(!err && (fusepath != NULL))
+        {
+          node_t *node;
+          mutex_lock(f.lock);
+          unlock_path(hdr_->nodeid,NULL,NULL);
+          node = get_node(hdr_->nodeid);
+          if(node)
+            update_stat(node,&stbuf);
+          if(f.lockq)
+            wake_up_queued();
+          mutex_unlock(f.lock);
+          free(fusepath);
+          stat_updated = true;
+        }
+      else
+        {
+          free_path(hdr_->nodeid,fusepath);
+        }
+
+      if(!err)
+        {
+          if(!stat_updated)
+            {
+              node_t *node;
+              mutex_lockguard(f.lock);
+              node = get_node(hdr_->nodeid);
+              if(node)
+                update_stat(node,&stbuf);
+            }
+
+          set_stat(hdr_->nodeid,&stbuf);
+          fuse_reply_attr(req_,&stbuf,timeouts.attr);
+        }
+      else
+        {
+          fuse_reply_err(req_,err);
+        }
+      return;
     }
 
-  if(!err)
-    {
-      {
-        node_t *node;
-        mutex_lockguard(f.lock);
-
-        node = get_node(hdr_->nodeid);
-        if(node)
-          update_stat(node,&stbuf);
-      }
-
-      set_stat(hdr_->nodeid,&stbuf);
-      fuse_reply_attr(req_,&stbuf,timeouts.attr);
-    }
-  else
-    {
-      fuse_reply_err(req_,err);
-    }
+  fuse_reply_err(req_,err);
 }
+
 
 static
 void
@@ -2089,15 +2211,8 @@ fuse_lib_create(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node_t *node = get_node(e.ino);
-      if(node)
-        {
-          if(remember_nodes())
-            remember_node(node);
-          node->open_count++;
-        }
-      mutex_unlock(f.lock);
+      free_path_and_inc_open(hdr_->nodeid,fusepath,e.ino,true);
+      fusepath = NULL;
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -2196,11 +2311,9 @@ fuse_lib_open(fuse_req_t            *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node_t *node = get_node(hdr_->nodeid);
-      if(node)
-        node->open_count++;
-      mutex_unlock(f.lock);
+      free_path_and_inc_open(hdr_->nodeid,fusepath,hdr_->nodeid,false);
+      fusepath = NULL;
+
       /* The open syscall was interrupted,so it must be cancelled */
       if(fuse_reply_open(req_,&ffi) == -ENOENT)
         fuse_do_release(&req_->ctx,hdr_->nodeid,&ffi);
@@ -2928,15 +3041,8 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
 
   if(!err)
     {
-      mutex_lock(f.lock);
-      node_t *node = get_node(e.ino);
-      if(node)
-        {
-          if(remember_nodes())
-            remember_node(node);
-          node->open_count++;
-        }
-      mutex_unlock(f.lock);
+      free_path_and_inc_open(hdr_->nodeid,fusepath,e.ino,true);
+      fusepath = NULL;
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
