@@ -28,8 +28,10 @@
 #include "str.hpp"
 #include "syslog.hpp"
 
-#include <string>
+#include <mutex>
 #include <optional>
+#include <shared_mutex>
+#include <string>
 
 #include <fnmatch.h>
 
@@ -437,24 +439,44 @@ Branches::from_string(const std::string_view str_)
   Branches::Ptr impl;
   Branches::Ptr new_impl;
 
-  impl = std::atomic_load(&_impl);
-
   new_impl = std::make_shared<Branches::Impl>(&minfreespace);
-  *new_impl = *impl;
 
-  rv = new_impl->from_string(str_);
-  if(rv < 0)
-    return rv;
+  for(;;)
+    {
+      {
+        std::shared_lock<std::shared_mutex> lk(_mutex);
+        impl = _impl;
+      }
 
-  std::atomic_store(&_impl,new_impl);
+      *new_impl = *impl;
 
-  return 0;
+      rv = new_impl->from_string(str_);
+      if(rv < 0)
+        return rv;
+
+      {
+        std::unique_lock<std::shared_mutex> lk(_mutex);
+        if(impl != _impl)
+          continue;
+
+        _impl = std::move(new_impl);
+      }
+
+      return 0;
+    }
 }
 
 std::string
 Branches::to_string(void) const
 {
-  return std::atomic_load(&_impl)->to_string();
+  Branches::Ptr impl;
+
+  {
+    std::shared_lock<std::shared_mutex> lk(_mutex);
+    impl = _impl;
+  }
+
+  return impl->to_string();
 }
 
 void
@@ -462,32 +484,50 @@ Branches::find_and_set_mode_ro()
 {
   Branches::Ptr impl;
   Branches::Ptr new_impl;
+  std::vector<fs::path> ro_paths;
 
-  impl = std::atomic_load(&_impl);
   new_impl = std::make_shared<Branches::Impl>(&minfreespace);
 
-  *new_impl = *impl;
-
-  bool changed = false;
-  for(auto &branch : *new_impl)
+  for(;;)
     {
-      if(branch.mode != Branch::Mode::RW)
-        continue;
+      ro_paths.clear();
 
-      if(!fs::is_rofs_but_not_mounted_ro(branch.path))
-        continue;
+      {
+        std::shared_lock<std::shared_mutex> lk(_mutex);
+        impl = _impl;
+      }
 
-      SysLog::warning("branch `{}` found to be readonly - setting its mode=RO",
-                      branch.path.string());
+      *new_impl = *impl;
 
-      branch.mode = Branch::Mode::RO;
-      changed = true;
+      for(auto &branch : *new_impl)
+        {
+          if(branch.mode != Branch::Mode::RW)
+            continue;
+
+          if(!fs::is_rofs_but_not_mounted_ro(branch.path))
+            continue;
+
+          branch.mode = Branch::Mode::RO;
+          ro_paths.emplace_back(branch.path);
+        }
+
+      if(ro_paths.empty())
+        return;
+
+      {
+        std::unique_lock<std::shared_mutex> lk(_mutex);
+        if(impl != _impl)
+          continue;
+
+        _impl = std::move(new_impl);
+      }
+
+      for(const auto &path : ro_paths)
+        SysLog::warning("branch `{}` found to be readonly - setting its mode=RO",
+                        path.string());
+
+      return;
     }
-
-  if(not changed)
-    return;
-
-  std::atomic_store(&_impl,new_impl);
 }
 
 SrcMounts::SrcMounts(Branches &b_)

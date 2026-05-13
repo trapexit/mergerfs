@@ -23,9 +23,9 @@
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
 
-#include <atomic>
 #include <cstdint>
 #include <memory>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 
@@ -69,7 +69,8 @@ public:
   u64 minfreespace = MINFREESPACE_DEFAULT;
 
 private:
-  mutable std::shared_ptr<Impl> _impl;
+  Branches::Ptr _impl;
+  mutable std::shared_mutex _mutex;
 
 public:
   Branches()
@@ -82,8 +83,17 @@ public:
   std::string to_string(void) const final;
 
 public:
-  operator Ptr()   const { return std::atomic_load(&_impl); }
-  Ptr operator->() const { return std::atomic_load(&_impl); }
+  operator Ptr() const
+  {
+    std::shared_lock<std::shared_mutex> lk(_mutex);
+    return _impl;
+  }
+
+  Ptr operator->() const
+  {
+    std::shared_lock<std::shared_mutex> lk(_mutex);
+    return _impl;
+  }
 
 public:
   void find_and_set_mode_ro();
