@@ -18,13 +18,27 @@
 
 #pragma once
 
+#include <atomic>
+
 #include <sys/types.h>
 
 
 namespace ioprio
 {
+  // Exposed so the disabled-path check in SetFrom can inline into
+  // every fuse_read/fuse_write as an atomic load + branch, with no
+  // function overhead.
+  extern std::atomic<bool> _enabled;
+
+  [[gnu::always_inline]]
+  inline
+  bool
+  enabled()
+  {
+    return _enabled.load(std::memory_order_relaxed);
+  }
+
   void enable(const bool);
-  bool enabled();
 
   int get(const int who);
   int set(const int who, const int ioprio);
@@ -33,6 +47,15 @@ namespace ioprio
   {
     static thread_local int thread_prio;
 
-    SetFrom(const pid_t pid);
+    [[gnu::always_inline]]
+    inline
+    SetFrom(const pid_t pid_)
+    {
+      if(ioprio::enabled())
+        _slow_apply(pid_);
+    }
+
+  private:
+    void _slow_apply(const pid_t);
   };
 };
