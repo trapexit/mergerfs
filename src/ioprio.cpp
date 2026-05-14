@@ -32,8 +32,12 @@ enum
     IOPRIO_WHO_PROCESS = 1
   };
 
+namespace ioprio
+{
+  std::atomic<bool> _enabled{false};
+}
+
 thread_local int ioprio::SetFrom::thread_prio = -1;
-bool _enabled = false;
 
 int
 ioprio::get(const int who_)
@@ -69,21 +73,13 @@ ioprio::set(const int who_,
 void
 ioprio::enable(const bool enable_)
 {
-  _enabled = enable_;
+  _enabled.store(enable_,std::memory_order_relaxed);
 }
 
-bool
-ioprio::enabled()
-{
-  return _enabled;
-}
-
-ioprio::SetFrom::SetFrom(const pid_t pid_)
+void
+ioprio::SetFrom::_slow_apply(const pid_t pid_)
 {
   int client_prio;
-
-  if(!_enabled)
-    return;
 
   client_prio = ioprio::get(pid_);
   if(client_prio < 0)
