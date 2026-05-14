@@ -15,6 +15,7 @@
 #include "extern_c.h"
 
 #include <atomic>
+#include <vector>
 
 /* Simplified fuse_session - fields inlined from former fuse_chan
  * Since mergerfs only supports one mount, we collapse the hierarchy:
@@ -24,9 +25,11 @@
 struct fuse_session
 {
   int (*receive_buf)(struct fuse_session *se,
+                     int                  fd,
                      fuse_msgbuf_t       *msgbuf);
 
   void (*process_buf)(struct fuse_session *se,
+                      int                  fd,
                       const fuse_msgbuf_t *msgbuf);
 
   void (*destroy)(void *data);
@@ -35,8 +38,10 @@ struct fuse_session
   std::atomic<int> exited;
 
   /* Formerly in fuse_chan - inlined for single-mount simplicity */
-  int fd;            /* /dev/fuse file descriptor */
-  size_t bufsize;    /* Buffer size for I/O operations */
+  int fd;          /* /dev/fuse file descriptor */
+  size_t bufsize;  /* Buffer size for I/O operations */
+
+  std::vector<int> clone_fds; /* cloned /dev/fuse fds for read workers */
 };
 
 struct fuse_notify_req
@@ -49,6 +54,12 @@ struct fuse_notify_req
   struct fuse_notify_req *next;
   struct fuse_notify_req *prev;
 };
+
+bool fuse_session_setup_read_fds(struct fuse_session *se,
+                                 int                  read_thread_count);
+
+int fuse_session_read_fd(struct fuse_session *se,
+                         int                  index);
 
 
 

@@ -10,6 +10,7 @@ struct fuse_req_t
 {
   fuse_req_ctx_t ctx;
   struct fuse_session *se;
+  int fd;
   fuse_conn_info_t conn;
   unsigned int ioctl_64bit : 1;
 };
