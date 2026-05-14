@@ -103,16 +103,16 @@ iov_length(const struct iovec *iov,
 
 static
 int
-fuse_send_msg(struct fuse_session *se,
-              struct iovec        *iov,
-              int                  count)
+fuse_send_msg(const int     fd_,
+              struct iovec *iov,
+              int           count)
 {
   int rv;
   struct fuse_out_header *out = (fuse_out_header*)iov[0].iov_base;
 
   out->len = iov_length(iov, count);
 
-  rv = writev(se->fd,iov,count);
+  rv = writev(fd_,iov,count);
   if(rv == -1)
     return -errno;
 
@@ -144,7 +144,7 @@ fuse_send_reply_iov_nofree(fuse_req_t   *req,
   iov[0].iov_base = &out;
   iov[0].iov_len  = sizeof(struct fuse_out_header);
 
-  return fuse_send_msg(req->se, iov, count);
+  return fuse_send_msg(req->fd, iov, count);
 }
 
 static
@@ -440,7 +440,7 @@ fuse_reply_data(fuse_req_t   *req,
   if(fuse_cfg.debug)
     fuse_debug_data_out(req->ctx.unique,bufsize_);
 
-  res = fuse_send_msg(req->se,iov,2);
+  res = fuse_send_msg(req->fd,iov,2);
   fuse_req_free(req);
 
   return res;
@@ -1310,7 +1310,7 @@ send_notify_iov(struct fuse_session *se,
   iov[0].iov_base = &out;
   iov[0].iov_len = sizeof(struct fuse_out_header);
 
-  return fuse_send_msg(se, iov, count);
+  return fuse_send_msg(se->fd, iov, count);
 }
 
 int
@@ -1558,7 +1558,7 @@ fuse_ll_destroy(void *data)
 
 static
 void
-fuse_send_errno(struct fuse_session *se_,
+fuse_send_errno(const int            fd_,
                 const int            errno_,
                 const uint64_t       unique_id_)
 {
@@ -1574,25 +1574,26 @@ fuse_send_errno(struct fuse_session *se_,
   if(fuse_cfg.debug)
     fuse_debug_out_header(&out);
 
-  fuse_send_msg(se_,&iov,1);
+  fuse_send_msg(fd_,&iov,1);
 }
 
 static
 void
-fuse_send_enomem(struct fuse_session *se_,
+fuse_send_enomem(const int            fd_,
                  const uint64_t       unique_id_)
 {
-  fuse_send_errno(se_,ENOMEM,unique_id_);
+  fuse_send_errno(fd_,ENOMEM,unique_id_);
 }
 
 static
 int
 fuse_ll_buf_receive_read(struct fuse_session *se_,
+                         int                  fd_,
                          fuse_msgbuf_t       *msgbuf_)
 {
   int rv;
 
-  rv = read(se_->fd,msgbuf_->mem,msgbuf_->size);
+  rv = read(fd_,msgbuf_->mem,msgbuf_->size);
   if(rv == -1)
     return -errno;
 
@@ -1608,6 +1609,7 @@ fuse_ll_buf_receive_read(struct fuse_session *se_,
 static
 void
 fuse_ll_buf_process_read(struct fuse_session *se_,
+                         int                  fd_,
                          const fuse_msgbuf_t *msgbuf_)
 {
   int err;
@@ -1621,7 +1623,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
 
   req = fuse_req_alloc();
   if(req == NULL)
-    return fuse_send_enomem(se_,in->unique);
+    return fuse_send_enomem(fd_,in->unique);
 
   req->ctx.len    = in->len;
   req->ctx.opcode = in->opcode;
@@ -1633,6 +1635,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   req->ctx.umask  = 0;
   req->conn       = f.conn;
   req->se         = se_;
+  req->fd         = fd_;
   req->ioctl_64bit = 0;
 
   err = ENOSYS;
@@ -1653,6 +1656,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
 static
 void
 fuse_ll_buf_process_read_init(struct fuse_session *se_,
+                              int                  fd_,
                               const fuse_msgbuf_t *msgbuf_)
 {
   int err;
@@ -1666,7 +1670,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
 
   req = fuse_req_alloc();
   if(req == NULL)
-    return fuse_send_enomem(se_,in->unique);
+    return fuse_send_enomem(fd_,in->unique);
 
   req->ctx.len    = in->len;
   req->ctx.opcode = in->opcode;
@@ -1678,6 +1682,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   req->ctx.pid    = in->pid;
   req->ctx.umask  = 0;
   req->se         = se_;
+  req->fd         = fd_;
 
   err = EIO;
   if(in->opcode != FUSE_INIT)

@@ -11,7 +11,6 @@
 #include "maintenance_thread.hpp"
 
 #include "fuse_i.hpp"
-#include "fuse_kernel.h"
 #include "fuse_lowlevel.h"
 
 #include "fuse_cfg.hpp"
@@ -67,13 +66,16 @@ _nproc()
 struct AsyncWorker
 {
   fuse_session *_se;
+  int _fd;
   sem_t *_finished;
   std::shared_ptr<ThreadPool> _process_tp;
 
   AsyncWorker(fuse_session                *se_,
+              int                          fd_,
               sem_t                       *finished_,
               std::shared_ptr<ThreadPool>  process_tp_)
     : _se(se_),
+      _fd(fd_),
       _finished(finished_),
       _process_tp(process_tp_)
   {
@@ -102,7 +104,7 @@ struct AsyncWorker
         while(true)
           {
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
-            rv = _se->receive_buf(_se,msgbuf);
+            rv = _se->receive_buf(_se,_fd,msgbuf);
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
 
             if(rv > 0)
@@ -118,9 +120,9 @@ struct AsyncWorker
           }
 
         _process_tp->enqueue_work(ptok,
-                                  [=]()
+                                  [se = _se,fd = _fd,msgbuf]()
                                   {
-                                    _se->process_buf(_se,msgbuf);
+                                    se->process_buf(se,fd,msgbuf);
                                     msgbuf_free(msgbuf);
                                   });
       }
@@ -130,12 +132,15 @@ struct AsyncWorker
 struct SyncWorker
 {
   fuse_session *_se;
+  int _fd;
   sem_t *_finished;
 
   SyncWorker(fuse_session *se_,
+             int           fd_,
              sem_t        *finished_)
 
     : _se(se_),
+      _fd(fd_),
       _finished(finished_)
   {
   }
@@ -162,7 +167,7 @@ struct SyncWorker
         while(true)
           {
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
-            rv = _se->receive_buf(_se,msgbuf);
+            rv = _se->receive_buf(_se,_fd,msgbuf);
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
             if(rv > 0)
               break;
@@ -176,7 +181,7 @@ struct SyncWorker
             return ::_print_error(rv);
           }
 
-        _se->process_buf(_se,msgbuf);
+        _se->process_buf(_se,_fd,msgbuf);
 
         msgbuf_free(msgbuf);
       }
@@ -255,15 +260,18 @@ fuse_session_loop_mt(struct fuse_session *se_,
                      const std::string    pin_threads_type_)
 {
   sem_t finished;
+  bool cloned_read_fds;
   int read_thread_count;
   int process_thread_count;
   int process_thread_queue_depth;
   std::vector<pthread_t> read_threads;
   std::vector<pthread_t> process_threads;
-  std::unique_ptr<ThreadPool> read_tp;
-  std::shared_ptr<ThreadPool> process_tp;
 
   sem_init(&finished,0,0);
+  DEFER{ sem_destroy(&finished); };
+
+  std::unique_ptr<ThreadPool> read_tp;
+  std::shared_ptr<ThreadPool> process_tp;
 
   read_thread_count          = raw_read_thread_count_;
   process_thread_count       = raw_process_thread_count_;
@@ -274,21 +282,28 @@ fuse_session_loop_mt(struct fuse_session *se_,
 
   if(process_thread_count > 0)
     process_tp = std::make_shared<ThreadPool>(process_thread_count,
-                                              process_thread_queue_depth,
-                                              "fuse.process");
+                                               process_thread_queue_depth,
+                                               "fuse.process");
+
+  cloned_read_fds = fuse_session_setup_read_fds(se_,read_thread_count);
 
   read_tp = std::make_unique<ThreadPool>(read_thread_count,
-                                         read_thread_count,
-                                         "fuse.read");
+                                          read_thread_count,
+                                          "fuse.read");
   if(process_tp)
     {
       for(auto i = 0; i < read_thread_count; i++)
-        read_tp->enqueue_work(AsyncWorker(se_,&finished,process_tp));
+        read_tp->enqueue_work(AsyncWorker(se_,
+                                          fuse_session_read_fd(se_,i),
+                                          &finished,
+                                          process_tp));
     }
   else
     {
       for(auto i = 0; i < read_thread_count; i++)
-        read_tp->enqueue_work(SyncWorker(se_,&finished));
+        read_tp->enqueue_work(SyncWorker(se_,
+                                         fuse_session_read_fd(se_,i),
+                                         &finished));
     }
 
   if(read_tp)
@@ -301,10 +316,12 @@ fuse_session_loop_mt(struct fuse_session *se_,
   SysLog::info("read-thread-count={}; "
                "process-thread-count={}; "
                "process-thread-queue-depth={}; "
+               "fuse-dev-ioc-clone={}; "
                "pin-threads={};",
                read_thread_count,
                process_thread_count,
                process_thread_queue_depth,
+               cloned_read_fds,
                pin_threads_type_);
 
   while(!fuse_session_exited(se_))
@@ -313,7 +330,8 @@ fuse_session_loop_mt(struct fuse_session *se_,
   for(auto t : read_threads)
     pthread_cancel(t);
 
-  sem_destroy(&finished);
+  read_tp.reset();
+  process_tp.reset();
 
   return 0;
 }
