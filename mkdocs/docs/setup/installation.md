@@ -139,7 +139,10 @@ docker run --device=/dev/fuse --cap-add=SYS_ADMIN -v /mnt/to-merge:/mnt/to-merge
 * `--cap-add=SYS_ADMIN`: Give proper permissions to mount.
 * `-v /mnt/mergerfs:/mnt/mergerfs:z,shared`: `z` and `shared` will
   allow the mount to be shared between the container and host and
-  therefore other containers.
+  therefore other containers. Note that once mergerfs is mounted
+  inside the container the resulting FUSE filesystem does not
+  support SELinux relabeling. See [Does mergerfs work with SELinux
+  relabeling?](../faq/compatibility_and_integration.md#does-mergerfs-work-with-selinux-relabeling)
 * `-v /mnt/to-merge:/mnt/to-merge:rshared`: The mounts from the host
   to merge within the container.
 
