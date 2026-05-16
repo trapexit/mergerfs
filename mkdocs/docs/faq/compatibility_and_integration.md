@@ -149,6 +149,70 @@ It is generally recommended to not use user namespacing / id mapping
 given the complication it introduces.
 
 
+## Does mergerfs work with SELinux relabeling?
+
+FUSE filesystems, including mergerfs, do not support per-inode
+SELinux labels (see [Red Hat bug
+1272868](https://bugzilla.redhat.com/show_bug.cgi?id=1272868) and the
+[upstream fuse-devel
+thread](https://sourceforge.net/p/fuse/mailman/fuse-devel/thread/CAN9vWDLGA4%3Dg3peKVWkX7gLRiVUUvJAQx9kiXHgqdeX6eh0MYA%40mail.gmail.com/)).
+When a container runtime such as Podman or Docker is asked to relabel
+a bind mount with the `:z` or `:Z` mount option, it first probes the
+source for `security.selinux` xattr support. On a FUSE path that
+probe returns `EOPNOTSUPP` and the runtime skips relabeling entirely.
+Files inside the mount keep the `fusefs_t` type assigned by the
+kernel. No tree walk is performed and no journal noise is produced at
+default verbosity. The runtime logs `Labeling not supported on
+"<path>"` only at debug level (for example
+`podman --log-level=debug`). The flag is therefore a no-op against a
+mergerfs mount; not harmful, but misleading.
+
+Containers can still read and write a mergerfs pool without `:z`
+because two independent access checks must succeed and both can be
+satisfied without any relabel:
+
+* **SELinux:** on Fedora, RHEL / CentOS Stream, and SUSE the shipped
+  [container-selinux](https://github.com/containers/container-selinux)
+  policy already permits the `container_t` process type to manage
+  files of type `fusefs_t`. See `container_selinux(8)`.
+* **DAC:** the in-container UID and GID must still be able to read
+  and write the files on the underlying branches. With rootless
+  Podman this is most easily arranged by aligning the container UID
+  with the host owner of the branches (for example
+  `--userns=keep-id`, or Quadlet `UserNS=keep-id`).
+
+The recommendation is to omit `:z` and `:Z` on bind mounts whose
+source is a mergerfs (or any other FUSE) path, and to keep them on
+bind mounts whose source is a regular local filesystem (ext4, btrfs,
+xfs, etc.) where relabeling does real work. On distributions whose
+container-selinux policy does not already include the `fusefs_t`
+allow rule, the targeted fix is to set a single label at mount time
+by adding `context="system_u:object_r:container_file_t:s0"` to the
+mergerfs mount options (for example in `/etc/fstab`). Files inside
+the pool then appear as `container_file_t`, which container-selinux
+permits `container_t` to manage everywhere. See [Red Hat's mounting
+file systems
+guide](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/7/html/selinux_users_and_administrators_guide/sect-security-enhanced_linux-working_with_selinux-mounting_file_systems).
+This is preferred over the much broader
+`--security-opt label=disable`, which removes SELinux confinement
+from the container as a whole. The trade-off of `context=` is that
+host-side processes touching the mount (rsync, backup tools, web
+UIs, cron jobs) see `container_file_t` rather than `fusefs_t` and
+may require a small SELinux policy adjustment.
+
+To verify on your own system:
+
+```
+podman --log-level=debug run --rm \
+    -v /path/to/mergerfs:/data:z \
+    alpine true 2>&1 | grep -iE 'relabel|setfilecon|Labeling'
+```
+
+Expected output is a single line of the form
+`Labeling not supported on "/path/to/mergerfs"` and nothing in
+`ausearch -m AVC,SELINUX_ERR` for the mount.
+
+
 ## Can mergerfs be used with NFS root squash?
 
 If mergerfs is pooling a NFS mount then root squash must be disabled
