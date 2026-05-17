@@ -19,12 +19,13 @@
 #pragma once
 
 #include "fuse_req_ctx.h"
+#include "fs_path.hpp"
 
 
 namespace FUSE
 {
   int
   rename(const fuse_req_ctx_t *ctx,
-         const char           *from,
-         const char           *to);
+         const fs::relpath       &from,
+         const fs::relpath       &to);
 }

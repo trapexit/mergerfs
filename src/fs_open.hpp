@@ -78,8 +78,16 @@ namespace fs
   static
   inline
   int
-  open_dir_ro(const std::string &path_)
+  open_dir_ro(const char *path_)
   {
     return fs::open(path_,O_RDONLY|O_DIRECTORY);
+  }
+
+  static
+  inline
+  int
+  open_dir_ro(const std::string &path_)
+  {
+    return fs::open(path_.c_str(),O_RDONLY|O_DIRECTORY);
   }
 }

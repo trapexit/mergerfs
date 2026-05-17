@@ -48,7 +48,7 @@ namespace fs
   inline
   int
   fstatat(const int       dirfd_,
-          const fs::path &pathname_,
+          const fs::relpath &pathname_,
           struct stat    *statbuf_,
           const int       flags_)
   {
@@ -75,7 +75,7 @@ namespace fs
   inline
   int
   fstatat_nofollow(const int       dirfd_,
-                   const fs::path &pathname_,
+                   const fs::relpath &pathname_,
                    struct stat    *statbuf_)
   {
     return fs::fstatat(dirfd_,

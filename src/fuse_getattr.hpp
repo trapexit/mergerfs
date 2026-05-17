@@ -31,18 +31,12 @@ namespace FUSE
 {
   int
   getattr(const fuse_req_ctx_t *ctx,
-          const char           *fusepath,
+          const fs::relpath       &fusepath,
           struct stat          *buf,
           fuse_timeouts_t      *timeout);
 
   int
-  getattr(const fuse_req_ctx_t *ctx,
-          const fs::path       &fusepath,
-          struct stat          *buf,
-          fuse_timeouts_t      *timeout);
-
-  int
-  getattr(const fs::path  &fusepath,
+  getattr(const fs::relpath  &fusepath,
           struct stat     *buf,
           fuse_timeouts_t *timeout);
 

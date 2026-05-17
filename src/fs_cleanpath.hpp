@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include <filesystem>
+#include <string>
 
 
 namespace fs
 {
-  using path = std::filesystem::path;
+  void cleanpath(std::string *path);
 }

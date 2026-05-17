@@ -19,9 +19,7 @@
 #pragma once
 
 #include "base_types.h"
-#include "fs_path.hpp"
 
-#include <filesystem>
 #include <string>
 
 
@@ -32,5 +30,4 @@ namespace str
   std::string to(cu64);
   std::string to(cs64);
   std::string to(const std::string&);
-  std::string to(const fs::path&);
 }

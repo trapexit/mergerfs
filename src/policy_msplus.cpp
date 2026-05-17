@@ -33,13 +33,14 @@
 static
 Branch*
 _create_1(const Branches::Ptr &branches_,
-          const fs::path      &fusepath_,
+          const fs::relpath      &fusepath_,
           int                 *err_)
 {
   int rv;
   u64 lus;
   fs::info_t info;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   lus = std::numeric_limits<u64>::max();
@@ -47,7 +48,7 @@ _create_1(const Branches::Ptr &branches_,
     {
       if(branch.ro_or_nc())
         error_and_continue(*err_,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(*err_,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -69,12 +70,12 @@ _create_1(const Branches::Ptr &branches_,
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int err;
   Branch *branch;
-  fs::path fusepath;
+  fs::relpath fusepath;
 
   err = ENOENT;
   fusepath = fusepath_;
@@ -83,7 +84,7 @@ _create(const Branches::Ptr  &branches_,
       branch = ::_create_1(branches_,fusepath,&err);
       if(branch)
         break;
-      if(fusepath == "/")
+      if(fusepath.empty())
         break;
       fusepath = fusepath.parent_path();
     }
@@ -98,7 +99,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLUS::Action::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplus(branches_,fusepath_,paths_);
@@ -106,7 +107,7 @@ Policy::MSPLUS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLUS::Create::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -114,7 +115,7 @@ Policy::MSPLUS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLUS::Search::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplus(branches_,fusepath_,paths_);

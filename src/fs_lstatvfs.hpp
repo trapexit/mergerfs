@@ -36,8 +36,8 @@ namespace fs
   static
   inline
   int
-  lstatvfs(const std::string &path_,
-           struct statvfs    *st_)
+  lstatvfs(const char     *path_,
+           struct statvfs *st_)
   {
     int fd;
     int rv;
@@ -51,5 +51,14 @@ namespace fs
     fs::close(fd);
 
     return rv;
+  }
+
+  static
+  inline
+  int
+  lstatvfs(const std::string &path_,
+           struct statvfs    *st_)
+  {
+    return fs::lstatvfs(path_.c_str(),st_);
   }
 }

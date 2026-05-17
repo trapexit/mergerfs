@@ -22,7 +22,7 @@
 
 #include "base_types.h"
 
-#include <string>
+#include <string_view>
 
 
 namespace symlinkify
@@ -62,8 +62,8 @@ namespace symlinkify
   static
   inline
   void
-  convert(const std::string &target_,
-          struct stat       *st_)
+  convert(const std::string_view target_,
+          struct stat           *st_)
   {
     st_->st_mode = (((st_->st_mode & ~S_IFMT) | S_IFLNK) | 0777);
     st_->st_size = target_.size();
@@ -73,8 +73,8 @@ namespace symlinkify
   static
   inline
   void
-  convert(const std::string &target_,
-          struct fuse_statx *st_)
+  convert(const std::string_view target_,
+          struct fuse_statx     *st_)
   {
     st_->mode = (((st_->mode & ~S_IFMT) | S_IFLNK) | 0777);
     st_->size = target_.size();
@@ -84,9 +84,9 @@ namespace symlinkify
   static
   inline
   void
-  convert_if_can_be_symlink(const std::string &target_,
-                            struct stat       *st_,
-                            const s64          timeout_)
+  convert_if_can_be_symlink(const std::string_view target_,
+                            struct stat           *st_,
+                            const s64              timeout_)
   {
     if(timeout_ < 0)
       return;
@@ -99,9 +99,9 @@ namespace symlinkify
   static
   inline
   void
-  convert_if_can_be_symlink(const std::string &target_,
-                            fuse_statx        *st_,
-                            const s64          timeout_)
+  convert_if_can_be_symlink(const std::string_view target_,
+                            fuse_statx            *st_,
+                            const s64              timeout_)
   {
     if(timeout_ < 0)
       return;

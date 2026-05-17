@@ -37,7 +37,7 @@
 
 static
 void
-_set_stat_if_leads_to_dir(const fs::path &path_,
+_set_stat_if_leads_to_dir(const fs::relpath &path_,
                           struct stat    *st_)
 {
   int rv;
@@ -55,7 +55,7 @@ _set_stat_if_leads_to_dir(const fs::path &path_,
 
 static
 void
-_set_stat_if_leads_to_reg(const fs::path &path_,
+_set_stat_if_leads_to_reg(const fs::relpath &path_,
                           struct stat    *st_)
 {
   int rv;
@@ -129,14 +129,14 @@ static
 int
 _getattr(const Policy::Search &searchFunc_,
          const Branches::Ptr   branches_,
-         const fs::path       &fusepath_,
+         const fs::relpath       &fusepath_,
          struct stat          *st_,
          const bool            symlinkify_,
          const time_t          symlinkify_timeout_,
          FollowSymlinks        followsymlinks_)
 {
   int rv;
-  fs::path fullpath;
+  fs::relpath fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
@@ -145,7 +145,7 @@ _getattr(const Policy::Search &searchFunc_,
   if(branches.empty())
     return -ENOENT;
 
-  fullpath = branches[0]->path / fusepath_;
+  fullpath.assign_concat(branches[0]->path,fusepath_);
 
   switch(followsymlinks_)
     {
@@ -183,7 +183,7 @@ _getattr(const Policy::Search &searchFunc_,
 }
 
 int
-_getattr(const fs::path  &fusepath_,
+_getattr(const fs::relpath  &fusepath_,
          struct stat     *st_,
          fuse_timeouts_t *timeout_)
 {
@@ -209,18 +209,7 @@ _getattr(const fs::path  &fusepath_,
 
 int
 FUSE::getattr(const fuse_req_ctx_t *ctx_,
-              const char           *fusepath_,
-              struct stat          *st_,
-              fuse_timeouts_t      *timeout_)
-{
-  const fs::path fusepath{fusepath_};
-
-  return FUSE::getattr(ctx_,fusepath,st_,timeout_);
-}
-
-int
-FUSE::getattr(const fuse_req_ctx_t *ctx_,
-              const fs::path       &fusepath_,
+              const fs::relpath       &fusepath_,
               struct stat          *st_,
               fuse_timeouts_t      *timeout_)
 {
@@ -228,7 +217,7 @@ FUSE::getattr(const fuse_req_ctx_t *ctx_,
 }
 
 int
-FUSE::getattr(const fs::path  &fusepath_,
+FUSE::getattr(const fs::relpath  &fusepath_,
               struct stat     *st_,
               fuse_timeouts_t *timeout_)
 {

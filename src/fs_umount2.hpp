@@ -21,6 +21,8 @@
 #include "errno.hpp"
 #include "to_neg_errno.hpp"
 
+#include <string>
+
 #ifdef __FreeBSD__
 # include <sys/param.h>
 # include <sys/mount.h>
@@ -30,19 +32,18 @@
 # include <sys/mount.h>
 #endif
 
-#include <string>
 
 namespace fs
 {
   static
   inline
   int
-  umount2(const std::string target_,
-          const int         flags_)
+  umount2(const char *target_,
+          const int   flags_)
   {
     int rv;
 
-    rv = ::umount2(target_.c_str(),
+    rv = ::umount2(target_,
                    flags_);
 
     return ::to_neg_errno(rv);
@@ -51,8 +52,16 @@ namespace fs
   static
   inline
   int
-  umount_lazy(const std::string target_)
+  umount_lazy(const char *target_)
   {
     return fs::umount2(target_,MNT_DETACH);
+  }
+
+  static
+  inline
+  int
+  umount_lazy(const std::string &target_)
+  {
+    return fs::umount_lazy(target_.c_str());
   }
 }

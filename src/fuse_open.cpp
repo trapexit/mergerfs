@@ -123,8 +123,8 @@ _rdonly(const int flags_)
 
 static
 int
-_lchmod_and_open_if_not_writable_and_empty(const fs::path &fullpath_,
-                                           const int       flags_)
+_lchmod_and_open_if_not_writable_and_empty(const std::string &fullpath_,
+                                           const int          flags_)
 {
   int rv;
   struct stat st;
@@ -151,7 +151,7 @@ _lchmod_and_open_if_not_writable_and_empty(const fs::path &fullpath_,
 
 static
 int
-_nfsopenhack(const fs::path    &fullpath_,
+_nfsopenhack(const std::string &fullpath_,
              const int          flags_,
              const NFSOpenHack  nfsopenhack_)
 {
@@ -163,7 +163,7 @@ _nfsopenhack(const fs::path    &fullpath_,
     case NFSOpenHack::ENUM::GIT:
       if(::_rdonly(flags_))
         return -EACCES;
-      if(fullpath_.string().find("/.git/") == std::string::npos)
+      if(fullpath_.find("/.git/") == std::string::npos)
         return -EACCES;
       return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
     case NFSOpenHack::ENUM::ALL:
@@ -262,9 +262,9 @@ _config_to_ffi_flags(const int         tid_,
 
 static
 int
-_open_path(const fs::path    &filepath_,
+_open_path(const std::string &filepath_,
            const Branch      *branch_,
-           const fs::path    &fusepath_,
+           const fs::relpath &fusepath_,
            fuse_file_info_t  *ffi_,
            const NFSOpenHack  nfsopenhack_)
 {
@@ -288,7 +288,7 @@ static
 int
 _open_fd(const int         fd_,
          const Branch     *branch_,
-         const fs::path   &fusepath_,
+         const fs::relpath   &fusepath_,
          fuse_file_info_t *ffi_)
 {
   int fd;
@@ -309,13 +309,13 @@ static
 int
 _open(const Policy::Search &searchFunc_,
       const Branches::Ptr   ibranches_,
-      const fs::path       &fusepath_,
+      const fs::relpath       &fusepath_,
       fuse_file_info_t     *ffi_,
       const bool            link_cow_,
       const NFSOpenHack     nfsopenhack_)
 {
   int rv;
-  fs::path filepath;
+  std::string filepath;
   std::vector<Branch*> obranches;
 
   rv = searchFunc_(ibranches_,fusepath_,obranches);
@@ -324,7 +324,9 @@ _open(const Policy::Search &searchFunc_,
   if(obranches.empty())
     return -ENOENT;
 
-  filepath = obranches[0]->path / fusepath_;
+  filepath  = obranches[0]->path;
+  filepath += '/';
+  filepath.append(fusepath_.native());
 
   if(link_cow_ && fs::cow::is_eligible(filepath,ffi_->flags))
     fs::cow::break_link(filepath);
@@ -349,7 +351,7 @@ _(const PassthroughIOEnum e_,
 static
 int
 _open(const fuse_req_ctx_t *ctx_,
-      const fs::path       &fusepath_,
+      const fs::relpath       &fusepath_,
       fuse_file_info_t     *ffi_)
 {
   int rv;
@@ -484,10 +486,9 @@ _open(const fuse_req_ctx_t *ctx_,
 
 int
 FUSE::open(const fuse_req_ctx_t *ctx_,
-           const char           *fusepath_,
+           const fs::relpath       &fusepath_,
            fuse_file_info_t     *ffi_)
 {
-  const fs::path fusepath{fusepath_};
 
-  return ::_open(ctx_,fusepath,ffi_);
+  return ::_open(ctx_,fusepath_,ffi_);
 }

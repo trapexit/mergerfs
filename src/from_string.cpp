@@ -206,12 +206,3 @@ str::from(const std::string_view  value_,
 {
   return -EINVAL;
 }
-
-int
-str::from(const std::string_view  value_,
-          fs::path               *path_)
-{
-  *path_ = value_;
-
-  return 0;
-}

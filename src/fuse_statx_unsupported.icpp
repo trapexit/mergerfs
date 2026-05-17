@@ -20,7 +20,7 @@
 
 int
 FUSE::statx(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_,
+            const fs::relpath       &fusepath_,
             const uint32_t        flags_,
             const uint32_t        mask_,
             struct fuse_statx    *st_,

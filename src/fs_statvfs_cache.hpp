@@ -33,18 +33,54 @@ namespace fs
   statvfs_cache_timeout(cu64 timeout);
 
   int
-  statvfs_cache(const std::string &path,
-                struct statvfs    *st);
+  statvfs_cache(const char     *path,
+                struct statvfs *st);
+
+  static
+  inline
+  int
+  statvfs_cache(const std::string &path_,
+                struct statvfs    *st_)
+  {
+    return fs::statvfs_cache(path_.c_str(),st_);
+  }
 
   int
-  statvfs_cache_readonly(const std::string &path,
-                         bool              *readonly);
+  statvfs_cache_readonly(const char *path,
+                         bool       *readonly);
+
+  static
+  inline
+  int
+  statvfs_cache_readonly(const std::string &path_,
+                         bool              *readonly_)
+  {
+    return fs::statvfs_cache_readonly(path_.c_str(),readonly_);
+  }
 
   int
-  statvfs_cache_spaceavail(const std::string &path,
-                           u64               *spaceavail);
+  statvfs_cache_spaceavail(const char *path,
+                           u64        *spaceavail);
+
+  static
+  inline
+  int
+  statvfs_cache_spaceavail(const std::string &path_,
+                           u64               *spaceavail_)
+  {
+    return fs::statvfs_cache_spaceavail(path_.c_str(),spaceavail_);
+  }
 
   int
-  statvfs_cache_spaceused(const std::string &path,
-                          u64               *spaceused);
+  statvfs_cache_spaceused(const char *path,
+                          u64        *spaceused);
+
+  static
+  inline
+  int
+  statvfs_cache_spaceused(const std::string &path_,
+                          u64               *spaceused_)
+  {
+    return fs::statvfs_cache_spaceused(path_.c_str(),spaceused_);
+  }
 }

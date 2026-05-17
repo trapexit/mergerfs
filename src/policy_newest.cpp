@@ -26,7 +26,6 @@
 #include "policy.hpp"
 #include "policy_error.hpp"
 
-#include <string>
 #include <limits>
 
 #include <sys/stat.h>
@@ -34,7 +33,7 @@
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -43,6 +42,7 @@ _create(const Branches::Ptr  &branches_,
   struct stat st;
   fs::info_t info;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   err = ENOENT;
@@ -51,7 +51,7 @@ _create(const Branches::Ptr  &branches_,
     {
       if(branch.ro_or_nc())
         error_and_continue(err,EROFS);
-      if(!fs::exists(branch.path,fusepath_,&st))
+      if(!fs::exists(fullpath,branch.path,&st))
         error_and_continue(err,ENOENT);
       if(st.st_mtime < newest)
         continue;
@@ -78,7 +78,7 @@ _create(const Branches::Ptr  &branches_,
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -87,6 +87,7 @@ _action(const Branches::Ptr  &branches_,
   time_t newest;
   struct stat st;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   err = ENOENT;
@@ -95,7 +96,7 @@ _action(const Branches::Ptr  &branches_,
     {
       if(branch.ro())
         error_and_continue(err,EROFS);
-      if(!fs::exists(branch.path,fusepath_,&st))
+      if(!fs::exists(fullpath,branch.path,&st))
         error_and_continue(err,ENOENT);
       if(st.st_mtime < newest)
         continue;
@@ -120,18 +121,19 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   time_t newest;
   struct stat st;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   newest = std::numeric_limits<time_t>::min();
   for(auto &branch : *branches_)
     {
-      if(!fs::exists(branch.path,fusepath_,&st))
+      if(!fs::exists(fullpath,branch.path,&st))
         continue;
       if(st.st_mtime < newest)
         continue;
@@ -150,7 +152,7 @@ _search(const Branches::Ptr  &branches_,
 
 int
 Policy::Newest::Action::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
@@ -158,7 +160,7 @@ Policy::Newest::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::Newest::Create::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -166,7 +168,7 @@ Policy::Newest::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::Newest::Search::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

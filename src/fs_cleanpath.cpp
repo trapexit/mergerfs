@@ -16,4 +16,37 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "fs_path.hpp"
+#include "fs_cleanpath.hpp"
+
+#include <string>
+
+
+void
+fs::cleanpath(std::string *path_)
+{
+  std::string &s = *path_;
+  std::size_t w = 0;
+  bool prev_slash = false;
+
+  for(std::size_t r = 0; r < s.size(); r++)
+    {
+      const char c = s[r];
+      if(c == '/')
+        {
+          if(prev_slash)
+            continue;
+          prev_slash = true;
+        }
+      else
+        {
+          prev_slash = false;
+        }
+      s[w++] = c;
+    }
+
+  // Strip trailing '/' but leave a bare "/" intact.
+  if(w > 1 && s[w - 1] == '/')
+    w--;
+
+  s.resize(w);
+}

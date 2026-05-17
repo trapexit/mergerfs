@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fuse_req_ctx.h"
+#include "fs_path.hpp"
 
 #include <sys/stat.h>
 
@@ -27,6 +28,6 @@ namespace FUSE
 {
   int
   chmod(const fuse_req_ctx_t *ctx,
-        const char           *fusepath,
+        const fs::relpath       &fusepath,
         mode_t                mode);
 }

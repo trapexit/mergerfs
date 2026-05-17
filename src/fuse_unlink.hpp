@@ -19,11 +19,12 @@
 #pragma once
 
 #include "fuse_req_ctx.h"
+#include "fs_path.hpp"
 
 
 namespace FUSE
 {
   int
   unlink(const fuse_req_ctx_t *ctx,
-         const char           *fusepath);
+         const fs::relpath       &fusepath);
 }

@@ -65,7 +65,7 @@ namespace fs
   inline
   int
   faccessat(const int       dirfd_,
-            const fs::path &path_,
+            const fs::relpath &path_,
             const int       mode_,
             const int       flags_)
   {
