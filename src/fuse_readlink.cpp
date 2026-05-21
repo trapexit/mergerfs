@@ -19,89 +19,6 @@
 #include "fuse_readlink.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
-#include "fs_lstat.hpp"
-#include "fs_path.hpp"
-#include "fs_readlink.hpp"
-#include "symlinkify.hpp"
-
-#include "fuse.h"
-
-#include <algorithm>
-#include <cstring>
-
-
-static
-ssize_t
-_readlink_core_symlinkify(const fs::path &fullpath_,
-                          char           *buf_,
-                          const size_t    bufsize_,
-                          const time_t    symlinkify_timeout_)
-{
-  ssize_t rv;
-  struct stat st;
-  std::string fullpath_str;
-
-  fullpath_str = fullpath_.string();
-
-  rv = fs::lstat(fullpath_str,&st);
-  if(rv < 0)
-    return rv;
-
-  if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
-    return fs::readlink(fullpath_,buf_,bufsize_);
-
-  rv = std::min(fullpath_str.size(),bufsize_);
-  memcpy(buf_,fullpath_str.c_str(),rv);
-
-  return rv;
-}
-
-static
-ssize_t
-_readlink_core(const fs::path &basepath_,
-               const fs::path &fusepath_,
-               char           *buf_,
-               const size_t    bufsize_,
-               const bool      symlinkify_,
-               const time_t    symlinkify_timeout_)
-{
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  if(symlinkify_)
-    return ::_readlink_core_symlinkify(fullpath,buf_,bufsize_,symlinkify_timeout_);
-
-  return fs::readlink(fullpath,buf_,bufsize_);
-}
-
-static
-ssize_t
-_readlink(const Policy::Search &searchFunc_,
-          const Branches::Ptr   ibranches_,
-          const fs::path       &fusepath_,
-          char                 *buf_,
-          const size_t          bufsize_,
-          const bool            symlinkify_,
-          const time_t          symlinkify_timeout_)
-{
-  ssize_t rv;
-  std::vector<Branch*> obranches;
-
-  rv = searchFunc_(ibranches_,fusepath_,obranches);
-  if(rv < 0)
-    return rv;
-  if(obranches.empty())
-    return -ENOENT;
-
-  return ::_readlink_core(obranches[0]->path,
-                          fusepath_,
-                          buf_,
-                          bufsize_,
-                          symlinkify_,
-                          symlinkify_timeout_);
-}
 
 ssize_t
 FUSE::readlink(const fuse_req_ctx_t *ctx_,
@@ -114,11 +31,10 @@ FUSE::readlink(const fuse_req_ctx_t *ctx_,
 
   const fs::path fusepath{fusepath_};
 
-  return ::_readlink(cfg.func.readlink.policy,
-                     cfg.branches,
-                     fusepath,
-                     buf_,
-                     bufsize_,
-                     cfg.symlinkify,
-                     cfg.symlinkify_timeout);
+  return cfg.readlink(cfg.branches,
+                      fusepath,
+                      buf_,
+                      bufsize_,
+                      cfg.symlinkify,
+                      cfg.symlinkify_timeout);
 }

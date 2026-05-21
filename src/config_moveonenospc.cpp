@@ -17,7 +17,7 @@
 */
 
 #include "config_moveonenospc.hpp"
-#include "ef.hpp"
+
 #include "errno.hpp"
 #include "from_string.hpp"
 
@@ -25,34 +25,16 @@
 int
 MoveOnENOSPC::from_string(const std::string_view s_)
 {
-  int rv;
-  std::string s;
-  Policy::CreateImpl *tmp;
-
-  rv = str::from(s_,&enabled);
-  if((rv == 0) && (enabled == true))
-    s = "pfrd";
-  ef((rv == 0) && (enabled == false))
-    return (enabled = false,0);
-  ef(rv != 0)
-    s = s_;
-  else
+  bool tmp;
+  const int rv = str::from(s_,&tmp);
+  if(rv != 0)
     return -EINVAL;
-
-  tmp = Policies::Create::find(s);
-  if(tmp == NULL)
-    return -EINVAL;
-
-  policy  = tmp;
-  enabled = true;
-
+  enabled = tmp;
   return 0;
 }
 
 std::string
 MoveOnENOSPC::to_string(void) const
 {
-  if(enabled)
-    return policy.name();
-  return "false";
+  return (enabled ? "true" : "false");
 }

@@ -23,35 +23,6 @@
 #include "fs_eaccess.hpp"
 #include "fs_path.hpp"
 
-#include <string>
-#include <vector>
-
-
-static
-int
-_access(const Policy::Search &searchFunc_,
-        const Branches::Ptr   branches_,
-        const fs::path       &fusepath_,
-        const int             mask_)
-{
-  int rv;
-  StrVec basepaths;
-  fs::path fullpath;
-  std::vector<Branch*> branches;
-
-  rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-  if(branches.empty())
-    return -ENOENT;
-
-  fullpath = branches[0]->path / fusepath_;
-
-  rv = fs::eaccess(fullpath,mask_);
-
-  return rv;
-}
-
 int
 FUSE::access(const fuse_req_ctx_t *ctx_,
              const char           *fusepath_,
@@ -59,8 +30,7 @@ FUSE::access(const fuse_req_ctx_t *ctx_,
 {
   const fs::path fusepath{fusepath_};
 
-  return ::_access(cfg.func.access.policy,
-                   cfg.branches,
-                   fusepath,
-                   mask_);
+  return cfg.access(cfg.branches,
+                    fusepath,
+                    mask_);
 }

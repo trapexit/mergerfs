@@ -162,91 +162,6 @@ _config_to_ffi_flags(const int         tid_,
     ffi_->parallel_direct_writes = ffi_->direct_io;
 }
 
-static
-int
-_create_core(const ugid_t    ugid_,
-             const fs::path &fullpath_,
-             mode_t          mode_,
-             const mode_t    umask_,
-             const int       flags_)
-{
-  if(!fs::acl::dir_has_defaults(fullpath_))
-    mode_ &= ~umask_;
-
-  return fs::open_as(ugid_,fullpath_,flags_,mode_);
-}
-
-static
-int
-_create_core(const ugid_t      ugid_,
-             const Branch     *branch_,
-             const fs::path   &fusepath_,
-             fuse_file_info_t *ffi_,
-             const mode_t      mode_,
-             const mode_t      umask_)
-{
-  int rv;
-  FileInfo *fi;
-  fs::path fullpath;
-
-  fullpath = branch_->path / fusepath_;
-
-  rv = ::_create_core(ugid_,fullpath,mode_,umask_,ffi_->flags);
-  if(rv < 0)
-    return rv;
-
-  fi = new FileInfo(rv,*branch_,fusepath_,ffi_->direct_io);
-
-  ffi_->fh = fi->to_fh();
-
-  return 0;
-}
-
-static
-int
-_create(const ugid_t          ugid_,
-        const Policy::Search &searchFunc_,
-        const Policy::Create &createFunc_,
-        const Branches::Ptr   branches_,
-        const fs::path       &fusepath_,
-        fuse_file_info_t     *ffi_,
-        const mode_t          mode_,
-        const mode_t          umask_)
-{
-  int rv;
-  fs::path fullpath;
-  fs::path fusedirpath;
-  std::vector<Branch*> createpaths;
-  std::vector<Branch*> existingpaths;
-
-  fusedirpath = fusepath_.parent_path();
-
-  rv = searchFunc_(branches_,fusedirpath,existingpaths);
-  if(rv < 0)
-    return rv;
-  if(existingpaths.empty())
-    return -ENOENT;
-
-  rv = createFunc_(branches_,fusedirpath,createpaths);
-  if(rv < 0)
-    return rv;
-  if(createpaths.empty())
-    return -ENOENT;
-
-  rv = fs::clonepath(existingpaths[0]->path,
-                     createpaths[0]->path,
-                     fusedirpath);
-  if(rv < 0)
-    return rv;
-
-  return ::_create_core(ugid_,
-                        createpaths[0],
-                        fusepath_,
-                        ffi_,
-                        mode_,
-                        umask_);
-}
-
 constexpr
 u64
 _(const PassthroughIOEnum e_,
@@ -262,32 +177,30 @@ _create(const fuse_req_ctx_t *ctx_,
         mode_t                mode_,
         fuse_file_info_t     *ffi_)
 {
+  int rv;
   auto &of = state.open_files;
+  const ugid_t ugid(ctx_);
 
   ::_config_to_ffi_flags(ctx_->pid,ffi_);
   if(cfg.cache_writeback)
     ::_tweak_flags_cache_writeback(&ffi_->flags);
   ffi_->noflush = !::_calculate_flush(cfg.flushonclose,ffi_->flags);
 
-  int rv = ::_create(ctx_,
-                     cfg.func.getattr.policy,
-                     cfg.func.create.policy,
-                     cfg.branches,
-                     fusepath_,
-                     ffi_,
-                     mode_,
-                     ctx_->umask);
+  rv = cfg.create(ugid,
+                  cfg.branches,
+                  fusepath_,
+                  ffi_,
+                  mode_,
+                  ctx_->umask);
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_create(ctx_,
-                     cfg.func.getattr.policy,
-                     cfg.func.create.policy,
-                     cfg.branches,
-                     fusepath_,
-                     ffi_,
-                     mode_,
-                     ctx_->umask);
+      rv = cfg.create(ugid,
+                      cfg.branches,
+                      fusepath_,
+                      ffi_,
+                      mode_,
+                      ctx_->umask);
     }
 
   if(rv < 0)

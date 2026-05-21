@@ -129,39 +129,6 @@ _ioctl_file(const fuse_req_ctx_t   *ctx_,
 
 static
 int
-_ioctl_dir_base(const Policy::Search &searchFunc_,
-                const Branches::Ptr   branches_,
-                const fs::path       &fusepath_,
-                const u32             cmd_,
-                void                 *data_,
-                u32                  *out_bufsz_)
-{
-  int fd;
-  int rv;
-  fs::path fullpath;
-  std::vector<Branch*> branches;
-
-  rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-  if(branches.empty())
-    return -ENOENT;
-
-  fullpath = branches[0]->path / fusepath_;
-
-  fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
-  if(fd < 0)
-    return fd;
-
-  rv = ::_ioctl(fd,cmd_,data_,out_bufsz_);
-
-  fs::close(fd);
-
-  return rv;
-}
-
-static
-int
 _ioctl_dir(const fuse_req_ctx_t   *ctx_,
            const fuse_file_info_t *ffi_,
            const u32               cmd_,
@@ -173,12 +140,11 @@ _ioctl_dir(const fuse_req_ctx_t   *ctx_,
   if(not di)
     return -EBADF;
 
-  return ::_ioctl_dir_base(cfg.func.open.policy,
-                           cfg.branches,
-                           di->fusepath.c_str(),
-                           cmd_,
-                           data_,
-                           out_bufsz_);
+  return cfg.ioctl(cfg.branches,
+                   di->fusepath.c_str(),
+                   cmd_,
+                   data_,
+                   out_bufsz_);
 }
 
 static

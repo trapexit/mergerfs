@@ -22,7 +22,6 @@
 
 #include "config.hpp"
 #include "dirinfo.hpp"
-#include "error.hpp"
 
 
 FUSE::ReadDirCOR::ReadDirCOR(unsigned concurrency_,
@@ -81,9 +80,15 @@ _concurrent_readdir(ThreadPool          &tp_,
       futures.emplace_back(std::move(rv));
     }
 
-  Err err;
+  int err;
+
+  err = 0;
   for(auto &future : futures)
-    err = future.get();
+    {
+      const int rv = future.get();
+      if(rv < 0)
+        err = rv;
+    }
 
   return err;
 }

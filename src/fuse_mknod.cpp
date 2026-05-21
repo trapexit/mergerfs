@@ -19,129 +19,9 @@
 #include "fuse_mknod.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
-#include "error.hpp"
-#include "fs_acl.hpp"
-#include "fs_mknod_as.hpp"
-#include "fs_clonepath.hpp"
-#include "fs_path.hpp"
 #include "ugid.hpp"
 
-#include "fuse.h"
-
 #include <string>
-#include <vector>
-
-
-static
-inline
-int
-_mknod_core(const ugid_t    ugid_,
-            const fs::path &fullpath_,
-            mode_t          mode_,
-            const mode_t    umask_,
-            const dev_t     dev_)
-{
-  if(!fs::acl::dir_has_defaults(fullpath_))
-    mode_ &= ~umask_;
-
-  return fs::mknod_as(ugid_,fullpath_,mode_,dev_);
-}
-
-static
-int
-_mknod_loop_core(const ugid_t    ugid_,
-                 const fs::path &createbranch_,
-                 const fs::path &fusepath_,
-                 const mode_t    mode_,
-                 const mode_t    umask_,
-                 const dev_t     dev_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = createbranch_ / fusepath_;
-
-  rv = ::_mknod_core(ugid_,fullpath,mode_,umask_,dev_);
-
-  return rv;
-}
-
-static
-int
-_mknod_loop(const ugid_t                ugid_,
-            const fs::path             &existingbranch_,
-            const std::vector<Branch*> &createbranches_,
-            const fs::path             &fusepath_,
-            const fs::path             &fusedirpath_,
-            const mode_t                mode_,
-            const mode_t                umask_,
-            const dev_t                 dev_)
-{
-  int rv;
-  Err err;
-
-  for(const auto &createbranch : createbranches_)
-    {
-      rv = fs::clonepath(existingbranch_,
-                         createbranch->path,
-                         fusedirpath_);
-      if(rv < 0)
-        {
-          err = rv;
-          continue;
-        }
-
-      err = ::_mknod_loop_core(ugid_,
-                               createbranch->path,
-                               fusepath_,
-                               mode_,
-                               umask_,
-                               dev_);
-    }
-
-  return err;
-}
-
-static
-int
-_mknod(const ugid_t          ugid_,
-       const Policy::Search &searchFunc_,
-       const Policy::Create &createFunc_,
-       const Branches::Ptr   branches_,
-       const fs::path       &fusepath_,
-       const mode_t          mode_,
-       const mode_t          umask_,
-       const dev_t           dev_)
-{
-  int rv;
-  fs::path fusedirpath;
-  std::vector<Branch*> createbranches;
-  std::vector<Branch*> existingbranches;
-
-  fusedirpath = fusepath_.parent_path();
-
-  rv = searchFunc_(branches_,fusedirpath,existingbranches);
-  if(rv < 0)
-    return rv;
-  if(existingbranches.empty())
-    return -ENOENT;
-
-  rv = createFunc_(branches_,fusedirpath,createbranches);
-  if(rv < 0)
-    return rv;
-  if(createbranches.empty())
-    return -ENOENT;
-
-  return ::_mknod_loop(ugid_,
-                       existingbranches[0]->path,
-                       createbranches,
-                       fusepath_,
-                       fusedirpath,
-                       mode_,
-                       umask_,
-                       dev_);
-}
 
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
@@ -151,26 +31,13 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   const fs::path fusepath{fusepath_};
+  const ugid_t ugid(ctx_);
 
-  rv = ::_mknod(ctx_,
-                cfg.func.getattr.policy,
-                cfg.func.mknod.policy,
-                cfg.branches,
-                fusepath,
-                mode_,
-                ctx_->umask,
-                rdev_);
+  rv = cfg.mknod(ugid,cfg.branches,fusepath,mode_,rdev_,ctx_->umask);
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_mknod(ctx_,
-                    cfg.func.getattr.policy,
-                    cfg.func.mknod.policy,
-                    cfg.branches,
-                    fusepath,
-                    mode_,
-                    ctx_->umask,
-                    rdev_);
+      rv = cfg.mknod(ugid,cfg.branches,fusepath,mode_,rdev_,ctx_->umask);
     }
 
   return rv;

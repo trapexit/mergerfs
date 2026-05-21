@@ -85,7 +85,27 @@ Config::Config()
   cache_statfs(0),
   cache_symlinks(false),
   cache_writeback(false),
-  category(func),
+  category(access,
+           chmod,
+           chown,
+           link,
+            _getattr_statx,
+            getxattr,
+            ioctl,
+            listxattr,
+            open,
+            readlink,
+           rename,
+           removexattr,
+           rmdir,
+           setxattr,
+           truncate,
+           unlink,
+           utimens,
+           create,
+           mkdir,
+           mknod,
+           symlink),
   config_file(),
   direct_io_allow_mmap(true),
   dropcacheonclose(false),
@@ -93,7 +113,6 @@ Config::Config()
   flushonclose(FlushOnClose::ENUM::OPENED_FOR_WRITE),
   follow_symlinks(FollowSymlinks::ENUM::NEVER),
   fsname(),
-  func(),
   fuse_msg_size("1M"),
   handle_killpriv(true),
   handle_killpriv_v2(true),
@@ -219,27 +238,29 @@ Config::Config()
   _map["flush-on-close"]              = &flushonclose;
   _map["follow-symlinks"]             = &follow_symlinks;
   _map["fsname"]                      = &fsname;
-  _map["func.access"]                 = &func.access;
-  _map["func.chmod"]                  = &func.chmod;
-  _map["func.chown"]                  = &func.chown;
-  _map["func.create"]                 = &func.create;
-  _map["func.getattr"]                = &func.getattr;
-  _map["func.getxattr"]               = &func.getxattr;
-  _map["func.link"]                   = &func.link;
-  _map["func.listxattr"]              = &func.listxattr;
-  _map["func.mkdir"]                  = &func.mkdir;
-  _map["func.mknod"]                  = &func.mknod;
-  _map["func.open"]                   = &func.open;
+  _map["func.access"]                 = &access;
+  _map["func.chmod"]                  = &chmod;
+  _map["func.chown"]                  = &chown;
+  _map["func.create"]                 = &create;
+  _map["func.getattr"]                = &_getattr_statx;
+  _map["func.getxattr"]               = &getxattr;
+  _map["func.ioctl"]                  = &ioctl;
+  _map["func.link"]                   = &link;
+  _map["func.listxattr"]              = &listxattr;
+  _map["func.mkdir"]                  = &mkdir;
+  _map["func.mknod"]                  = &mknod;
+  _map["func.open"]                   = &open;
   _map["func.readdir"]                = &readdir;
-  _map["func.readlink"]               = &func.readlink;
-  _map["func.removexattr"]            = &func.removexattr;
-  _map["func.rename"]                 = &func.rename;
-  _map["func.rmdir"]                  = &func.rmdir;
-  _map["func.setxattr"]               = &func.setxattr;
-  _map["func.symlink"]                = &func.symlink;
-  _map["func.truncate"]               = &func.truncate;
-  _map["func.unlink"]                 = &func.unlink;
-  _map["func.utimens"]                = &func.utimens;
+  _map["func.readlink"]               = &readlink;
+  _map["func.removexattr"]            = &removexattr;
+  _map["func.rename"]                 = &rename;
+  _map["func.rmdir"]                  = &rmdir;
+  _map["func.setxattr"]               = &setxattr;
+  _map["func.statx"]                  = &_getattr_statx;
+  _map["func.symlink"]                = &symlink;
+  _map["func.truncate"]               = &truncate;
+  _map["func.unlink"]                 = &unlink;
+  _map["func.utimens"]                = &utimens;
   _map["fuse-msg-size"]               = &fuse_msg_size;
   _map["gid"]                         = &_gid;
   _map["gid-cache.expire-timeout"]    = &_dummy;
@@ -446,6 +467,34 @@ void
 Config::finish_initializing()
 {
   _initialized = true;
+}
+
+void
+Config::initialize_funcs()
+{
+  access.initialize();
+  chmod.initialize();
+  chown.initialize();
+  create.initialize();
+  getattr.initialize();
+  getxattr.initialize();
+  ioctl.initialize();
+  link.initialize();
+  listxattr.initialize();
+  mkdir.initialize();
+  mknod.initialize();
+  open.initialize();
+  readlink.initialize();
+  removexattr.initialize();
+  rename.initialize();
+  rmdir.initialize();
+  setxattr.initialize();
+  statx.initialize();
+  symlink.initialize();
+  truncate.initialize();
+  unlink.initialize();
+  utimens.initialize();
+  readdir.initialize();
 }
 
 bool

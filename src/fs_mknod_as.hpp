@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "fs_acl.hpp"
 #include "fs_mknod.hpp"
 #include "ugid.hpp"
 
@@ -31,9 +32,13 @@ namespace fs
   int
   mknod_as(const ugid_t  ugid_,
            const T      &path_,
-           const mode_t  mode_,
-           const dev_t   dev_)
+           mode_t        mode_,
+           dev_t         dev_,
+           mode_t        umask_)
   {
+    if(not fs::acl::dir_has_defaults(path_))
+      mode_ &= ~umask_;
+
     const ugid::SetGuard _(ugid_);
 
     return fs::mknod(path_,mode_,dev_);
@@ -41,6 +46,7 @@ namespace fs
 }
 #elif defined __FreeBSD__
 #include "fs_lchown.hpp"
+#include "fs_unlink.hpp"
 
 namespace fs
 {
@@ -50,16 +56,29 @@ namespace fs
   int
   mknod_as(const ugid_t  ugid_,
            const T      &path_,
-           const mode_t  mode_,
-           const dev_t   dev_)
+           mode_t        mode_,
+           dev_t         dev_,
+           mode_t        umask_)
   {
     int rv;
 
+    if(not fs::acl::dir_has_defaults(path_))
+      mode_ &= ~umask_;
+
     rv = fs::mknod(path_,mode_,dev_);
+    if(rv < 0)
+      return rv;
 
-    fs::lchown(path_,ugid_.uid,ugid_.gid);
+    const int lrv = fs::lchown(path_,ugid_.uid,ugid_.gid);
+    if(lrv < 0)
+      {
+        // Clean up the just-created node so a retry sees -ENOENT
+        // instead of -EEXIST and userspace doesn't observe a phantom.
+        fs::unlink(path_);
+        return lrv;
+      }
 
-    return rv;
+    return 0;
   }
 }
 #else

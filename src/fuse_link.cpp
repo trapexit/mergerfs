@@ -21,11 +21,13 @@
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_exists.hpp"
 #include "fs_link.hpp"
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fuse_getattr.hpp"
 #include "fuse_symlink.hpp"
+#include "ugid.hpp"
 
 #include "fuse.h"
 
@@ -35,161 +37,11 @@
 
 
 static
-int
-_link_create_path_loop(const std::vector<Branch*> &oldbranches_,
-                       const Branch               *newbranch_,
-                       const fs::path             &oldfusepath_,
-                       const fs::path             &newfusepath_,
-                       const fs::path             &newfusedirpath_)
+bool
+_create_is_path_preserving()
 {
-  int rv;
-  int err;
-  fs::path oldfullpath;
-  fs::path newfullpath;
-
-  err = -ENOENT;
-  for(const auto &oldbranch : oldbranches_)
-    {
-      oldfullpath = oldbranch->path / oldfusepath_;
-      newfullpath = oldbranch->path / newfusepath_;
-
-      rv = fs::link(oldfullpath,newfullpath);
-      if(rv == -ENOENT)
-        {
-          rv = fs::clonepath(newbranch_->path,
-                             oldbranch->path,
-                             newfusedirpath_);
-          if(rv == 0)
-            rv = fs::link(oldfullpath,newfullpath);
-        }
-
-      if(err < 0)
-        err = rv;
-    }
-
-  return err;
-}
-
-static
-int
-_link_create_path(const Policy::Search &searchFunc_,
-                  const Policy::Action &actionFunc_,
-                  const Branches::Ptr   ibranches_,
-                  const fs::path       &oldfusepath_,
-                  const fs::path       &newfusepath_)
-{
-  int rv;
-  fs::path newfusedirpath;
-  std::vector<Branch*> oldbranches;
-  std::vector<Branch*> newbranches;
-
-  rv = actionFunc_(ibranches_,oldfusepath_,oldbranches);
-  if(rv < 0)
-    return rv;
-  if(oldbranches.empty())
-    return -ENOENT;
-
-  newfusedirpath = newfusepath_.parent_path();
-
-  rv = searchFunc_(ibranches_,newfusedirpath,newbranches);
-  if(rv < 0)
-    return rv;
-  if(newbranches.empty())
-    return -ENOENT;
-
-  return ::_link_create_path_loop(oldbranches,newbranches[0],
-                                  oldfusepath_,newfusepath_,
-                                  newfusedirpath);
-}
-
-static
-int
-_link_preserve_path_core(const fs::path &oldbasepath_,
-                         const fs::path &oldfusepath_,
-                         const fs::path &newfusepath_,
-                         struct stat    *st_)
-{
-  int rv;
-  fs::path oldfullpath;
-  fs::path newfullpath;
-
-  oldfullpath = oldbasepath_ / oldfusepath_;
-  newfullpath = oldbasepath_ / newfusepath_;
-
-  rv = fs::link(oldfullpath,newfullpath);
-  if(rv == -ENOENT)
-    rv = -EXDEV;
-  if((rv == 0) && (st_->st_ino == 0))
-    rv = fs::lstat(oldfullpath,st_);
-
-  return rv;
-}
-
-static
-int
-_link_preserve_path_loop(const std::vector<Branch*> &oldbranches_,
-                         const fs::path             &oldfusepath_,
-                         const fs::path             &newfusepath_,
-                         struct stat                *st_)
-{
-  int rv;
-  int err;
-
-  err = -ENOENT;
-  for(const auto &oldbranch : oldbranches_)
-    {
-      rv = ::_link_preserve_path_core(oldbranch->path,
-                                      oldfusepath_,
-                                      newfusepath_,
-                                      st_);
-      if(err < 0)
-        err = rv;
-    }
-
-  return err;
-}
-
-static
-int
-_link_preserve_path(const Policy::Action &actionFunc_,
-                    const Branches::Ptr   branches_,
-                    const fs::path       &oldfusepath_,
-                    const fs::path       &newfusepath_,
-                    struct stat          *st_)
-{
-  int rv;
-  std::vector<Branch*> oldbranches;
-
-  rv = actionFunc_(branches_,oldfusepath_,oldbranches);
-  if(rv < 0)
-    return rv;
-  if(oldbranches.empty())
-    return -ENOENT;
-
-  return ::_link_preserve_path_loop(oldbranches,
-                                    oldfusepath_,
-                                    newfusepath_,
-                                    st_);
-}
-
-static
-int
-_link(const fs::path &oldpath_,
-      const fs::path &newpath_,
-      struct stat    *st_)
-{
-  if(cfg.func.create.policy.path_preserving() && !cfg.ignorepponrename)
-    return ::_link_preserve_path(cfg.func.link.policy,
-                                 cfg.branches,
-                                 oldpath_,
-                                 newpath_,
-                                 st_);
-
-  return ::_link_create_path(cfg.func.getattr.policy,
-                             cfg.func.link.policy,
-                             cfg.branches,
-                             oldpath_,
-                             newpath_);
+  auto impl = cfg.create.impl();
+  return impl && impl->path_preserving();
 }
 
 static
@@ -202,7 +54,27 @@ _link(const fuse_req_ctx_t *ctx_,
 {
   int rv;
 
-  rv = ::_link(oldpath_,newpath_,st_);
+  // Honor path-preserving create policies: don't clone the new path
+  // structure into branches that don't already have it. Fall through
+  // to the link_exdev handling (PASSTHROUGH/REL_SYMLINK/etc.).
+  if(!cfg.ignorepponrename && ::_create_is_path_preserving())
+    {
+      Branches::Ptr branches = cfg.branches;
+      const fs::path newdir = newpath_.parent_path();
+      bool any_target = false;
+      for(const auto &branch : *branches)
+        {
+          if(branch.ro())
+            continue;
+          if(fs::exists(branch.path,oldpath_) &&
+             fs::exists(branch.path,newdir))
+            { any_target = true; break; }
+        }
+      if(!any_target)
+        return -EXDEV;
+    }
+
+  rv = cfg.link(cfg.branches,oldpath_,newpath_);
   if(rv < 0)
     return rv;
 
@@ -237,8 +109,7 @@ _link_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
-                              const Policy::Search &openPolicy_,
-                              const Branches::Ptr   ibranches_,
+                             const Branches       &branches_,
                              const fs::path       &oldpath_,
                              const fs::path       &newpath_,
                              struct stat          *st_,
@@ -246,25 +117,26 @@ _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
 {
   int rv;
   fs::path target;
-  std::vector<Branch*> obranches;
 
-  rv = openPolicy_(ibranches_,oldpath_,obranches);
-  if(rv < 0)
-    return rv;
-  if(obranches.empty())
-    return -ENOENT;
+  for(const auto &branch : branches_)
+    {
+      if(!fs::exists(branch.path,oldpath_))
+        continue;
 
-  target = obranches[0]->path / oldpath_;
+      target = branch.path / oldpath_;
 
-  rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
-  if(rv == 0)
-    rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
+      rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
+      if(rv == 0)
+        rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
 
-  // Disable caching since we created a symlink but should be a regular.
-  timeouts_->attr  = 0;
-  timeouts_->entry = 0;
+      // Disable caching since we created a symlink but should be a regular.
+      timeouts_->attr  = 0;
+      timeouts_->entry = 0;
 
-  return rv;
+      return rv;
+    }
+
+  return -ENOENT;
 }
 
 static
@@ -277,7 +149,6 @@ _link_exdev_abs_pool_symlink(const fuse_req_ctx_t *ctx_,
                              fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  StrVec basepaths;
   fs::path target;
 
   target = mount_ / oldpath_;
@@ -313,7 +184,6 @@ _link_exdev(const fuse_req_ctx_t *ctx_,
                                        timeouts_);
     case LinkEXDEV::ENUM::ABS_BASE_SYMLINK:
       return ::_link_exdev_abs_base_symlink(ctx_,
-                                            cfg.func.open.policy,
                                             cfg.branches,
                                             oldpath_,
                                             newpath_,

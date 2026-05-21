@@ -19,9 +19,9 @@
 #include "fuse_rename.hpp"
 
 #include "config.hpp"
-#include "error.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_exists.hpp"
 #include "fs_link.hpp"
 #include "fs_mkdir_as.hpp"
 #include "fs_path.hpp"
@@ -36,147 +36,6 @@
 #include <string>
 #include <vector>
 
-
-static
-bool
-_contains(const std::vector<Branch*> &haystack_,
-          const char                 *needle_)
-{
-  for(auto &hay : haystack_)
-    {
-      if(hay->path == needle_)
-        return true;
-    }
-
-  return false;
-}
-
-static
-bool
-_contains(const std::vector<Branch*> &haystack_,
-          const std::string          &needle_)
-{
-  return ::_contains(haystack_,needle_.c_str());
-}
-
-static
-void
-_remove(const StrVec &toremove_)
-{
-  for(auto &path : toremove_)
-    fs::remove(path);
-}
-
-static
-int
-_rename_create_path(const Policy::Search &searchPolicy_,
-                    const Policy::Action &actionPolicy_,
-                    const Branches::Ptr   branches_,
-                    const fs::path       &oldfusepath_,
-                    const fs::path       &newfusepath_)
-{
-  int rv;
-  Err err;
-  StrVec toremove;
-  std::vector<Branch*> newbranches;
-  std::vector<Branch*> oldbranches;
-  fs::path oldfullpath;
-  fs::path newfullpath;
-
-  rv = actionPolicy_(branches_,oldfusepath_,oldbranches);
-  if(rv < 0)
-    return rv;
-  if(oldbranches.empty())
-    return -ENOENT;
-
-  rv = searchPolicy_(branches_,newfusepath_.parent_path(),newbranches);
-  if(rv < 0)
-    return rv;
-  if(newbranches.empty())
-    return -ENOENT;
-
-  for(auto &branch : *branches_)
-    {
-      newfullpath = branch.path / newfusepath_;
-
-      if(!::_contains(oldbranches,branch.path))
-        {
-          toremove.push_back(newfullpath);
-          continue;
-        }
-
-      oldfullpath = branch.path / oldfusepath_;
-
-      rv = fs::rename(oldfullpath,newfullpath);
-      if(rv < 0)
-        {
-          rv = fs::clonepath(newbranches[0]->path,
-                             branch.path,
-                             newfusepath_.parent_path());
-          if(rv >= 0)
-            rv = fs::rename(oldfullpath,newfullpath);
-        }
-
-      err = rv;
-      if(rv < 0)
-        toremove.push_back(oldfullpath);
-    }
-
-  if(err == 0)
-    ::_remove(toremove);
-
-  return err;
-}
-
-static
-int
-_rename_preserve_path(const Policy::Action &actionPolicy_,
-                      const Branches::Ptr   branches_,
-                      const fs::path       &oldfusepath_,
-                      const fs::path       &newfusepath_)
-{
-  int rv;
-  bool success;
-  StrVec toremove;
-  std::vector<Branch*> oldbranches;
-  fs::path oldfullpath;
-  fs::path newfullpath;
-
-  rv = actionPolicy_(branches_,oldfusepath_,oldbranches);
-  if(rv < 0)
-    return rv;
-
-  success = false;
-  for(auto &branch : *branches_)
-    {
-      newfullpath = branch.path / newfusepath_;
-
-      if(!::_contains(oldbranches,branch.path))
-        {
-          toremove.push_back(newfullpath);
-          continue;
-        }
-
-      oldfullpath = branch.path / oldfusepath_;
-
-      rv = fs::rename(oldfullpath,newfullpath);
-      if(rv < 0)
-        {
-          toremove.push_back(oldfullpath);
-          continue;
-        }
-
-      success = true;
-    }
-
-  // TODO: probably should try to be nuanced here.
-  if(success == false)
-    return -EXDEV;
-
-  ::_remove(toremove);
-
-  return 0;
-}
 
 static
 void
@@ -201,8 +60,7 @@ _rename_exdev_rename_back(const std::vector<Branch*> &branches_,
 
 static
 int
-_rename_exdev_rename_target(const Policy::Action &actionPolicy_,
-                            const Branches::Ptr   ibranches_,
+_rename_exdev_rename_target(const Branches::Ptr  &ibranches_,
                             const fs::path       &oldfusepath_,
                             std::vector<Branch*> &obranches_)
 {
@@ -210,9 +68,16 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
   fs::path clonesrc;
   fs::path clonedst;
 
-  rv = actionPolicy_(ibranches_,oldfusepath_,obranches_);
-  if(rv < 0)
-    return rv;
+  for(auto &branch : *ibranches_)
+    {
+      if(branch.ro())
+        continue;
+      if(!fs::exists(branch.path,oldfusepath_))
+        continue;
+      obranches_.emplace_back(&branch);
+    }
+  if(obranches_.empty())
+    return -ENOENT;
 
   for(auto &branch : obranches_)
     {
@@ -249,8 +114,7 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
 static
 int
 _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
-                          const Policy::Action &actionPolicy_,
-                          const Branches::Ptr   branches_,
+                          const Branches::Ptr  &branches_,
                           const fs::path       &oldfusepath_,
                           const fs::path       &newfusepath_)
 {
@@ -259,7 +123,9 @@ _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
   fs::path linkpath;
   std::vector<Branch*> branches;
 
-  rv = ::_rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,branches);
+  rv = ::_rename_exdev_rename_target(branches_,
+                                     oldfusepath_,
+                                     branches);
   if(rv < 0)
     return rv;
 
@@ -278,8 +144,7 @@ _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _rename_exdev_abs_symlink(const fuse_req_ctx_t *ctx_,
-                          const Policy::Action &actionPolicy_,
-                          const Branches::Ptr   branches_,
+                          const Branches::Ptr  &branches_,
                           const fs::path       &mount_,
                           const fs::path       &oldfusepath_,
                           const fs::path       &newfusepath_)
@@ -289,7 +154,9 @@ _rename_exdev_abs_symlink(const fuse_req_ctx_t *ctx_,
   fs::path linkpath;
   std::vector<Branch*> branches;
 
-  rv = ::_rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,branches);
+  rv = ::_rename_exdev_rename_target(branches_,
+                                     oldfusepath_,
+                                     branches);
   if(rv < 0)
     return rv;
 
@@ -317,13 +184,11 @@ _rename_exdev(const fuse_req_ctx_t *ctx_,
       return -EXDEV;
     case RenameEXDEV::ENUM::REL_SYMLINK:
       return ::_rename_exdev_rel_symlink(ctx_,
-                                         cfg.func.rename.policy,
                                          cfg.branches,
                                          oldfusepath_,
                                          newfusepath_);
     case RenameEXDEV::ENUM::ABS_SYMLINK:
       return ::_rename_exdev_abs_symlink(ctx_,
-                                         cfg.func.rename.policy,
                                          cfg.branches,
                                          cfg.mountpoint,
                                          oldfusepath_,
@@ -334,21 +199,44 @@ _rename_exdev(const fuse_req_ctx_t *ctx_,
 }
 
 static
+bool
+_create_is_path_preserving()
+{
+  auto impl = cfg.create.impl();
+  return impl && impl->path_preserving();
+}
+
+static
 int
 _rename(const fs::path &oldpath_,
         const fs::path &newpath_)
 {
-  if(cfg.func.create.policy.path_preserving() && !cfg.ignorepponrename)
-    return ::_rename_preserve_path(cfg.func.rename.policy,
-                                   cfg.branches,
-                                   oldpath_,
-                                   newpath_);
+  // Honor ignorepponrename: when the create policy is path-preserving
+  // and the user has not opted out, refuse to clone the new path
+  // structure into branches that don't already have it. The fallback
+  // is the EXDEV path which lets the caller handle the move via
+  // copy+unlink or symlink per cfg.rename_exdev.
+  if(!cfg.ignorepponrename && ::_create_is_path_preserving())
+    {
+      // Snapshot the Branches::Impl so the per-branch fs::exists
+      // calls below all observe the same set of branches even if
+      // cfg.branches is concurrently mutated.
+      Branches::Ptr branches = cfg.branches;
+      const fs::path newdir = newpath_.parent_path();
+      bool any_target = false;
+      for(const auto &branch : *branches)
+        {
+          if(branch.ro())
+            continue;
+          if(fs::exists(branch.path,oldpath_) &&
+             fs::exists(branch.path,newdir))
+            { any_target = true; break; }
+        }
+      if(!any_target)
+        return -EXDEV;
+    }
 
-  return ::_rename_create_path(cfg.func.getattr.policy,
-                               cfg.func.rename.policy,
-                               cfg.branches,
-                               oldpath_,
-                               newpath_);
+  return cfg.rename(cfg.branches,oldpath_,newpath_);
 }
 
 int

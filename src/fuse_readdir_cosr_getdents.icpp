@@ -22,7 +22,6 @@
 #include "fs_getdents64.hpp"
 #include "hashset.hpp"
 #include "branches.hpp"
-#include "error.hpp"
 #include "fs_close.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
@@ -82,7 +81,7 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
          const fs::path                  &rel_dirpath_,
          fuse_dirents_t                  *dirents_)
 {
-  Err err;
+  int err;
   HashSet names;
   fuse_msgbuf_t *buf;
 
@@ -91,15 +90,18 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
     return -ENOMEM;
   DEFER { msgbuf_free(buf); };
 
+  err = 0;
   for(auto &dh_future : dh_futures_)
     {
       DirRV dirrv;
 
       dirrv = dh_future.get();
 
-      err = dirrv.fd;
       if(dirrv.fd < 0)
-        continue;
+        {
+          err = dirrv.fd;
+          continue;
+        }
       DEFER { fs::close(dirrv.fd); };
 
       fs::inode::ReaddirCalc inodecalc(*dirrv.branch_path,rel_dirpath_);

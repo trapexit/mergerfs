@@ -24,6 +24,7 @@
 #include "tofrom_string.hpp"
 
 #include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <shared_mutex>
 #include <string>
@@ -79,8 +80,58 @@ public:
   }
 
 public:
+  class ConstIterator
+  {
+  private:
+    Branches::Ptr _impl;
+    size_t        _idx = 0;
+
+  public:
+    ConstIterator() = default;
+    ConstIterator(Branches::Ptr impl_,
+                  const size_t  idx_)
+      : _impl(impl_),
+        _idx(idx_)
+    {
+    }
+
+  public:
+    const Branch& operator*() const
+    {
+      return (*_impl)[_idx];
+    }
+
+    ConstIterator& operator++()
+    {
+      ++_idx;
+      return *this;
+    }
+
+    bool operator!=(const ConstIterator &rhs_) const
+    {
+      if(rhs_._impl == nullptr)
+        return (_impl != nullptr && _idx < _impl->size());
+      if(_impl == nullptr)
+        return (rhs_._impl != nullptr && rhs_._idx < rhs_._impl->size());
+      return ((_impl != rhs_._impl) || (_idx != rhs_._idx));
+    }
+  };
+
+public:
   int from_string(const std::string_view str) final;
   std::string to_string(void) const final;
+
+public:
+  ConstIterator begin() const
+  {
+    std::shared_lock<std::shared_mutex> lk(_mutex);
+    return ConstIterator(_impl,0);
+  }
+
+  ConstIterator end() const
+  {
+    return ConstIterator();
+  }
 
 public:
   operator Ptr() const

@@ -11,8 +11,18 @@
 #include "str.hpp"
 #include "thread_pool.hpp"
 
+#include "error.hpp"
+#include "func_getattr_ff.hpp"
+#include "func_link_epall.hpp"
+#include "func_mkdir_pfrd.hpp"
+#include "func_mknod_ff.hpp"
+#include "func_readlink_ff.hpp"
+#include "func_rename_epall.hpp"
+#include "fs_exists.hpp"
+
 #include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fcntl.h>
@@ -27,6 +37,27 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+static
+fs::path
+_make_test_root(const char *name_)
+{
+  fs::path root;
+
+  if(const char *test_root = std::getenv("MERGERFS_TEST_ROOT");
+     test_root && test_root[0])
+    root = fs::path(test_root);
+  else
+    root = fs::path("/tmp");
+  root /= "mergerfs-tests";
+  root /= std::to_string(::getpid());
+  root /= name_;
+
+  std::filesystem::remove_all(root);
+  std::filesystem::create_directories(root);
+
+  return root;
+}
 
 template<typename Predicate>
 bool
@@ -2972,15 +3003,8 @@ test_fs_copyfile_basic()
   fs::path src_path;
   fs::path dst_path;
   fs::path tmp_dir;
-  char tmp_template[] = "/tmp/mergerfs-test-copyfile-basic-XXXXXX";
 
-  if(::mkdtemp(tmp_template) == nullptr)
-    {
-      TEST_CHECK(false);
-      return;
-    }
-
-  tmp_dir = tmp_template;
+  tmp_dir = _make_test_root("copyfile-basic");
   src_path = tmp_dir / "src.bin";
   dst_path = tmp_dir / "dst.bin";
 
@@ -3037,15 +3061,8 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
   fs::path tmp_dir;
   std::atomic<bool> stop_mutator{false};
   std::atomic<int> mutator_updates{0};
-  char tmp_template[] = "/tmp/mergerfs-test-copyfile-race-XXXXXX";
 
-  if(::mkdtemp(tmp_template) == nullptr)
-    {
-      TEST_CHECK(false);
-      return;
-    }
-
-  tmp_dir = tmp_template;
+  tmp_dir = _make_test_root("copyfile-race");
   src_path = tmp_dir / "src.bin";
   dst_path = tmp_dir / "dst.bin";
 
@@ -3647,6 +3664,667 @@ test_rapidhash_withSeed_preserves_default_output()
     }
 }
 
+void
+test_config_bespoke_policy_compat()
+{
+  Config cfg;
+
+  // Defaults reflect each function's natural class.
+  TEST_CHECK(cfg.access.to_string() == "ff");
+
+  // Setting a legacy create-focused policy on a search/action func is
+  // accepted but maps to the function's default class.
+  TEST_CHECK(cfg.set("func.open","mfs") == 0);
+  TEST_CHECK(cfg.open.to_string() == "ff");
+  TEST_CHECK(cfg.set("func.ioctl","mfs") == 0);
+  TEST_CHECK(cfg.ioctl.to_string() == "ff");
+  TEST_CHECK(cfg.set("func.getxattr","mfs") == 0);
+  TEST_CHECK(cfg.getxattr.to_string() == "ff");
+
+  // Each create func has a real per-policy class; "all" round-trips.
+  TEST_CHECK(cfg.set("func.create","all") == 0);
+  TEST_CHECK(cfg.create.to_string() == "all");
+  TEST_CHECK(cfg.set("func.mkdir","all") == 0);
+  TEST_CHECK(cfg.mkdir.to_string() == "all");
+  TEST_CHECK(cfg.set("func.mknod","all") == 0);
+  TEST_CHECK(cfg.mknod.to_string() == "all");
+  TEST_CHECK(cfg.set("func.symlink","all") == 0);
+  TEST_CHECK(cfg.symlink.to_string() == "all");
+
+  TEST_CHECK(cfg.set("category.create","pfrd") == 0);
+  TEST_CHECK(cfg.create.to_string() == "pfrd");
+  TEST_CHECK(cfg.mkdir.to_string() == "pfrd");
+  TEST_CHECK(cfg.mknod.to_string() == "pfrd");
+  TEST_CHECK(cfg.symlink.to_string() == "pfrd");
+
+  // "erofs" is a real per-class behavior on every action and search
+  // function that has an EROFS variant.
+  TEST_CHECK(cfg.set("category.action","erofs") == 0);
+  TEST_CHECK(cfg.chmod.to_string() == "erofs");
+  TEST_CHECK(cfg.chown.to_string() == "erofs");
+  TEST_CHECK(cfg.link.to_string() == "erofs");
+  TEST_CHECK(cfg.removexattr.to_string() == "erofs");
+  TEST_CHECK(cfg.rename.to_string() == "erofs");
+  TEST_CHECK(cfg.rmdir.to_string() == "erofs");
+  TEST_CHECK(cfg.setxattr.to_string() == "erofs");
+  TEST_CHECK(cfg.truncate.to_string() == "erofs");
+  TEST_CHECK(cfg.unlink.to_string() == "erofs");
+  TEST_CHECK(cfg.utimens.to_string() == "erofs");
+
+  // Category-wide assignment of a create-focused legacy name parses on
+  // every member, but each func collapses to its default class.
+  TEST_CHECK(cfg.set("category.action","mfs") == 0);
+  TEST_CHECK(cfg.chmod.to_string() == "all");
+  TEST_CHECK(cfg.chown.to_string() == "all");
+  TEST_CHECK(cfg.link.to_string() == "epall");
+  TEST_CHECK(cfg.removexattr.to_string() == "all");
+  TEST_CHECK(cfg.rename.to_string() == "epall");
+  TEST_CHECK(cfg.rmdir.to_string() == "all");
+  TEST_CHECK(cfg.setxattr.to_string() == "all");
+  TEST_CHECK(cfg.truncate.to_string() == "all");
+  TEST_CHECK(cfg.unlink.to_string() == "all");
+  TEST_CHECK(cfg.utimens.to_string() == "all");
+
+  // Search funcs: erofs is a real per-class behavior.
+  TEST_CHECK(cfg.set("category.search","erofs") == 0);
+  TEST_CHECK(cfg.access.to_string() == "erofs");
+  // getattr/statx don't have an erofs variant, so they keep their
+  // default class.
+  TEST_CHECK(cfg.getattr.to_string() == "cdfo");
+  TEST_CHECK(cfg.getxattr.to_string() == "erofs");
+  TEST_CHECK(cfg.ioctl.to_string() == "erofs");
+  TEST_CHECK(cfg.listxattr.to_string() == "erofs");
+  TEST_CHECK(cfg.open.to_string() == "erofs");
+  TEST_CHECK(cfg.readlink.to_string() == "erofs");
+
+  TEST_CHECK(cfg.set("category.search","mfs") == 0);
+  TEST_CHECK(cfg.access.to_string() == "ff");
+  TEST_CHECK(cfg.getattr.to_string() == "cdfo");
+  TEST_CHECK(cfg.getxattr.to_string() == "ff");
+  TEST_CHECK(cfg.ioctl.to_string() == "ff");
+  TEST_CHECK(cfg.listxattr.to_string() == "ff");
+  TEST_CHECK(cfg.open.to_string() == "ff");
+  TEST_CHECK(cfg.readlink.to_string() == "ff");
+
+  TEST_CHECK(cfg.set("func.link","ff") == 0);
+  TEST_CHECK(cfg.link.to_string() == "epall");
+  TEST_CHECK(cfg.set("func.rename","ff") == 0);
+  TEST_CHECK(cfg.rename.to_string() == "epall");
+
+  cfg.finish_initializing();
+
+  TEST_CHECK(cfg.open.to_string() == "ff");
+  cfg.initialize_funcs();
+
+  TEST_CHECK(cfg.open.to_string() == "ff");
+  TEST_CHECK(cfg.set("func.open","ff") == 0);
+  TEST_CHECK(cfg.open.to_string() == "ff");
+  TEST_CHECK(cfg.set("func.open","not-a-policy") == -EINVAL);
+  TEST_CHECK(cfg.open.to_string() == "ff");
+}
+
+static
+void
+test_legacy_policy_erofs_runtime()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  ugid_t ugid{::getuid(),::getgid()};
+  Func2::Access access("erofs");
+  Func2::Mkdir mkdir("erofs");
+  Func2::Unlink unlink("erofs");
+  fs::path root;
+  fs::path a;
+
+  root = ::_make_test_root("legacy-policy-erofs-runtime");
+  a = root / "a";
+
+  std::filesystem::create_directories(a);
+  std::ofstream(a / "file") << "data";
+
+  branches_str = a.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  access.initialize();
+  mkdir.initialize();
+  unlink.initialize();
+
+  rv = access(branches,"file",F_OK);
+  TEST_CHECK(rv == -EROFS);
+
+  rv = unlink(branches,"file");
+  TEST_CHECK(rv == -EROFS);
+  TEST_CHECK(fs::exists(a / "file") == true);
+
+  rv = mkdir(ugid,branches,"dir",0777,0);
+  TEST_CHECK(rv == -EROFS);
+  TEST_CHECK(fs::exists(a / "dir") == false);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_access_policy_all_vs_ff()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  Func2::Access all("all");
+  Func2::Access epall("epall");
+  Func2::Access ff("ff");
+  fs::path root;
+  fs::path a;
+  fs::path b;
+
+  root = ::_make_test_root("access-policy-all-vs-ff");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a);
+  std::filesystem::create_directories(b);
+  std::ofstream(a / "file") << "data";
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  all.initialize();
+  epall.initialize();
+  ff.initialize();
+
+  rv = all(branches,"file",F_OK);
+  TEST_CHECK(rv == -ENOENT);
+
+  rv = ff(branches,"file",F_OK);
+  TEST_CHECK(rv == 0);
+
+  std::ofstream(b / "file") << "data";
+  TEST_CHECK(::chmod((a / "file").c_str(),0755) == 0);
+  TEST_CHECK(::chmod((b / "file").c_str(),0644) == 0);
+
+  rv = epall(branches,"file",X_OK);
+  TEST_CHECK(rv == -EACCES);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_mkdir_all_policy()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  ugid_t ugid{::getuid(),::getgid()};
+  Func2::Mkdir mkdir("all");
+  fs::path root;
+  fs::path a;
+  fs::path b;
+
+  root = ::_make_test_root("mkdir-all-policy");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a / "parent");
+  std::filesystem::create_directories(b / "parent");
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  mkdir.initialize();
+
+  rv = mkdir(ugid,branches,"parent/dir",0777,0);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(fs::exists(a / "parent" / "dir") == true);
+  TEST_CHECK(fs::exists(b / "parent" / "dir") == true);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_create_parent_uses_search_policy()
+{
+  int rv;
+  struct stat st;
+  std::string branches_str;
+  Branches branches;
+  ugid_t ugid{::getuid(),::getgid()};
+  Func2::Mkdir mkdir("ff");
+  fs::path root;
+  fs::path a;
+  fs::path b;
+  fs::path c;
+  timespec atime{};
+  timespec old_times[2]{};
+  timespec new_times[2]{};
+
+  root = ::_make_test_root("create-parent-uses-search-policy");
+  a = root / "a";
+  b = root / "b";
+  c = root / "c";
+
+  std::filesystem::create_directories(a / "parent");
+  std::filesystem::create_directories(b / "parent");
+  std::filesystem::create_directories(c);
+  TEST_CHECK(::chmod((a / "parent").c_str(),0701) == 0);
+  TEST_CHECK(::chmod((b / "parent").c_str(),0755) == 0);
+
+  atime.tv_sec = 1700000000;
+  old_times[0] = atime;
+  old_times[1] = {1700000000,100000000};
+  new_times[0] = atime;
+  new_times[1] = {1700000000,900000000};
+  TEST_CHECK(::utimensat(AT_FDCWD,(a / "parent").c_str(),old_times,0) == 0);
+  TEST_CHECK(::utimensat(AT_FDCWD,(b / "parent").c_str(),new_times,0) == 0);
+
+  branches_str  = a.string();
+  branches_str += "=RO:";
+  branches_str += b.string();
+  branches_str += "=RO:";
+  branches_str += c.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  mkdir.initialize();
+
+  rv = mkdir(ugid,branches,"parent/dir",0777,0);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(fs::exists(c / "parent" / "dir") == true);
+  TEST_CHECK(::stat((c / "parent").c_str(),&st) == 0);
+  // clone source is picked first-found over the branches (a), so the
+  // cloned parent inherits a's mode rather than b's.
+  TEST_CHECK((st.st_mode & 0777) == 0701);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_link_rename_parent_uses_search_policy()
+{
+  int rv;
+  struct stat st;
+  std::string branches_str;
+  Branches branches;
+  Func2::LinkEPAll link;
+  Func2::RenameEPAll rename;
+  fs::path root;
+  fs::path a;
+  fs::path b;
+  fs::path c;
+  timespec atime{};
+  timespec old_times[2]{};
+  timespec new_times[2]{};
+
+  root = ::_make_test_root("link-rename-parent-uses-search-policy");
+  a = root / "a";
+  b = root / "b";
+  c = root / "c";
+
+  std::filesystem::create_directories(a / "linkparent");
+  std::filesystem::create_directories(b / "linkparent");
+  std::filesystem::create_directories(a / "renameparent");
+  std::filesystem::create_directories(b / "renameparent");
+  std::filesystem::create_directories(c / "old");
+  std::ofstream(c / "old" / "linkfile") << "link";
+  std::ofstream(c / "old" / "renamefile") << "rename";
+
+  TEST_CHECK(::chmod((a / "linkparent").c_str(),0701) == 0);
+  TEST_CHECK(::chmod((b / "linkparent").c_str(),0755) == 0);
+  TEST_CHECK(::chmod((a / "renameparent").c_str(),0701) == 0);
+  TEST_CHECK(::chmod((b / "renameparent").c_str(),0755) == 0);
+
+  atime.tv_sec = 1700000000;
+  old_times[0] = atime;
+  old_times[1] = {1700000000,100000000};
+  new_times[0] = atime;
+  new_times[1] = {1700000000,900000000};
+  TEST_CHECK(::utimensat(AT_FDCWD,(a / "linkparent").c_str(),old_times,0) == 0);
+  TEST_CHECK(::utimensat(AT_FDCWD,(b / "linkparent").c_str(),new_times,0) == 0);
+  TEST_CHECK(::utimensat(AT_FDCWD,(a / "renameparent").c_str(),old_times,0) == 0);
+  TEST_CHECK(::utimensat(AT_FDCWD,(b / "renameparent").c_str(),new_times,0) == 0);
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+  branches_str += ":";
+  branches_str += c.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  rv = link(branches,"old/linkfile","linkparent/linkfile");
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(fs::exists(c / "linkparent" / "linkfile") == true);
+  TEST_CHECK(::stat((c / "linkparent").c_str(),&st) == 0);
+  // clone source is picked first-found, so c inherits a's mode.
+  TEST_CHECK((st.st_mode & 0777) == 0701);
+
+  rv = rename(branches,"old/renamefile","renameparent/renamefile");
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(fs::exists(c / "old" / "renamefile") == false);
+  TEST_CHECK(fs::exists(c / "renameparent" / "renamefile") == true);
+  TEST_CHECK(::stat((c / "renameparent").c_str(),&st) == 0);
+  // clone source is picked first-found, so c inherits a's mode.
+  TEST_CHECK((st.st_mode & 0777) == 0701);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_action_newest_subsecond()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  Func2::Unlink unlink("newest");
+  fs::path root;
+  fs::path a;
+  fs::path b;
+  timespec atime{};
+  timespec old_times[2]{};
+  timespec new_times[2]{};
+
+  root = ::_make_test_root("action-newest-subsecond");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a);
+  std::filesystem::create_directories(b);
+  std::ofstream(a / "file") << "old";
+  std::ofstream(b / "file") << "new";
+
+  atime.tv_sec = 1700000000;
+  old_times[0] = atime;
+  old_times[1] = {1700000000,100000000};
+  new_times[0] = atime;
+  new_times[1] = {1700000000,900000000};
+  TEST_CHECK(::utimensat(AT_FDCWD,(a / "file").c_str(),old_times,0) == 0);
+  TEST_CHECK(::utimensat(AT_FDCWD,(b / "file").c_str(),new_times,0) == 0);
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  unlink.initialize();
+
+  rv = unlink(branches,"file");
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(fs::exists(a / "file") == true);
+  TEST_CHECK(fs::exists(b / "file") == false);
+
+  std::filesystem::remove_all(root);
+}
+
+void
+test_err()
+{
+  Err err;
+
+  TEST_CHECK((err = -ENOENT) == -ENOENT);
+  TEST_CHECK((err = -EROFS) == -EROFS);
+  TEST_CHECK((err = -ENOENT) == -EROFS);
+  TEST_CHECK((err = -ENAMETOOLONG) == -ENAMETOOLONG);
+  TEST_CHECK((err = -EIO) == -ENAMETOOLONG);
+  TEST_CHECK((err = 0) == 0);
+  TEST_CHECK((err = -EIO) == 0);
+}
+
+static
+void
+test_mkdir_pfrd()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  ugid_t ugid{::getuid(),::getgid()};
+  Func2::MkdirPFRD mkdir;
+  fs::path root;
+  fs::path a;
+  fs::path b;
+
+  root = ::_make_test_root("mkdir-pfrd");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a / "c");
+  std::filesystem::create_directories(b);
+
+  branches_str  = a.string();
+  branches_str += "=RO:";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  rv = mkdir(ugid,branches,"c/d",0777,0);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(std::filesystem::exists(b / "c" / "d"));
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_link_epall()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  Func2::LinkEPAll link;
+  fs::path root;
+  fs::path a;
+  fs::path b;
+
+  root = ::_make_test_root("link-epall");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a / "old");
+  std::filesystem::create_directories(a / "new");
+  std::filesystem::create_directories(b / "old");
+  std::ofstream(a / "old" / "file") << "a";
+  std::ofstream(b / "old" / "file") << "b";
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  rv = link(branches,"old/file","new/file");
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(std::filesystem::exists(a / "new" / "file"));
+  TEST_CHECK(std::filesystem::exists(b / "new" / "file"));
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_getattr_ff_symlinkify()
+{
+  int rv;
+  struct stat st;
+  std::string branches_str;
+  Branches branches;
+  Func2::GetAttrFF getattr;
+  fs::path root;
+  fs::path a;
+
+  root = ::_make_test_root("getattr-ff-symlinkify");
+  a = root / "a";
+
+  std::filesystem::create_directories(a);
+  std::ofstream(a / "file") << "x";
+  ::chmod((a / "file").c_str(),0444);
+
+  branches_str = a.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  std::memset(&st,0,sizeof(st));
+  rv = getattr(branches,"file",&st,FollowSymlinksEnum::NEVER,false,-1);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(S_ISREG(st.st_mode));
+
+  std::memset(&st,0,sizeof(st));
+  rv = getattr(branches,"file",&st,FollowSymlinksEnum::NEVER,true,-1);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(S_ISLNK(st.st_mode));
+  TEST_CHECK(st.st_size == (off_t)(a / "file").string().size());
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_readlink_ff()
+{
+  int rv;
+  char buf[3] = {};
+  std::string branches_str;
+  Branches branches;
+  Func2::ReadlinkFF readlink;
+  fs::path root;
+  fs::path a;
+  fs::path b;
+
+  root = ::_make_test_root("readlink-ff");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a);
+  std::filesystem::create_directories(b);
+  std::filesystem::create_symlink("abcdef",a / "link");
+  std::ofstream(a / "shadow") << "x";
+  std::filesystem::create_symlink("lower",b / "shadow");
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  rv = readlink(branches,"link",buf,sizeof(buf),false,0);
+  TEST_CHECK(rv == 3);
+  TEST_CHECK(std::memcmp(buf,"abc",3) == 0);
+
+  rv = readlink(branches,"shadow",buf,sizeof(buf),false,0);
+  TEST_CHECK(rv == -EINVAL);
+  rv = readlink(branches,"shadow",buf,sizeof(buf),true,0);
+  TEST_CHECK(rv == -EINVAL);
+
+  std::ofstream(a / "file") << "x";
+  ::chmod((a / "file").c_str(),0444);
+
+  rv = readlink(branches,"file",buf,sizeof(buf),false,-1);
+  TEST_CHECK(rv < 0);
+
+  rv = readlink(branches,"file",buf,sizeof(buf),true,-1);
+  TEST_CHECK(rv == 3);
+  TEST_CHECK(std::memcmp(buf,(a / "file").c_str(),3) == 0);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_mknod_ff()
+{
+  int rv;
+  std::string branches_str;
+  Branches branches;
+  ugid_t ugid{::getuid(),::getgid()};
+  Func2::Mknod mknod("ff");
+  fs::path root;
+  fs::path a;
+  fs::path b;
+
+  root = ::_make_test_root("mknod-ff");
+  a = root / "a";
+  b = root / "b";
+
+  std::filesystem::create_directories(a);
+  std::filesystem::create_directories(b / "c" / "d");
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+  mknod.initialize();
+
+  umask(0);
+  rv = mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
+  TEST_CHECK(rv == 0);
+  rv = mknod(ugid,branches,"c/d/fifo",S_IFIFO|0777,0,0);
+  TEST_CHECK(rv == -EEXIST);
+  TEST_CHECK(fs::exists(a / "c/d/fifo") == true);
+
+  std::filesystem::remove_all(root);
+}
+
+static
+void
+test_mknod_create_search_policy()
+{
+  int rv;
+  struct stat st;
+  std::string branches_str;
+  Branches branches;
+  ugid_t ugid{::getuid(),::getgid()};
+  Func2::MknodFF mknod;
+  struct timespec newer_times[2] = {{100,200},{100,200}};
+  struct timespec older_times[2] = {{100,100},{100,100}};
+  fs::path root;
+  fs::path a;
+  fs::path b;
+  fs::path c;
+
+  root = ::_make_test_root("mknod-create-search");
+  a = root / "a";
+  b = root / "b";
+  c = root / "c";
+
+  std::filesystem::create_directories(a);
+  std::filesystem::create_directories(b / "d");
+  std::filesystem::create_directories(c / "d");
+  ::chmod((b / "d").c_str(),0755);
+  ::chmod((c / "d").c_str(),0700);
+  TEST_CHECK(::utimensat(AT_FDCWD,(b / "d").c_str(),newer_times,0) == 0);
+  TEST_CHECK(::utimensat(AT_FDCWD,(c / "d").c_str(),older_times,0) == 0);
+
+  branches_str  = a.string();
+  branches_str += ":";
+  branches_str += b.string();
+  branches_str += ":";
+  branches_str += c.string();
+
+  TEST_CHECK(branches.from_string(branches_str) == 0);
+
+  umask(0);
+  rv = mknod(ugid,branches,"d/fifo",S_IFIFO|0777,0,0);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK(fs::exists(a / "d/fifo") == true);
+
+  rv = ::lstat((a / "d").c_str(),&st);
+  TEST_CHECK(rv == 0);
+  TEST_CHECK((st.st_mode & 0777) == 0755);
+
+  std::filesystem::remove_all(root);
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -3825,8 +4503,22 @@ TEST_LIST =
    {"tp_many_producers_many_tasks_stress",test_tp_many_producers_many_tasks_stress},
    {"tp_heavy_mixed_resize_and_enqueue_stress",test_tp_heavy_mixed_resize_and_enqueue_stress},
    {"tp_heavy_try_enqueue_pressure",test_tp_heavy_try_enqueue_pressure},
-   {"tp_heavy_repeated_construct_destroy",test_tp_heavy_repeated_construct_destroy},
-   {"tp_heavy_enqueue_task_mixed_outcomes",test_tp_heavy_enqueue_task_mixed_outcomes},
-   {"tp_heavy_add_remove_churn_under_enqueue",test_tp_heavy_add_remove_churn_under_enqueue},
+    {"tp_heavy_repeated_construct_destroy",test_tp_heavy_repeated_construct_destroy},
+    {"tp_heavy_enqueue_task_mixed_outcomes",test_tp_heavy_enqueue_task_mixed_outcomes},
+    {"tp_heavy_add_remove_churn_under_enqueue",test_tp_heavy_add_remove_churn_under_enqueue},
+    {"config_bespoke_policy_compat",test_config_bespoke_policy_compat},
+    {"legacy_policy_erofs_runtime",test_legacy_policy_erofs_runtime},
+    {"access_policy_all_vs_ff",test_access_policy_all_vs_ff},
+    {"mkdir_all_policy",test_mkdir_all_policy},
+    {"create_parent_uses_search_policy",test_create_parent_uses_search_policy},
+    {"link_rename_parent_uses_search_policy",test_link_rename_parent_uses_search_policy},
+    {"action_newest_subsecond",test_action_newest_subsecond},
+    {"err",test_err},
+   {"mkdir_pfrd",test_mkdir_pfrd},
+   {"link_epall",test_link_epall},
+   {"getattr_ff_symlinkify",test_getattr_ff_symlinkify},
+   {"readlink_ff",test_readlink_ff},
+   {"mknod_ff",test_mknod_ff},
+   {"mknod_create_search_policy",test_mknod_create_search_policy},
    {NULL,NULL}
   };

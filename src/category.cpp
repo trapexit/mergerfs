@@ -18,8 +18,8 @@
 
 #include "category.hpp"
 #include "errno.hpp"
-#include "str.hpp"
 
+#include <set>
 #include <string>
 
 int
@@ -34,16 +34,45 @@ Category::Base::from_string(const std::string_view s_)
         return rv;
     }
 
+  {
+    std::lock_guard<std::mutex> lk(_last_set_mutex);
+    _last_set = std::string(s_);
+  }
+
   return 0;
 }
 
 std::string
 Category::Base::to_string(void) const
 {
-  std::set<std::string> rv;
+  // Snapshot the last category-wide input under the lock so a
+  // concurrent from_string can't tear the string mid-read.
+  std::string last;
+  {
+    std::lock_guard<std::mutex> lk(_last_set_mutex);
+    last = _last_set;
+  }
 
+  // Collect current constituent names. Each FuncWrapper::to_string is
+  // itself mutex-protected.
+  std::set<std::string> names;
   for(const auto func : funcs)
-    rv.insert(func->to_string());
+    names.insert(func->to_string());
 
-  return str::join(rv,',');
+  if(names.size() == 1)
+    {
+      // All children agree. Prefer _last_set (round-trippable through
+      // the category-wide setter even when it maps to the agreed
+      // name); otherwise fall back to the agreed name.
+      if(!last.empty())
+        return last;
+      return *names.begin();
+    }
+
+  // Children diverge — either no category-wide assignment ever ran,
+  // or a per-function override has changed a child since the last
+  // category-wide set. Report "mixed" rather than a stale _last_set,
+  // since per-function .to_string()s are the source of truth for the
+  // actual policy in effect.
+  return std::string("mixed");
 }

@@ -18,7 +18,6 @@
 
 #pragma message "using readdir"
 
-#include "error.hpp"
 #include "fs_closedir.hpp"
 #include "fs_inode.hpp"
 #include "fs_opendir.hpp"
@@ -92,18 +91,21 @@ _readdir(std::vector<std::future<DirRV>> &dh_futures_,
          const fs::path                  &rel_dirpath_,
          fuse_dirents_t                  *dirents_)
 {
-  Err err;
+  int err;
   HashSet names;
 
+  err = 0;
   for(auto &dh_future : dh_futures_)
     {
       DirRV dirrv;
 
       dirrv = dh_future.get();
 
-      err = dirrv.err;
       if(dirrv.dir == NULL)
-        continue;
+        {
+          err = dirrv.err;
+          continue;
+        }
       DEFER { fs::closedir(dirrv.dir); };
       fs::inode::ReaddirCalc inodecalc(*dirrv.branch_path,rel_dirpath_);
 

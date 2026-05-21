@@ -19,132 +19,15 @@
 #include "fuse_listxattr.hpp"
 
 #include "config.hpp"
-#include "errno.hpp"
-#include "fs_llistxattr.hpp"
 #include "xattr.hpp"
-
-#include "fuse.h"
-
-#include <filesystem>
-#include <string>
-#include <cstring>
-
-
-static
-ssize_t
-_listxattr_size(const std::vector<Branch*> &branches_,
-                const fs::path             &fusepath_)
-{
-  ssize_t size;
-  ssize_t err;
-  bool success;
-  fs::path fullpath;
-
-  if(branches_.empty())
-    return -ENOENT;
-
-  size    = 0;
-  err     = -ENOENT;
-  success = false;
-  for(const auto branch : branches_)
-    {
-      ssize_t rv;
-
-      fullpath = branch->path / fusepath_;
-
-      rv = fs::llistxattr(fullpath,NULL,0);
-      if(rv < 0)
-        {
-          if(err == -ENOENT)
-            err = rv;
-          continue;
-        }
-
-      success = true;
-      size += rv;
-    }
-
-  if(success == false)
-    return err;
-
-  return size;
-}
-
-static
-ssize_t
-_listxattr(const std::vector<Branch*> &branches_,
-           const fs::path             &fusepath_,
-           char                       *list_,
-           size_t                      size_)
-{
-  ssize_t rv;
-  ssize_t size;
-  ssize_t err;
-  bool success;
-  fs::path fullpath;
-
-  if(size_ == 0)
-    return ::_listxattr_size(branches_,fusepath_);
-
-  size    = 0;
-  err     = -ENOENT;
-  success = false;
-  for(const auto branch : branches_)
-    {
-      fullpath = branch->path / fusepath_;
-
-      rv = fs::llistxattr(fullpath,list_,size_);
-      if(rv < 0)
-        {
-          if(rv == -ERANGE)
-            return -ERANGE;
-          if(err == -ENOENT)
-            err = rv;
-          continue;
-        }
-
-      if((size_t)rv > size_)
-        return -ERANGE;
-
-      success = true;
-      list_ += rv;
-      size_ -= rv;
-      size  += rv;
-    }
-
-  if(success == false)
-    return err;
-
-  return size;
-}
-
-static
-int
-_listxattr(const Policy::Search &searchFunc_,
-           const Branches::Ptr   ibranches_,
-           const fs::path       &fusepath_,
-           char                 *list_,
-           const size_t          size_)
-{
-  int rv;
-  std::vector<Branch*> obranches;
-
-  rv = searchFunc_(ibranches_,fusepath_,obranches);
-  if(rv < 0)
-    return rv;
-
-  if(size_ == 0)
-    return ::_listxattr_size(obranches,fusepath_);
-
-  return ::_listxattr(obranches,fusepath_,list_,size_);
-}
 
 int
 FUSE::listxattr(const fuse_req_ctx_t *ctx_,
                 const char           *fusepath_,
                 char                 *list_,
-                size_t                size_)
+                const size_t          size_)
 {
+  ssize_t rv;
   const fs::path fusepath{fusepath_};
 
   if(Config::is_ctrl_file(fusepath))
@@ -160,9 +43,10 @@ FUSE::listxattr(const fuse_req_ctx_t *ctx_,
       return -ENOSYS;
     }
 
-  return ::_listxattr(cfg.func.listxattr.policy,
-                      cfg.branches,
-                      fusepath,
-                      list_,
-                      size_);
+  rv = cfg.listxattr(cfg.branches,
+                     fusepath,
+                     list_,
+                     size_);
+
+  return rv;
 }

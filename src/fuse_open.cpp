@@ -121,58 +121,6 @@ _rdonly(const int flags_)
   return ((flags_ & O_ACCMODE) == O_RDONLY);
 }
 
-static
-int
-_lchmod_and_open_if_not_writable_and_empty(const fs::path &fullpath_,
-                                           const int       flags_)
-{
-  int rv;
-  struct stat st;
-
-  rv = fs::lstat(fullpath_,&st);
-  if(rv < 0)
-    return -EACCES;
-
-  if(StatUtil::writable(st))
-    return -EACCES;
-
-  rv = fs::lchmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
-  if(rv < 0)
-    return -EACCES;
-
-  rv = fs::open(fullpath_,flags_);
-  if(rv < 0)
-    return -EACCES;
-
-  fs::fchmod(rv,st.st_mode);
-
-  return rv;
-}
-
-static
-int
-_nfsopenhack(const fs::path    &fullpath_,
-             const int          flags_,
-             const NFSOpenHack  nfsopenhack_)
-{
-  switch(nfsopenhack_)
-    {
-    default:
-    case NFSOpenHack::ENUM::OFF:
-      return -EACCES;
-    case NFSOpenHack::ENUM::GIT:
-      if(::_rdonly(flags_))
-        return -EACCES;
-      if(fullpath_.string().find("/.git/") == std::string::npos)
-        return -EACCES;
-      return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
-    case NFSOpenHack::ENUM::ALL:
-      if(::_rdonly(flags_))
-        return -EACCES;
-      return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
-    }
-}
-
 /*
   The kernel expects being able to issue read requests when running
   with writeback caching enabled so we must change O_WRONLY to
@@ -262,30 +210,6 @@ _config_to_ffi_flags(const int         tid_,
 
 static
 int
-_open_path(const fs::path    &filepath_,
-           const Branch      *branch_,
-           const fs::path    &fusepath_,
-           fuse_file_info_t  *ffi_,
-           const NFSOpenHack  nfsopenhack_)
-{
-  int fd;
-  FileInfo *fi;
-
-  fd = fs::openat(AT_FDCWD,filepath_,ffi_->flags);
-  if(fd == -EACCES)
-    fd = ::_nfsopenhack(filepath_,ffi_->flags,nfsopenhack_);
-  if(fd < 0)
-    return fd;
-
-  fi = new FileInfo(fd,branch_,fusepath_,ffi_->direct_io);
-
-  ffi_->fh = fi->to_fh();
-
-  return 0;
-}
-
-static
-int
 _open_fd(const int         fd_,
          const Branch     *branch_,
          const fs::path   &fusepath_,
@@ -303,39 +227,6 @@ _open_fd(const int         fd_,
   ffi_->fh = fi->to_fh();
 
   return 0;
-}
-
-static
-int
-_open(const Policy::Search &searchFunc_,
-      const Branches::Ptr   ibranches_,
-      const fs::path       &fusepath_,
-      fuse_file_info_t     *ffi_,
-      const bool            link_cow_,
-      const NFSOpenHack     nfsopenhack_)
-{
-  int rv;
-  fs::path filepath;
-  std::vector<Branch*> obranches;
-
-  rv = searchFunc_(ibranches_,fusepath_,obranches);
-  if(rv < 0)
-    return rv;
-  if(obranches.empty())
-    return -ENOENT;
-
-  filepath = obranches[0]->path / fusepath_;
-
-  if(link_cow_ && fs::cow::is_eligible(filepath,ffi_->flags))
-    fs::cow::break_link(filepath);
-
-  rv = ::_open_path(filepath,
-                    obranches[0],
-                    fusepath_,
-                    ffi_,
-                    nfsopenhack_);
-
-  return rv;
 }
 
 constexpr
@@ -424,12 +315,11 @@ _open(const fuse_req_ctx_t *ctx_,
 
       // Was not open, do first open, try to insert, if someone beat us
       // to it in another thread then throw it away and try again.
-      rv = ::_open(cfg.func.open.policy,
-                   cfg.branches,
-                   fusepath_,
-                   ffi_,
-                   cfg.link_cow,
-                   cfg.nfsopenhack);
+      rv = cfg.open(cfg.branches,
+                    fusepath_,
+                    ffi_,
+                    cfg.link_cow,
+                    cfg.nfsopenhack);
       if(rv < 0)
         return rv;
 

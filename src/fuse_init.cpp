@@ -188,7 +188,7 @@ void *
 FUSE::init(fuse_conn_info_t *conn_)
 {
   procfs::init();
-  cfg.readdir.initialize();
+  cfg.initialize_funcs();
 
   ::_want_if_capable(conn_,FUSE_CAP_ASYNC_DIO);
   ::_want_if_capable(conn_,FUSE_CAP_ASYNC_READ,&cfg.async_read);

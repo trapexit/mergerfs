@@ -1,0 +1,173 @@
+#include "func_mknod_msppfrd.hpp"
+
+#include "errno.hpp"
+#include "fs_clonepath.hpp"
+#include "fs_exists.hpp"
+#include "fs_info.hpp"
+#include "fs_info_t.hpp"
+#include "fs_path.hpp"
+#include "fs_mknod_as.hpp"
+#include "fs_mkdir_as.hpp"
+#include "rnd.hpp"
+#include <vector>
+
+
+#define error_and_continue(CUR,ERR)             \
+  do {                                          \
+    ::_calc_error(CUR,ERR);                     \
+    continue;                                   \
+  } while(0)
+
+static
+inline
+void
+_calc_error(int &cur_,
+            const int err_)
+{
+  switch(cur_)
+    {
+    default:
+    case ENOENT:
+      cur_ = err_;
+      break;
+    case ENOSPC:
+      if(err_ != ENOENT)
+        cur_ = err_;
+      break;
+    case EROFS:
+      if((err_ != ENOENT) && (err_ != ENOSPC))
+        cur_ = err_;
+      break;
+    }
+}
+
+
+std::string_view
+Func2::MknodMSPPFRD::name() const
+{
+  return "msppfrd";
+}
+
+int
+Func2::MknodMSPPFRD::operator()(const ugid_t   &ugid_,
+                                const Branches &branches_,
+                                const fs::path &fusepath_,
+                                const mode_t    mode_,
+                                const dev_t     dev_,
+                                const mode_t    umask_)
+{
+  int rv;
+  int error;
+  fs::info_t info;
+  Branches::Ptr branches;
+  const Branch *chosen;
+  fs::path walk;
+  std::vector<fs::path> segments;
+  fs::path fullpath;
+  mode_t dirmode;
+
+  branches = branches_;
+  chosen   = nullptr;
+  error    = ENOENT;
+  walk     = fusepath_.parent_path();
+
+  for(;;)
+    {
+      u64 sum;
+      struct W { Branch *b; u64 weight; };
+      std::vector<W> writable;
+
+      sum = 0;
+      for(auto &branch : *branches)
+        {
+          if(branch.ro_or_nc())
+            error_and_continue(error,EROFS);
+          if(!fs::exists(branch.path,walk))
+            error_and_continue(error,ENOENT);
+          rv = fs::info(branch.path,&info);
+          if(rv < 0)
+            error_and_continue(error,ENOENT);
+          if(info.readonly)
+            error_and_continue(error,EROFS);
+          if(info.spaceavail < branch.minfreespace())
+            error_and_continue(error,ENOSPC);
+
+          writable.push_back({&branch,info.spaceavail});
+          sum += info.spaceavail;
+        }
+
+      if(!writable.empty())
+        {
+          if(sum == 0)
+            {
+              chosen = writable.front().b;
+            }
+          else
+            {
+              u64 idx;
+              u64 threshold;
+
+              idx = 0;
+              threshold = RND::rand64(sum);
+              for(const auto &w : writable)
+                {
+                  if(w.weight == 0)
+                    continue;
+                  idx += w.weight;
+                  if(idx > threshold)
+                    {
+                      chosen = w.b;
+                      break;
+                    }
+                }
+              if(!chosen)
+                chosen = writable.back().b;
+            }
+          break;
+        }
+
+      if(walk == "/")
+        break;
+      walk = walk.parent_path();
+    }
+
+  if(!chosen)
+    return -error;
+
+  for(fs::path p = fusepath_.parent_path();
+      !p.empty() && p != "/";
+      p = p.parent_path())
+    segments.push_back(p);
+
+  dirmode = (0777 & ~umask_);
+  for(auto it = segments.rbegin(); it != segments.rend(); ++it)
+    {
+      const Branch *src;
+      const fs::path full = chosen->path / *it;
+
+      if(fs::exists(full))
+        continue;
+
+      src = nullptr;
+      for(auto &b : *branches)
+        {
+          if(&b == chosen)
+            continue;
+          if(!fs::exists(b.path,*it))
+            continue;
+          src = &b;
+          break;
+        }
+
+      if(src != nullptr)
+        rv = fs::clonepath(src->path,chosen->path,*it);
+      else
+        rv = fs::mkdir_as(ugid_,full,dirmode);
+      if((rv < 0) && (rv != -EEXIST))
+        return rv;
+    }
+
+  fullpath = chosen->path / fusepath_;
+
+  return fs::mknod_as(ugid_,fullpath,mode_,dev_,umask_);
+}

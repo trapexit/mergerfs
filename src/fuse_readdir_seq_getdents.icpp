@@ -19,7 +19,6 @@
 #pragma message "using getdents"
 
 #include "dirinfo.hpp"
-#include "error.hpp"
 #include "fs_close.hpp"
 #include "fs_getdents64.hpp"
 #include "fs_inode.hpp"
@@ -37,7 +36,7 @@ _readdir(const Branches::Ptr &branches_,
          const fs::path      &rel_dirpath_,
          fuse_dirents_t      *dirents_)
 {
-  Err err;
+  int err;
   HashSet names;
   fs::path abs_dirpath;
   fuse_msgbuf_t *buf;
@@ -49,6 +48,7 @@ _readdir(const Branches::Ptr &branches_,
     return -ENOMEM;
   DEFER { msgbuf_free(buf); };
 
+  err = 0;
   for(const auto &branch : *branches_)
     {
       int fd;
@@ -57,9 +57,11 @@ _readdir(const Branches::Ptr &branches_,
       abs_dirpath = branch.path / rel_dirpath_;
 
       fd = fs::open_dir_ro(abs_dirpath);
-      err = fd;
       if(fd < 0)
-        continue;
+        {
+          err = fd;
+          continue;
+        }
       DEFER{ fs::close(fd); };
 
       while(true)

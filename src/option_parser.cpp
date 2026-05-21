@@ -25,7 +25,6 @@
 #include "fs_statvfs_cache.hpp"
 #include "hw_cpu.hpp"
 #include "num.hpp"
-#include "policy.hpp"
 #include "str.hpp"
 #include "syslog.hpp"
 #include "version.hpp"

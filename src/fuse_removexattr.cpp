@@ -20,78 +20,8 @@
 
 #include "config.hpp"
 #include "errno.hpp"
-#include "fs_lremovexattr.hpp"
-#include "fs_path.hpp"
-#include "policy_rv.hpp"
 
 #include "fuse.h"
-
-#include <vector>
-
-
-static
-void
-_removexattr_loop_core(const fs::path &basepath_,
-                       const fs::path &fusepath_,
-                       const char     *attrname_,
-                       PolicyRV       *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::lremovexattr(fullpath,attrname_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
-_removexattr_loop(const std::vector<Branch*> &branches_,
-                  const fs::path             &fusepath_,
-                  const char                 *attrname_,
-                  PolicyRV                   *prv_)
-{
-  for(auto &branch : branches_)
-    {
-      ::_removexattr_loop_core(branch->path,fusepath_,attrname_,prv_);
-    }
-}
-
-static
-int
-_removexattr(const Policy::Action &actionFunc_,
-             const Policy::Search &searchFunc_,
-             const Branches::Ptr   ibranches_,
-             const fs::path       &fusepath_,
-             const char           *attrname_)
-{
-  int rv;
-  PolicyRV prv;
-  std::vector<Branch*> obranches;
-
-  rv = actionFunc_(ibranches_,fusepath_,obranches);
-  if(rv < 0)
-    return rv;
-  if(obranches.empty())
-    return -ENOENT;
-
-  ::_removexattr_loop(obranches,fusepath_,attrname_,&prv);
-  if(prv.errors.empty())
-    return 0;
-  if(prv.successes.empty())
-    return prv.errors[0].rv;
-
-  obranches.clear();
-  rv = searchFunc_(ibranches_,fusepath_,obranches);
-  if(rv < 0)
-    return rv;
-  if(obranches.empty())
-    return -ENOENT;
-
-  return prv.get_error(obranches[0]->path);
-}
 
 int
 FUSE::removexattr(const fuse_req_ctx_t *ctx_,
@@ -106,9 +36,7 @@ FUSE::removexattr(const fuse_req_ctx_t *ctx_,
   if(cfg.xattr.to_int())
     return -cfg.xattr.to_int();
 
-  return ::_removexattr(cfg.func.removexattr.policy,
-                        cfg.func.getxattr.policy,
-                        cfg.branches,
-                        fusepath,
-                        attrname_);
+  return cfg.removexattr(cfg.branches,
+                         fusepath,
+                         attrname_);
 }

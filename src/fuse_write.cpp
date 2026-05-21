@@ -59,8 +59,7 @@ _move_and_pwrite(const char   *buf_,
   if(cfg.moveonenospc.enabled == false)
     return err_;
 
-  rv = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
-                                     cfg.branches,
+  rv = fs::movefile_and_open_as_root(cfg.branches,
                                      fi_->branch.path,
                                      fi_->fusepath,
                                      fi_->fd);
@@ -90,8 +89,7 @@ _move_and_pwriten(char const    *buf_,
   if(cfg.moveonenospc.enabled == false)
     return err_;
 
-  rv = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
-                                     cfg.branches,
+  rv = fs::movefile_and_open_as_root(cfg.branches,
                                      fi_->branch.path,
                                      fi_->fusepath,
                                      fi_->fd);

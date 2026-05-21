@@ -18,6 +18,29 @@
 
 #pragma once
 
+#include "func_access.hpp"
+#include "func_chmod.hpp"
+#include "func_chown.hpp"
+#include "func_create.hpp"
+#include "func_getattr.hpp"
+#include "func_getxattr.hpp"
+#include "func_ioctl.hpp"
+#include "func_link.hpp"
+#include "func_listxattr.hpp"
+#include "func_mkdir.hpp"
+#include "func_mknod.hpp"
+#include "func_open.hpp"
+#include "func_readlink.hpp"
+#include "func_removexattr.hpp"
+#include "func_rename.hpp"
+#include "func_rmdir.hpp"
+#include "func_setxattr.hpp"
+#include "func_statx.hpp"
+#include "func_symlink.hpp"
+#include "func_truncate.hpp"
+#include "func_unlink.hpp"
+#include "func_utimens.hpp"
+
 #include "branches.hpp"
 #include "category.hpp"
 #include "config_cachefiles.hpp"
@@ -25,6 +48,7 @@
 #include "config_dummy.hpp"
 #include "config_flushonclose.hpp"
 #include "config_follow_symlinks.hpp"
+#include "config_getattr_statx.hpp"
 #include "config_inodecalc.hpp"
 #include "config_link_exdev.hpp"
 #include "config_log_file.hpp"
@@ -43,10 +67,8 @@
 #include "enum.hpp"
 #include "errno.hpp"
 #include "fs_path.hpp"
-#include "funcs.hpp"
 #include "fuse_cfg.hpp"
 #include "fuse_readdir.hpp"
-#include "policy.hpp"
 #include "tofrom_ref.hpp"
 #include "tofrom_wrapper.hpp"
 #include "syslog.hpp"
@@ -107,6 +129,31 @@ public:
   Config();
 
 public:
+  Func2::Access      access{"ff"};
+  Func2::Chmod       chmod{"all"};
+  Func2::Chown       chown{"all"};
+  Func2::Create      create{"pfrd"};
+  Func2::GetAttr     getattr{"cdfo"};
+  Func2::Getxattr    getxattr{"ff"};
+  Func2::Ioctl       ioctl{"ff"};
+  Func2::Link        link{"epall"};
+  Func2::Listxattr   listxattr{"ff"};
+  Func2::Mkdir       mkdir{"pfrd"};
+  Func2::Mknod       mknod{"ff"};
+  Func2::Open        open{"ff"};
+  Func2::Readlink    readlink{"ff"};
+  Func2::Removexattr removexattr{"all"};
+  Func2::Rename      rename{"epall"};
+  Func2::Rmdir       rmdir{"all"};
+  Func2::Setxattr    setxattr{"all"};
+  Func2::Statx       statx{"cdfo"};
+  Func2::Symlink     symlink{"pfrd"};
+  Func2::Truncate    truncate{"all"};
+  Func2::Unlink      unlink{"all"};
+  Func2::Utimens     utimens{"all"};
+
+  ConfigGetAttrStatx _getattr_statx{getattr,statx};
+
   ConfigBOOL     allow_idmap;
   ConfigBOOL     async_read;
   Branches       branches;
@@ -129,7 +176,6 @@ public:
   FlushOnClose   flushonclose;
   FollowSymlinks follow_symlinks;
   ConfigSTR      fsname;
-  Funcs          func;
   ConfigPageSize fuse_msg_size;
   ConfigBOOL     handle_killpriv;
   ConfigBOOL     handle_killpriv_v2;
@@ -189,6 +235,7 @@ private:
 
 public:
   void finish_initializing();
+  void initialize_funcs();
 
 public:
   friend std::ostream& operator<<(std::ostream &s,

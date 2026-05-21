@@ -19,10 +19,10 @@
 #pragma once
 
 #include "tofrom_string.hpp"
-#include "funcs.hpp"
-#include "func.hpp"
 
+#include <mutex>
 #include <string>
+#include <vector>
 
 namespace Category
 {
@@ -34,6 +34,13 @@ namespace Category
 
   protected:
     std::vector<ToFromString*> funcs;
+    // The last value successfully applied via from_string. Categories
+    // can map a single user input to different per-function default
+    // classes, so the constituent name()s may disagree. Returning the
+    // last-set value here keeps to_string output round-trippable, but
+    // only if no per-function override has since diverged the children.
+    std::string _last_set;
+    mutable std::mutex _last_set_mutex;
   };
 
   class Action final : public Base
@@ -42,18 +49,27 @@ namespace Category
     Action();
 
   public:
-    Action(Funcs &funcs_)
+    Action(ToFromString &chmod_,
+           ToFromString &chown_,
+           ToFromString &link_,
+           ToFromString &removexattr_,
+           ToFromString &rename_,
+           ToFromString &rmdir_,
+           ToFromString &setxattr_,
+           ToFromString &truncate_,
+           ToFromString &unlink_,
+           ToFromString &utimens_)
     {
-      funcs.push_back(&funcs_.chmod);
-      funcs.push_back(&funcs_.chown);
-      funcs.push_back(&funcs_.link);
-      funcs.push_back(&funcs_.removexattr);
-      funcs.push_back(&funcs_.rename);
-      funcs.push_back(&funcs_.rmdir);
-      funcs.push_back(&funcs_.setxattr);
-      funcs.push_back(&funcs_.truncate);
-      funcs.push_back(&funcs_.unlink);
-      funcs.push_back(&funcs_.utimens);
+      funcs.push_back(&chmod_);
+      funcs.push_back(&chown_);
+      funcs.push_back(&link_);
+      funcs.push_back(&removexattr_);
+      funcs.push_back(&rename_);
+      funcs.push_back(&rmdir_);
+      funcs.push_back(&setxattr_);
+      funcs.push_back(&truncate_);
+      funcs.push_back(&unlink_);
+      funcs.push_back(&utimens_);
     }
   };
 
@@ -63,12 +79,15 @@ namespace Category
     Create();
 
   public:
-    Create(Funcs &funcs_)
+    Create(ToFromString &create_,
+           ToFromString &mkdir_,
+           ToFromString &mknod_,
+           ToFromString &symlink_)
     {
-      funcs.push_back(&funcs_.create);
-      funcs.push_back(&funcs_.mkdir);
-      funcs.push_back(&funcs_.mknod);
-      funcs.push_back(&funcs_.symlink);
+      funcs.push_back(&create_);
+      funcs.push_back(&mkdir_);
+      funcs.push_back(&mknod_);
+      funcs.push_back(&symlink_);
     }
   };
 
@@ -78,14 +97,21 @@ namespace Category
     Search();
 
   public:
-    Search(Funcs &funcs_)
+    Search(ToFromString &access_,
+           ToFromString &getattr_,
+           ToFromString &getxattr_,
+           ToFromString &ioctl_,
+           ToFromString &listxattr_,
+           ToFromString &open_,
+           ToFromString &readlink_)
     {
-      funcs.push_back(&funcs_.access);
-      funcs.push_back(&funcs_.getattr);
-      funcs.push_back(&funcs_.getxattr);
-      funcs.push_back(&funcs_.listxattr);
-      funcs.push_back(&funcs_.open);
-      funcs.push_back(&funcs_.readlink);
+      funcs.push_back(&access_);
+      funcs.push_back(&getattr_);
+      funcs.push_back(&getxattr_);
+      funcs.push_back(&ioctl_);
+      funcs.push_back(&listxattr_);
+      funcs.push_back(&open_);
+      funcs.push_back(&readlink_);
     }
   };
 }
@@ -96,10 +122,45 @@ private:
   Categories();
 
 public:
-  Categories(Funcs &funcs_)
-    : action(funcs_),
-      create(funcs_),
-      search(funcs_)
+  Categories(ToFromString &access_,
+             ToFromString &chmod_,
+             ToFromString &chown_,
+              ToFromString &link_,
+              ToFromString &getattr_,
+              ToFromString &getxattr_,
+              ToFromString &ioctl_,
+              ToFromString &listxattr_,
+              ToFromString &open_,
+              ToFromString &readlink_,
+             ToFromString &rename_,
+             ToFromString &removexattr_,
+             ToFromString &rmdir_,
+             ToFromString &setxattr_,
+             ToFromString &truncate_,
+             ToFromString &unlink_,
+             ToFromString &utimens_,
+             ToFromString &create_,
+             ToFromString &mkdir_,
+             ToFromString &mknod_,
+             ToFromString &symlink_)
+    : action(chmod_,
+             chown_,
+             link_,
+             removexattr_,
+             rename_,
+             rmdir_,
+             setxattr_,
+             truncate_,
+             unlink_,
+             utimens_),
+      create(create_,mkdir_,mknod_,symlink_),
+      search(access_,
+             getattr_,
+             getxattr_,
+             ioctl_,
+             listxattr_,
+             open_,
+             readlink_)
   {}
 
 public:

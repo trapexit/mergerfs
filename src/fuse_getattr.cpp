@@ -36,42 +36,6 @@
 
 
 static
-void
-_set_stat_if_leads_to_dir(const fs::path &path_,
-                          struct stat    *st_)
-{
-  int rv;
-  struct stat st;
-
-  rv = fs::stat(path_,&st);
-  if(rv < 0)
-    return;
-
-  if(S_ISDIR(st.st_mode))
-    *st_ = st;
-
-  return;
-}
-
-static
-void
-_set_stat_if_leads_to_reg(const fs::path &path_,
-                          struct stat    *st_)
-{
-  int rv;
-  struct stat st;
-
-  rv = fs::stat(path_,&st);
-  if(rv < 0)
-    return;
-
-  if(S_ISREG(st.st_mode))
-    *st_ = st;
-
-  return;
-}
-
-static
 int
 _getattr_fake_root(struct stat     *st_,
                    fuse_timeouts_t *timeout_)
@@ -125,63 +89,6 @@ _getattr_controlfile(struct stat     *st_,
   return 0;
 }
 
-static
-int
-_getattr(const Policy::Search &searchFunc_,
-         const Branches::Ptr   branches_,
-         const fs::path       &fusepath_,
-         struct stat          *st_,
-         const bool            symlinkify_,
-         const time_t          symlinkify_timeout_,
-         FollowSymlinks        followsymlinks_)
-{
-  int rv;
-  fs::path fullpath;
-  std::vector<Branch*> branches;
-
-  rv = searchFunc_(branches_,fusepath_,branches);
-  if(rv < 0)
-    return rv;
-  if(branches.empty())
-    return -ENOENT;
-
-  fullpath = branches[0]->path / fusepath_;
-
-  switch(followsymlinks_)
-    {
-    case FollowSymlinks::ENUM::NEVER:
-      rv = fs::lstat(fullpath,st_);
-      break;
-    case FollowSymlinks::ENUM::DIRECTORY:
-      rv = fs::lstat(fullpath,st_);
-      if((rv >= 0) && S_ISLNK(st_->st_mode))
-        ::_set_stat_if_leads_to_dir(fullpath,st_);
-      break;
-    case FollowSymlinks::ENUM::REGULAR:
-      rv = fs::lstat(fullpath,st_);
-      if((rv >= 0) && S_ISLNK(st_->st_mode))
-        ::_set_stat_if_leads_to_reg(fullpath,st_);
-      break;
-    case FollowSymlinks::ENUM::ALL:
-      rv = fs::stat(fullpath,st_);
-      if(rv < 0)
-        rv = fs::lstat(fullpath,st_);
-      break;
-    }
-
-  if(rv < 0)
-    return rv;
-
-  if(symlinkify_ && symlinkify::can_be_symlink(*st_,symlinkify_timeout_))
-    symlinkify::convert(fullpath,st_);
-
-  fs::inode::calc(branches[0]->path,
-                  fusepath_,
-                  st_);
-
-  return 0;
-}
-
 int
 _getattr(const fs::path  &fusepath_,
          struct stat     *st_,
@@ -189,13 +96,12 @@ _getattr(const fs::path  &fusepath_,
 {
   int rv;
 
-  rv = ::_getattr(cfg.func.getattr.policy,
-                  cfg.branches,
-                  fusepath_,
-                  st_,
-                  cfg.symlinkify,
-                  cfg.symlinkify_timeout,
-                  cfg.follow_symlinks);
+  rv = cfg.getattr(cfg.branches,
+                   fusepath_,
+                   st_,
+                   cfg.follow_symlinks,
+                   cfg.symlinkify,
+                   cfg.symlinkify_timeout);
   if((rv < 0) && Config::is_rootdir(fusepath_))
     return ::_getattr_fake_root(st_,timeout_);
 

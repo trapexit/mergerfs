@@ -31,3 +31,6 @@ rpmbuild/
 # mkdocs files
 mkdocs/venv
 __pycache__/
+
+# claude code harness
+.claude/
