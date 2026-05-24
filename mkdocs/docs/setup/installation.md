@@ -67,12 +67,25 @@ sudo apt install -y mergerfs
 
 ## Fedora
 
+
+In your terminal, type 
+
+
+```
+sudo dnf install "https://github.com/trapexit/mergerfs/releases/latest/download/mergerfs-$(curl -fsSL https://api.github.com/repos/trapexit/mergerfs/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')-1.fc$(rpm -E %fedora).$(rpm -E %_arch).rpm"
+```
+
+OR
+
 Get the RPM from the [releases page](https://github.com/trapexit/mergerfs/releases).
 
 ```
 wget https://github.com/trapexit/mergerfs/releases/download/<ver>/mergerfs-<ver>.fc<rel>.<arch>.rpm
 sudo rpm -i mergerfs-<ver>.fc<rel>.<arch>.rpm
 ```
+
+
+
 
 ## SUSE/OpenSUSE
 
