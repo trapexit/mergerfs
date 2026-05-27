@@ -10,7 +10,7 @@ namespace Func2
   {
   public:
     UnlinkBase() {}
-    ~UnlinkBase() {}
+    virtual ~UnlinkBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

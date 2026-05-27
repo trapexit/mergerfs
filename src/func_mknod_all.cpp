@@ -5,15 +5,9 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_info_t.hpp"
-#include "fs_path.hpp"
 #include "fs_mknod_as.hpp"
+#include "fs_path.hpp"
 
-
-#define error_and_continue(CUR,ERR)             \
-  do {                                          \
-    ::_calc_error(CUR,ERR);                     \
-    continue;                                   \
-  } while(0)
 
 static
 inline
@@ -38,6 +32,12 @@ _calc_error(int &cur_,
     }
 }
 
+#define error_and_continue(CUR,ERR)             \
+  do {                                          \
+    ::_calc_error(CUR,ERR);                     \
+    continue;                                   \
+  } while(0)
+
 
 std::string_view
 Func2::MknodAll::name() const
@@ -55,16 +55,24 @@ Func2::MknodAll::operator()(const ugid_t   &ugid_,
 {
   int rv;
   int error;
+  bool any;
   fs::info_t info;
   Branches::Ptr branches;
-  const Branch *chosen;
   const Branch *clone_src;
   fs::path fullpath;
 
   branches  = branches_;
-  chosen    = nullptr;
   clone_src = nullptr;
   error     = ENOENT;
+  any       = false;
+
+  for(auto &branch : *branches)
+    {
+      if(!fs::exists(branch.path,fusepath_.parent_path()))
+        continue;
+      clone_src = &branch;
+      break;
+    }
 
   for(auto &branch : *branches)
     {
@@ -78,32 +86,26 @@ Func2::MknodAll::operator()(const ugid_t   &ugid_,
       if(info.spaceavail < branch.minfreespace())
         error_and_continue(error,ENOSPC);
 
-      chosen = &branch;
-      break;
+      if(clone_src && (clone_src != &branch))
+        {
+          rv = fs::clonepath(clone_src->path,branch.path,fusepath_.parent_path());
+          if(rv < 0)
+            error_and_continue(error,-rv);
+        }
+
+      fullpath = branch.path / fusepath_;
+      rv = fs::mknod_as(ugid_,fullpath,mode_,dev_,umask_);
+      if(rv < 0)
+        {
+          ::_calc_error(error,-rv);
+          continue;
+        }
+
+      any = true;
     }
 
-  if(!chosen)
+  if(!any)
     return -error;
 
-  for(auto &branch : *branches)
-    {
-      if(!fs::exists(branch.path,fusepath_.parent_path()))
-        continue;
-      clone_src = &branch;
-      break;
-    }
-
-  if(!clone_src)
-    return -ENOENT;
-
-  if(clone_src != chosen)
-    {
-      rv = fs::clonepath(clone_src->path,chosen->path,fusepath_.parent_path());
-      if(rv < 0)
-        return rv;
-    }
-
-  fullpath = chosen->path / fusepath_;
-
-  return fs::mknod_as(ugid_,fullpath,mode_,dev_,umask_);
+  return 0;
 }

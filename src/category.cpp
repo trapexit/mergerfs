@@ -27,6 +27,13 @@ Category::Base::from_string(const std::string_view s_)
 {
   int rv;
 
+  // "mixed" is the sentinel to_string emits when constituent funcs
+  // disagree. Accepting it as a no-op makes config save/restore work
+  // even when per-function overrides have diverged from the
+  // category-wide value.
+  if(s_ == "mixed")
+    return 0;
+
   for(auto func : funcs)
     {
       rv = func->from_string(s_);

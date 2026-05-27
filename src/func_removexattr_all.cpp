@@ -31,8 +31,13 @@ Func2::RemovexattrAll::operator()(const Branches &branches_,
       if(rv == -ENOENT)
         continue;
 
-      found = true;
-      err   = rv;
+      if(!found)
+        { err = rv; found = true; continue; }
+      if(rv == 0)
+        { err = 0; continue; }
+      if(err == 0)
+        continue;
+      err = rv;
     }
 
   if(!found)

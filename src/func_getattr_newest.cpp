@@ -9,6 +9,7 @@
 std::string_view
 Func2::GetAttrNewest::name() const
 {
+
   return "newest";
 }
 
@@ -27,7 +28,8 @@ Func2::GetAttrNewest::operator()(const Branches           &branches_,
 
   err = 0;
   newest_branch = nullptr;
-  for(const auto &branch : branches_)
+  Branches::Ptr branches = branches_;
+  for(const auto &branch : *branches)
     {
       struct stat tmp_st;
 

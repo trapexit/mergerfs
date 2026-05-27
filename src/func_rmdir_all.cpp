@@ -42,8 +42,19 @@ Func2::RmdirAll::operator()(const Branches &branches_,
       if(rv == -ENOENT)
         continue;
 
-      found = true;
-      err   = rv;
+      if(!found)
+        { err = rv; found = true; continue; }
+      // -ENOTEMPTY / -EEXIST are strongest: a remaining-content failure must
+      // override a sibling-branch success since the directory is not fully gone.
+      if((rv == -ENOTEMPTY) || (rv == -EEXIST))
+        { err = rv; continue; }
+      if((err == -ENOTEMPTY) || (err == -EEXIST))
+        continue;
+      if(rv == 0)
+        { err = 0; continue; }
+      if(err == 0)
+        continue;
+      err = rv;
     }
 
   if(!found)

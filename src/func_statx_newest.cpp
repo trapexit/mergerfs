@@ -9,6 +9,7 @@
 std::string_view
 Func2::StatxNewest::name() const
 {
+
   return "newest";
 }
 
@@ -29,7 +30,8 @@ Func2::StatxNewest::operator()(const Branches           &branches_,
 
   err = 0;
   newest_branch = nullptr;
-  for(const auto &branch : branches_)
+  Branches::Ptr branches = branches_;
+  for(const auto &branch : *branches)
     {
       struct fuse_statx tmp_st;
 

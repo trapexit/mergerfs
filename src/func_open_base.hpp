@@ -15,7 +15,7 @@ namespace Func2
   {
   public:
     OpenBase() {}
-    ~OpenBase() {}
+    virtual ~OpenBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

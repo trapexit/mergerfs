@@ -18,6 +18,7 @@
 
 #include "fuse_link.hpp"
 
+#include "clone_source.hpp"
 #include "config.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
@@ -44,6 +45,51 @@ _create_is_path_preserving()
   return impl && impl->path_preserving();
 }
 
+// Path-preserving link: only link on branches that already have BOTH oldpath
+// and newdir; never clone newdir into branches that lacked it.
+static
+int
+_link_preserve_path(const fs::path &oldpath_,
+                    const fs::path &newpath_)
+{
+  Branches::Ptr branches = cfg.branches;
+  const fs::path newdir = newpath_.parent_path();
+  int err;
+  bool found;
+  fs::path oldfullpath;
+  fs::path newfullpath;
+
+  err   = 0;
+  found = false;
+  for(auto &branch : *branches)
+    {
+      if(branch.ro())
+        continue;
+      if(!fs::exists(branch.path,oldpath_))
+        continue;
+      if(!fs::exists(branch.path,newdir))
+        continue;
+
+      oldfullpath = branch.path / oldpath_;
+      newfullpath = branch.path / newpath_;
+
+      const int rv = fs::link(oldfullpath,newfullpath);
+
+      if(!found)
+        { err = rv; found = true; continue; }
+      if(rv == 0)
+        { err = 0; continue; }
+      if(err == 0)
+        continue;
+      err = rv;
+    }
+
+  if(!found)
+    return -EXDEV;
+
+  return err;
+}
+
 static
 int
 _link(const fuse_req_ctx_t *ctx_,
@@ -54,27 +100,16 @@ _link(const fuse_req_ctx_t *ctx_,
 {
   int rv;
 
-  // Honor path-preserving create policies: don't clone the new path
+  // Honor path-preserving create policies: link only on branches that
+  // already have both old and new-parent path; never clone the new path
   // structure into branches that don't already have it. Fall through
-  // to the link_exdev handling (PASSTHROUGH/REL_SYMLINK/etc.).
+  // to the link_exdev handling (PASSTHROUGH/REL_SYMLINK/etc.) when no
+  // qualifying branch exists.
   if(!cfg.ignorepponrename && ::_create_is_path_preserving())
-    {
-      Branches::Ptr branches = cfg.branches;
-      const fs::path newdir = newpath_.parent_path();
-      bool any_target = false;
-      for(const auto &branch : *branches)
-        {
-          if(branch.ro())
-            continue;
-          if(fs::exists(branch.path,oldpath_) &&
-             fs::exists(branch.path,newdir))
-            { any_target = true; break; }
-        }
-      if(!any_target)
-        return -EXDEV;
-    }
+    rv = ::_link_preserve_path(oldpath_,newpath_);
+  else
+    rv = cfg.link(cfg.branches,oldpath_,newpath_);
 
-  rv = cfg.link(cfg.branches,oldpath_,newpath_);
   if(rv < 0)
     return rv;
 
@@ -118,25 +153,25 @@ _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
   int rv;
   fs::path target;
 
-  for(const auto &branch : branches_)
-    {
-      if(!fs::exists(branch.path,oldpath_))
-        continue;
+  // Honor func.open: pick the source branch via the configured open
+  // policy. For 'newest' this picks the branch holding the newest copy
+  // of oldpath; for the other defaults this is first-found.
+  Branches::Ptr branches = branches_;
+  const Branch *src = CloneSource::find(*branches,oldpath_,cfg.open.to_string());
+  if(src == nullptr)
+    return -ENOENT;
 
-      target = branch.path / oldpath_;
+  target = src->path / oldpath_;
 
-      rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
-      if(rv == 0)
-        rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
+  rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
+  if(rv == 0)
+    rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
 
-      // Disable caching since we created a symlink but should be a regular.
-      timeouts_->attr  = 0;
-      timeouts_->entry = 0;
+  // Disable caching since we created a symlink but should be a regular.
+  timeouts_->attr  = 0;
+  timeouts_->entry = 0;
 
-      return rv;
-    }
-
-  return -ENOENT;
+  return rv;
 }
 
 static

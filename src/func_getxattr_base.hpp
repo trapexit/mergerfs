@@ -10,7 +10,7 @@ namespace Func2
   {
   public:
     GetxattrBase() {}
-    ~GetxattrBase() {}
+    virtual ~GetxattrBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

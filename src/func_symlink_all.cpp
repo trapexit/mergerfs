@@ -5,17 +5,11 @@
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_info_t.hpp"
-#include "fs_path.hpp"
 #include "fs_inode.hpp"
 #include "fs_lstat.hpp"
+#include "fs_path.hpp"
 #include "fs_symlink_as.hpp"
 
-
-#define error_and_continue(CUR,ERR)             \
-  do {                                          \
-    ::_calc_error(CUR,ERR);                     \
-    continue;                                   \
-  } while(0)
 
 static
 inline
@@ -40,6 +34,12 @@ _calc_error(int &cur_,
     }
 }
 
+#define error_and_continue(CUR,ERR)             \
+  do {                                          \
+    ::_calc_error(CUR,ERR);                     \
+    continue;                                   \
+  } while(0)
+
 
 std::string_view
 Func2::SymlinkAll::name() const
@@ -56,16 +56,26 @@ Func2::SymlinkAll::operator()(const ugid_t    &ugid_,
 {
   int rv;
   int error;
+  bool any;
   fs::info_t info;
   Branches::Ptr branches;
-  const Branch *chosen;
   const Branch *clone_src;
+  const Branch *last_success;
   fs::path fullpath;
 
-  branches  = branches_;
-  chosen    = nullptr;
-  clone_src = nullptr;
-  error     = ENOENT;
+  branches     = branches_;
+  clone_src    = nullptr;
+  last_success = nullptr;
+  error        = ENOENT;
+  any          = false;
+
+  for(auto &branch : *branches)
+    {
+      if(!fs::exists(branch.path,linkpath_.parent_path()))
+        continue;
+      clone_src = &branch;
+      break;
+    }
 
   for(auto &branch : *branches)
     {
@@ -79,40 +89,35 @@ Func2::SymlinkAll::operator()(const ugid_t    &ugid_,
       if(info.spaceavail < branch.minfreespace())
         error_and_continue(error,ENOSPC);
 
-      chosen = &branch;
-      break;
+      if(clone_src && (clone_src != &branch))
+        {
+          rv = fs::clonepath(clone_src->path,branch.path,linkpath_.parent_path());
+          if(rv < 0)
+            error_and_continue(error,-rv);
+        }
+
+      fullpath = branch.path / linkpath_;
+      rv = fs::symlink_as(ugid_,target_,fullpath);
+      if(rv < 0)
+        {
+          ::_calc_error(error,-rv);
+          continue;
+        }
+
+      any = true;
+      last_success = &branch;
     }
 
-  if(!chosen)
+  if(!any)
     return -error;
 
-  for(auto &branch : *branches)
+  if(last_success && (st_ != NULL) && (st_->st_ino == 0))
     {
-      if(!fs::exists(branch.path,linkpath_.parent_path()))
-        continue;
-      clone_src = &branch;
-      break;
-    }
-
-  if(!clone_src)
-    return -ENOENT;
-
-  if(clone_src != chosen)
-    {
-      rv = fs::clonepath(clone_src->path,chosen->path,linkpath_.parent_path());
-      if(rv < 0)
-        return rv;
-    }
-
-  fullpath = chosen->path / linkpath_;
-
-  rv = fs::symlink_as(ugid_,target_,fullpath);
-  if((rv >= 0) && (st_ != NULL) && (st_->st_ino == 0))
-    {
+      fullpath = last_success->path / linkpath_;
       fs::lstat(fullpath,st_);
       if(st_->st_ino != 0)
-        fs::inode::calc(chosen->path,linkpath_,st_);
+        fs::inode::calc(last_success->path,linkpath_,st_);
     }
 
-  return rv;
+  return 0;
 }

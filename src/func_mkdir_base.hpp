@@ -11,7 +11,7 @@ namespace Func2
   {
   public:
     MkdirBase() {}
-    ~MkdirBase() {}
+    virtual ~MkdirBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

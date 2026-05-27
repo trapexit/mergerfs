@@ -13,7 +13,7 @@ namespace Func2
   {
   public:
     SymlinkBase() {}
-    ~SymlinkBase() {}
+    virtual ~SymlinkBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

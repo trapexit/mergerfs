@@ -10,7 +10,7 @@ namespace Func2
   {
   public:
     ListxattrBase() {}
-    ~ListxattrBase() {}
+    virtual ~ListxattrBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

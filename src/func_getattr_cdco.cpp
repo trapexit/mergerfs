@@ -27,7 +27,8 @@ Func2::GetAttrCDCO::operator()(const Branches           &branches_,
 
   err = 0;
   first_branch = nullptr;
-  for(const auto &branch : branches_)
+  Branches::Ptr branches = branches_;
+  for(const auto &branch : *branches)
     {
       struct stat tmp_st;
 

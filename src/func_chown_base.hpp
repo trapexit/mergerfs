@@ -13,7 +13,7 @@ namespace Func2
   {
   public:
     ChownBase() {}
-    ~ChownBase() {}
+    virtual ~ChownBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

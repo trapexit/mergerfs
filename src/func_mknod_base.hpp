@@ -13,7 +13,7 @@ namespace Func2
   {
   public:
     MknodBase() {}
-    ~MknodBase() {}
+    virtual ~MknodBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

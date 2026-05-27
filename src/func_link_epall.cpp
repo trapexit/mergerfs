@@ -1,5 +1,7 @@
 #include "func_link_epall.hpp"
 
+#include "clone_source.hpp"
+#include "config.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_exists.hpp"
@@ -46,16 +48,9 @@ Func2::LinkEPAll::operator()(const Branches &branches_,
             continue;
 
           if(clone_src == nullptr)
-            {
-              for(auto &b : *branches)
-                {
-                  if(fs::exists(b.path,newfusedirpath))
-                    {
-                      clone_src = &b;
-                      break;
-                    }
-                }
-            }
+            clone_src = CloneSource::find(*branches,
+                                          newfusedirpath,
+                                          cfg.getattr.to_string());
 
           if(clone_src != nullptr)
             {
@@ -65,8 +60,13 @@ Func2::LinkEPAll::operator()(const Branches &branches_,
             }
         }
 
-      found = true;
-      err   = rv;
+      if(!found)
+        { err = rv; found = true; continue; }
+      if(rv == 0)
+        { err = 0; continue; }
+      if(err == 0)
+        continue;
+      err = rv;
     }
 
   if(!found)

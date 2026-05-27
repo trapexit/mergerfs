@@ -10,7 +10,7 @@ namespace Func2
   {
   public:
     ReadlinkBase() {}
-    ~ReadlinkBase() {}
+    virtual ~ReadlinkBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

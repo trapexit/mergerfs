@@ -10,7 +10,7 @@ namespace Func2
   {
   public:
     UtimensBase() {}
-    ~UtimensBase() {}
+    virtual ~UtimensBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

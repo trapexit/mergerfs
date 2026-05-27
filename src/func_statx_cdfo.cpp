@@ -9,6 +9,7 @@
 std::string_view
 Func2::StatxCDFO::name() const
 {
+
   return "cdfo";
 }
 
@@ -29,7 +30,8 @@ Func2::StatxCDFO::operator()(const Branches           &branches_,
 
   err = 0;
   first_branch = nullptr;
-  for(const auto &branch : branches_)
+  Branches::Ptr branches = branches_;
+  for(const auto &branch : *branches)
     {
       struct fuse_statx tmp_st;
 

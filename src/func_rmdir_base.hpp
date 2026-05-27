@@ -10,7 +10,7 @@ namespace Func2
   {
   public:
     RmdirBase() {}
-    ~RmdirBase() {}
+    virtual ~RmdirBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

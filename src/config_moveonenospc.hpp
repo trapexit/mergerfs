@@ -26,15 +26,13 @@
 class MoveOnENOSPC : public ToFromString
 {
 public:
-  MoveOnENOSPC(const bool enabled_)
-    : enabled(enabled_)
-  {
-  }
+  MoveOnENOSPC(const bool enabled_);
 
 public:
   int from_string(const std::string_view s) final;
   std::string to_string() const final;
 
 public:
-  bool enabled;
+  bool        enabled;
+  std::string policy_name;  // default "pfrd"; one of the create policy names
 };

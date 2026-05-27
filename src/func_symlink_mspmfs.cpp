@@ -117,7 +117,7 @@ Func2::SymlinkMSPMFS::operator()(const ugid_t    &ugid_,
       p = p.parent_path())
     segments.push_back(p);
 
-  dirmode = 0777;
+  dirmode = 0755;
   for(auto it = segments.rbegin(); it != segments.rend(); ++it)
     {
       const Branch *src;

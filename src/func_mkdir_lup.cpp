@@ -87,7 +87,7 @@ Func2::MkdirLUP::operator()(const ugid_t   &ugid_,
         long double ratio;
 
         if(total == 0)
-          { used = 0; total = 1; }
+          { used = 1; total = 1; }
         ratio = (long double)used / (long double)total;
         if(ratio >= best_ratio)
           continue;

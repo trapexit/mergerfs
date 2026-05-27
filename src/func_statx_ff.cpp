@@ -9,6 +9,7 @@
 std::string_view
 Func2::StatxFF::name() const
 {
+
   return "ff";
 }
 
@@ -24,7 +25,8 @@ Func2::StatxFF::operator()(const Branches           &branches_,
 {
   fs::path fullpath;
 
-  for(const auto &branch : branches_)
+  Branches::Ptr branches = branches_;
+  for(const auto &branch : *branches)
     {
       fullpath = branch.path / fusepath_;
 

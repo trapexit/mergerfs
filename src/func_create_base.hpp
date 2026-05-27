@@ -13,7 +13,7 @@ namespace Func2
   {
   public:
     CreateBase() {}
-    ~CreateBase() {}
+    virtual ~CreateBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

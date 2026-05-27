@@ -20,21 +20,42 @@
 
 #include "errno.hpp"
 #include "from_string.hpp"
+#include "func_create_factory.hpp"
 
+
+MoveOnENOSPC::MoveOnENOSPC(const bool enabled_)
+  : enabled(enabled_),
+    policy_name("pfrd")
+{
+}
 
 int
 MoveOnENOSPC::from_string(const std::string_view s_)
 {
   bool tmp;
   const int rv = str::from(s_,&tmp);
-  if(rv != 0)
+  if(rv == 0)
+    {
+      enabled = tmp;
+      if(enabled)
+        policy_name = "pfrd";
+      return 0;
+    }
+
+  // Not a bool — try a create-policy name.
+  auto impl = Func2::CreateFactory::make(s_);
+  if(!impl)
     return -EINVAL;
-  enabled = tmp;
+
+  policy_name = std::string(s_);
+  enabled     = true;
   return 0;
 }
 
 std::string
 MoveOnENOSPC::to_string(void) const
 {
-  return (enabled ? "true" : "false");
+  if(enabled)
+    return policy_name;
+  return "false";
 }

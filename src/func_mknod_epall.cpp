@@ -1,19 +1,12 @@
 #include "func_mknod_epall.hpp"
 
 #include "errno.hpp"
-#include "fs_clonepath.hpp"
 #include "fs_exists.hpp"
 #include "fs_info.hpp"
 #include "fs_info_t.hpp"
-#include "fs_path.hpp"
 #include "fs_mknod_as.hpp"
+#include "fs_path.hpp"
 
-
-#define error_and_continue(CUR,ERR)             \
-  do {                                          \
-    ::_calc_error(CUR,ERR);                     \
-    continue;                                   \
-  } while(0)
 
 static
 inline
@@ -38,6 +31,12 @@ _calc_error(int &cur_,
     }
 }
 
+#define error_and_continue(CUR,ERR)             \
+  do {                                          \
+    ::_calc_error(CUR,ERR);                     \
+    continue;                                   \
+  } while(0)
+
 
 std::string_view
 Func2::MknodEPALL::name() const
@@ -55,14 +54,14 @@ Func2::MknodEPALL::operator()(const ugid_t   &ugid_,
 {
   int rv;
   int error;
+  bool any;
   fs::info_t info;
   Branches::Ptr branches;
-  const Branch *chosen;
   fs::path fullpath;
 
   branches = branches_;
-  chosen   = nullptr;
   error    = ENOENT;
+  any      = false;
 
   for(auto &branch : *branches)
     {
@@ -78,14 +77,19 @@ Func2::MknodEPALL::operator()(const ugid_t   &ugid_,
       if(info.spaceavail < branch.minfreespace())
         error_and_continue(error,ENOSPC);
 
-      chosen = &branch;
-      break;
+      fullpath = branch.path / fusepath_;
+      rv = fs::mknod_as(ugid_,fullpath,mode_,dev_,umask_);
+      if(rv < 0)
+        {
+          ::_calc_error(error,-rv);
+          continue;
+        }
+
+      any = true;
     }
 
-  if(!chosen)
+  if(!any)
     return -error;
 
-  fullpath = chosen->path / fusepath_;
-
-  return fs::mknod_as(ugid_,fullpath,mode_,dev_,umask_);
+  return 0;
 }

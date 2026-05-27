@@ -9,7 +9,7 @@ namespace Func2
   {
   public:
     LinkBase() {}
-    ~LinkBase() {}
+    virtual ~LinkBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

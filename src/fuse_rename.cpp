@@ -206,35 +206,90 @@ _create_is_path_preserving()
   return impl && impl->path_preserving();
 }
 
+// Path-preserving rename: rename only on branches that already have BOTH
+// oldpath and newdir. Never clone newdir into branches that lacked it. Other
+// branches with oldpath get their stale source queued for removal so the file
+// does not end up at both old and new paths.
+static
+int
+_rename_preserve_path(const fs::path &oldpath_,
+                      const fs::path &newpath_)
+{
+  Branches::Ptr branches = cfg.branches;
+  const fs::path newdir = newpath_.parent_path();
+  StrVec toremove;
+  int err;
+  bool found;
+  fs::path oldfullpath;
+  fs::path newfullpath;
+
+  err   = 0;
+  found = false;
+  for(auto &branch : *branches)
+    {
+      if(branch.ro())
+        continue;
+
+      oldfullpath = branch.path / oldpath_;
+      newfullpath = branch.path / newpath_;
+
+      const bool has_old = fs::exists(branch.path,oldpath_);
+      const bool has_newdir = fs::exists(branch.path,newdir);
+
+      if(!has_old)
+        {
+          if(has_newdir)
+            toremove.push_back(newfullpath);
+          continue;
+        }
+
+      if(!has_newdir)
+        {
+          // Branch has source but lacks newdir. Path-preserving: do NOT
+          // clonepath. Queue source for removal on overall success so the
+          // file ends up only at branches that did rename successfully.
+          toremove.push_back(oldfullpath);
+          continue;
+        }
+
+      const int rv = fs::rename(oldfullpath,newfullpath);
+      if(rv < 0)
+        toremove.push_back(oldfullpath);
+
+      if(!found)
+        { err = rv; found = true; continue; }
+      if(rv == 0)
+        { err = 0; continue; }
+      if(err == 0)
+        continue;
+      err = rv;
+    }
+
+  if(!found)
+    return -EXDEV;
+
+  if(err == 0)
+    {
+      for(const auto &path : toremove)
+        fs::remove(path);
+    }
+
+  return err;
+}
+
 static
 int
 _rename(const fs::path &oldpath_,
         const fs::path &newpath_)
 {
-  // Honor ignorepponrename: when the create policy is path-preserving
-  // and the user has not opted out, refuse to clone the new path
-  // structure into branches that don't already have it. The fallback
-  // is the EXDEV path which lets the caller handle the move via
-  // copy+unlink or symlink per cfg.rename_exdev.
+  // Honor ignorepponrename: when the create policy is path-preserving and
+  // the user has not opted out, perform the rename only on branches that
+  // already have both oldpath and newdir — never clone newdir into a branch
+  // that previously lacked it. Fall through to EXDEV when no qualifying
+  // branch exists, letting cfg.rename_exdev decide on copy+unlink or
+  // symlink fallback.
   if(!cfg.ignorepponrename && ::_create_is_path_preserving())
-    {
-      // Snapshot the Branches::Impl so the per-branch fs::exists
-      // calls below all observe the same set of branches even if
-      // cfg.branches is concurrently mutated.
-      Branches::Ptr branches = cfg.branches;
-      const fs::path newdir = newpath_.parent_path();
-      bool any_target = false;
-      for(const auto &branch : *branches)
-        {
-          if(branch.ro())
-            continue;
-          if(fs::exists(branch.path,oldpath_) &&
-             fs::exists(branch.path,newdir))
-            { any_target = true; break; }
-        }
-      if(!any_target)
-        return -EXDEV;
-    }
+    return ::_rename_preserve_path(oldpath_,newpath_);
 
   return cfg.rename(cfg.branches,oldpath_,newpath_);
 }

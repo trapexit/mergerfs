@@ -21,18 +21,22 @@
 #include "branches.hpp"
 #include "fs_path.hpp"
 
+#include <string>
+
 
 namespace fs
 {
   int
-  movefile_and_open(const Branches &branches,
-                    const fs::path &branchpath,
-                    const fs::path &fusepath,
-                    const int       origfd);
+  movefile_and_open(const std::string &policy_name,
+                    const Branches    &branches,
+                    const fs::path    &branchpath,
+                    const fs::path    &fusepath,
+                    const int          origfd);
 
   int
-  movefile_and_open_as_root(const Branches &branches,
-                            const fs::path &branchpath,
-                            const fs::path &fusepath,
-                            int             origfd);
+  movefile_and_open_as_root(const std::string &policy_name,
+                            const Branches    &branches,
+                            const fs::path    &branchpath,
+                            const fs::path    &fusepath,
+                            int                origfd);
 }

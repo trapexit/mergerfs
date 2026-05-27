@@ -13,7 +13,7 @@ namespace Func2
   {
   public:
     ChmodBase() {}
-    ~ChmodBase() {}
+    virtual ~ChmodBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

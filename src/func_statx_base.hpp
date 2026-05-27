@@ -21,7 +21,7 @@ namespace Func2
   {
   public:
     StatxBase() {}
-    ~StatxBase() {}
+    virtual ~StatxBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

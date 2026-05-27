@@ -1,5 +1,7 @@
 #include "func_rename_epall.hpp"
 
+#include "clone_source.hpp"
+#include "config.hpp"
 #include "errno.hpp"
 #include "fs_clonepath.hpp"
 #include "fs_exists.hpp"
@@ -51,16 +53,9 @@ Func2::RenameEPAll::operator()(const Branches &branches_,
       if(rv == -ENOENT)
         {
           if(clone_src == nullptr)
-            {
-              for(auto &b : *branches)
-                {
-                  if(fs::exists(b.path,newfusedirpath))
-                    {
-                      clone_src = &b;
-                      break;
-                    }
-                }
-            }
+            clone_src = CloneSource::find(*branches,
+                                          newfusedirpath,
+                                          cfg.getattr.to_string());
 
           if(clone_src != nullptr)
             {
@@ -70,8 +65,19 @@ Func2::RenameEPAll::operator()(const Branches &branches_,
             }
         }
 
-      found = true;
-      err   = rv;
+      // If rename failed on this branch but the source still exists, queue
+      // the stale source for removal on overall success so the file is not
+      // left at both old and new paths.
+      if(rv < 0)
+        toremove.push_back(oldfullpath);
+
+      if(!found)
+        { err = rv; found = true; continue; }
+      if(rv == 0)
+        { err = 0; continue; }
+      if(err == 0)
+        continue;
+      err = rv;
     }
 
   if(!found)

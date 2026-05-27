@@ -20,7 +20,7 @@ namespace Func2
   {
   public:
     GetAttrBase() {}
-    ~GetAttrBase() {}
+    virtual ~GetAttrBase() = default;
 
   public:
     virtual std::string_view name() const = 0;

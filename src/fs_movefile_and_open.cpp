@@ -51,12 +51,109 @@ _cleanup_flags(const int flags_)
   return rv;
 }
 
-// Pick a writable destination branch using PFRD (proportional to free
-// space). Self-contained for moveonenospc — mirrors the same algorithm
-// used by Func2::CreatePFRD but on a fresh selection (no clonepath/open).
+// FF pick: first writable branch (excluding the source).
+static
+int
+_pick_ff_branch(const Branches &branches_,
+                const fs::path &exclude_path_,
+                Branch        *&chosen_)
+{
+  int err = ENOENT;
+  Branches::Ptr branches = branches_;
+  fs::info_t info;
+
+  for(auto &branch : *branches)
+    {
+      if(branch.path == exclude_path_)
+        continue;
+      if(branch.ro_or_nc())
+        { if(err == ENOENT) err = EROFS; continue; }
+      const int irv = fs::info(branch.path,&info);
+      if(irv < 0)
+        { if(err == ENOENT) err = ENOENT; continue; }
+      if(info.readonly)
+        { if(err == ENOENT) err = EROFS; continue; }
+      if(info.spaceavail < branch.minfreespace())
+        { if(err == ENOENT) err = ENOSPC; continue; }
+
+      chosen_ = &branch;
+      return 0;
+    }
+  return -err;
+}
+
+// MFS pick: most-free-space branch (excluding the source).
+static
+int
+_pick_mfs_branch(const Branches &branches_,
+                 const fs::path &exclude_path_,
+                 Branch        *&chosen_)
+{
+  int err = ENOENT;
+  Branches::Ptr branches = branches_;
+  fs::info_t info;
+  uint64_t best = 0;
+
+  for(auto &branch : *branches)
+    {
+      if(branch.path == exclude_path_)
+        continue;
+      if(branch.ro_or_nc())
+        { if(err == ENOENT) err = EROFS; continue; }
+      const int irv = fs::info(branch.path,&info);
+      if(irv < 0)
+        { if(err == ENOENT) err = ENOENT; continue; }
+      if(info.readonly)
+        { if(err == ENOENT) err = EROFS; continue; }
+      if(info.spaceavail < branch.minfreespace())
+        { if(err == ENOENT) err = ENOSPC; continue; }
+
+      if(chosen_ && info.spaceavail <= best)
+        continue;
+      best = info.spaceavail;
+      chosen_ = &branch;
+    }
+  return chosen_ ? 0 : -err;
+}
+
+// LFS pick: least-free-space branch (excluding the source).
+static
+int
+_pick_lfs_branch(const Branches &branches_,
+                 const fs::path &exclude_path_,
+                 Branch        *&chosen_)
+{
+  int err = ENOENT;
+  Branches::Ptr branches = branches_;
+  fs::info_t info;
+  uint64_t best = UINT64_MAX;
+
+  for(auto &branch : *branches)
+    {
+      if(branch.path == exclude_path_)
+        continue;
+      if(branch.ro_or_nc())
+        { if(err == ENOENT) err = EROFS; continue; }
+      const int irv = fs::info(branch.path,&info);
+      if(irv < 0)
+        { if(err == ENOENT) err = ENOENT; continue; }
+      if(info.readonly)
+        { if(err == ENOENT) err = EROFS; continue; }
+      if(info.spaceavail < branch.minfreespace())
+        { if(err == ENOENT) err = ENOSPC; continue; }
+
+      if(info.spaceavail >= best)
+        continue;
+      best = info.spaceavail;
+      chosen_ = &branch;
+    }
+  return chosen_ ? 0 : -err;
+}
+
 static
 int
 _pick_pfrd_branch(const Branches &branches_,
+                  const fs::path &exclude_path_,
                   Branch        *&chosen_)
 {
   int err = ENOENT;
@@ -68,6 +165,11 @@ _pick_pfrd_branch(const Branches &branches_,
 
   for(auto &branch : *branches)
     {
+      // Never reselect the source branch — the caller is here precisely
+      // because writing to this branch failed (ENOSPC/quota). Picking it
+      // again would cause copyfile+unlink to delete the file.
+      if(branch.path == exclude_path_)
+        continue;
       if(branch.ro_or_nc())
         { if(err == ENOENT) err = EROFS; continue; }
       const int irv = fs::info(branch.path,&info);
@@ -100,12 +202,33 @@ _pick_pfrd_branch(const Branches &branches_,
   return 0;
 }
 
+// Dispatch on policy name. Implements the most common create policies
+// (ff, mfs, lfs, pfrd) inline; any other valid create policy name falls
+// back to pfrd (the historical default for moveonenospc).
 static
 int
-_movefile_and_open(const Branches &branches_,
-                   const fs::path &branchpath_,
-                   const fs::path &fusepath_,
-                   int             origfd_)
+_pick_branch(const std::string &policy_name_,
+             const Branches    &branches_,
+             const fs::path    &exclude_path_,
+             Branch           *&chosen_)
+{
+  if(policy_name_ == "ff")
+    return ::_pick_ff_branch(branches_,exclude_path_,chosen_);
+  if(policy_name_ == "mfs" || policy_name_ == "epmfs" || policy_name_ == "mspmfs")
+    return ::_pick_mfs_branch(branches_,exclude_path_,chosen_);
+  if(policy_name_ == "lfs" || policy_name_ == "eplfs" || policy_name_ == "msplfs")
+    return ::_pick_lfs_branch(branches_,exclude_path_,chosen_);
+
+  return ::_pick_pfrd_branch(branches_,exclude_path_,chosen_);
+}
+
+static
+int
+_movefile_and_open(const std::string &policy_name_,
+                   const Branches    &branches_,
+                   const fs::path    &branchpath_,
+                   const fs::path    &fusepath_,
+                   int                origfd_)
 {
   int rv;
   int dstfd_flags;
@@ -119,7 +242,7 @@ _movefile_and_open(const Branches &branches_,
 
   src_branch = branchpath_;
 
-  rv = ::_pick_pfrd_branch(branches_,dst_branch);
+  rv = ::_pick_branch(policy_name_,branches_,branchpath_,dst_branch);
   if(rv < 0)
     return rv;
   if(dst_branch == nullptr)
@@ -160,19 +283,21 @@ _movefile_and_open(const Branches &branches_,
 }
 
 int
-fs::movefile_and_open(const Branches &branches_,
-                      const fs::path &branchpath_,
-                      const fs::path &fusepath_,
-                      const int       origfd_)
+fs::movefile_and_open(const std::string &policy_name_,
+                      const Branches    &branches_,
+                      const fs::path    &branchpath_,
+                      const fs::path    &fusepath_,
+                      const int          origfd_)
 {
-  return ::_movefile_and_open(branches_,branchpath_,fusepath_,origfd_);
+  return ::_movefile_and_open(policy_name_,branches_,branchpath_,fusepath_,origfd_);
 }
 
 int
-fs::movefile_and_open_as_root(const Branches &branches_,
-                              const fs::path &branchpath_,
-                              const fs::path &fusepath_,
-                              const int       origfd_)
+fs::movefile_and_open_as_root(const std::string &policy_name_,
+                              const Branches    &branches_,
+                              const fs::path    &branchpath_,
+                              const fs::path    &fusepath_,
+                              const int          origfd_)
 {
-  return fs::movefile_and_open(branches_,branchpath_,fusepath_,origfd_);
+  return fs::movefile_and_open(policy_name_,branches_,branchpath_,fusepath_,origfd_);
 }
