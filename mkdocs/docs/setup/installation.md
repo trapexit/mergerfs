@@ -135,6 +135,25 @@ docker pull ghcr.io/trapexit/mergerfs:TAG
 docker run --device=/dev/fuse --cap-add=SYS_ADMIN -v /mnt/to-merge:/mnt/to-merge:rshared -v /mnt/mergerfs:/mnt/mergerfs:z,shared ghcr.io/trapexit/mergerfs:TAG -f '/mnt/to-merge/*' '/mnt/mergerfs'
 ```
 
+ or with docker compose
+
+```
+services:
+  mergerfs:
+    image: ghcr.io/trapexit/mergerfs:TAG
+    container_name: mergerfs
+    restart: unless-stopped
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    command: -f '/mnt/to-merge/*' '/mnt/mergerfs'
+    volumes:
+      - /mnt/to-merge:/mnt/to-merge:rshared
+      - /mnt/mergerfs:/mnt/mergerfs:z,shared
+```
+
 * `--device=/dev/fuse`: Pass in host FUSE device.
 * `--cap-add=SYS_ADMIN`: Give proper permissions to mount.
 * `-v /mnt/mergerfs:/mnt/mergerfs:z,shared`: `z` and `shared` will
