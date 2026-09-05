@@ -67,7 +67,7 @@ typedef ToFromWrapper<u64>                  ConfigU64;
 typedef ToFromWrapper<s64>                  ConfigS64;
 typedef ToFromWrapper<int>                  ConfigINT;
 typedef ToFromWrapper<std::string>          ConfigSTR;
-typedef ToFromWrapper<fs::path>             ConfigPath;
+typedef ToFromWrapper<std::string>          ConfigPath;
 typedef std::map<std::string,ToFromString*> Str2TFStrMap;
 typedef ROToFromWrapper<std::string>        ConfigROSTR;
 
@@ -92,7 +92,7 @@ public:
   class CfgConfigFile : public ToFromString
   {
   private:
-    fs::path  _cfg_file;
+    std::string  _cfg_file;
     static thread_local int _depth;
 
   public:
@@ -141,7 +141,7 @@ public:
   LinkEXDEV      link_exdev;
   LogFile        log_file;
   TFSRef<u64>    minfreespace;
-  fs::path       mountpoint;
+  std::string    mountpoint;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;
   ConfigBOOL     nullrw;
@@ -172,8 +172,8 @@ private:
   CfgDummy         _dummy;
   TFSRef<s64>      _gid;
   TFSRef<int>      _max_background;
-  TFSRef<fs::path> _mount;
-  TFSRef<fs::path> _mountpoint;
+  TFSRef<std::string> _mount;
+  TFSRef<std::string> _mountpoint;
   CfgNoforget      _never_forget_nodes;
   CfgNoforget      _noforget;
   CfgNoforget      _remember;
@@ -207,11 +207,11 @@ public:
 
 public:
   int from_stream(std::istream &istrm);
-  int from_file(const std::string &filepath);
+  int from_file(const char *filepath);
 
 public:
-  static bool is_rootdir(const fs::path &fusepath);
-  static bool is_ctrl_file(const fs::path &fusepath);
+  static bool is_rootdir(const fs::relpath &fusepath);
+  static bool is_ctrl_file(const fs::relpath &fusepath);
   static bool is_mergerfs_xattr(const char *attrname);
   static bool is_cmd_xattr(const std::string_view &attrname);
   static std::string_view prune_ctrl_xattr(const std::string_view s);

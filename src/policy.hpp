@@ -40,7 +40,7 @@ namespace Policy
   public:
     std::string name;
     virtual int operator()(const Branches::Ptr&,
-                           const fs::path&,
+                           const fs::relpath&,
                            std::vector<Branch*>&) const = 0;
   };
 
@@ -67,7 +67,7 @@ namespace Policy
 
     int
     operator()(const Branches::Ptr  &branches_,
-               const fs::path       &fusepath_,
+               const fs::relpath       &fusepath_,
                std::vector<Branch*> &output_) const
     {
       return (*impl)(branches_,fusepath_,output_);
@@ -94,7 +94,7 @@ namespace Policy
     std::string name;
     virtual bool path_preserving(void) const = 0;
     virtual int operator()(const Branches::Ptr&,
-                           const fs::path&,
+                           const fs::relpath&,
                            std::vector<Branch*>&) const = 0;
   };
 
@@ -127,7 +127,7 @@ namespace Policy
 
     int
     operator()(const Branches::Ptr  &branches_,
-               const fs::path       &fusepath_,
+               const fs::relpath       &fusepath_,
                std::vector<Branch*> &output_) const
     {
       return (*impl)(branches_,fusepath_,output_);
@@ -153,7 +153,7 @@ namespace Policy
   public:
     std::string name;
     virtual int operator()(const Branches::Ptr&,
-                           const fs::path&,
+                           const fs::relpath&,
                            std::vector<Branch*>&) const = 0;
   };
 
@@ -180,7 +180,7 @@ namespace Policy
 
     int
     operator()(const Branches::Ptr  &branches_,
-               const fs::path       &fusepath_,
+               const fs::relpath       &fusepath_,
                std::vector<Branch*> &output_) const
     {
       return (*impl)(branches_,fusepath_,output_);

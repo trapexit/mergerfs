@@ -25,6 +25,10 @@
 
 namespace fs
 {
+  // Public API takes std::string for caller convenience. Internally
+  // we strip any leading '/' so the per-branch loop's set_prefix()
+  // produces a single separator; this entry point handles the
+  // conversion.
   int
   findonfs(const Branches::Ptr &branches,
            const std::string   &fusepath,

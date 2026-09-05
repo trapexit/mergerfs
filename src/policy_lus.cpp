@@ -25,11 +25,8 @@
 #include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "policy_lus.hpp"
-#include "strvec.hpp"
 
 #include <limits>
-#include <string>
 #include <vector>
 
 using std::vector;
@@ -76,7 +73,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::LUS::Action::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplus(branches_,fusepath_,paths_);
@@ -84,7 +81,7 @@ Policy::LUS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LUS::Create::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,paths_);
@@ -92,7 +89,7 @@ Policy::LUS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LUS::Search::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplus(branches_,fusepath_,paths_);

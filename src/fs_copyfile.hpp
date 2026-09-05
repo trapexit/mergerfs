@@ -19,7 +19,8 @@
 #pragma once
 
 #include "base_types.h"
-#include "fs_path.hpp"
+
+#include <string>
 
 #include <sys/stat.h>
 
@@ -40,11 +41,21 @@ namespace fs
 
   s64
   copyfile(const int            src_fd,
-           const fs::path      &dst_filepath,
+           const char          *dst_filepath,
            const CopyFileFlags &flags);
 
   s64
-  copyfile(const fs::path      &src_filepath,
-           const fs::path      &dst_filepath,
+  copyfile(const char          *src_filepath,
+           const char          *dst_filepath,
            const CopyFileFlags &flags);
+
+  static
+  inline
+  s64
+  copyfile(const std::string   &src_filepath,
+           const std::string   &dst_filepath,
+           const CopyFileFlags &flags)
+  {
+    return fs::copyfile(src_filepath.c_str(),dst_filepath.c_str(),flags);
+  }
 }

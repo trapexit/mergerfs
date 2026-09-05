@@ -36,17 +36,17 @@ constexpr std::chrono::milliseconds SLEEP_DURATION = std::chrono::milliseconds(3
 static
 bool
 _branch_is_mounted(const struct stat &src_st_,
-                   const fs::path    &branch_path_)
+                   const std::string &branch_path_)
 {
   int rv;
   struct stat st;
-  fs::path filepath;
+  std::string filepath;
 
   rv = fs::lgetxattr(branch_path_,"user.mergerfs.branch",NULL,0);
   if(rv >= 0)
     return true;
 
-  filepath = branch_path_ / ".mergerfs.branch";
+  filepath = branch_path_ + "/.mergerfs.branch";
   rv = fs::exists(filepath);
   if(rv)
     return true;
@@ -55,7 +55,7 @@ _branch_is_mounted(const struct stat &src_st_,
   if(rv >= 0)
     return false;
 
-  filepath = branch_path_ / ".mergerfs.branch_mounts_here";
+  filepath = branch_path_ + "/.mergerfs.branch_mounts_here";
   rv = fs::exists(filepath);
   if(rv)
     return false;
@@ -69,13 +69,13 @@ _branch_is_mounted(const struct stat &src_st_,
 
 static
 void
-_check_mounted(const struct stat        &src_st_,
-               const std::set<fs::path> &tgt_paths_,
-               std::vector<fs::path>    *successes_,
-               std::vector<fs::path>    *failures_)
+_check_mounted(const struct stat           &src_st_,
+               const std::set<std::string> &tgt_paths_,
+               std::vector<std::string>    *successes_,
+               std::vector<std::string>    *failures_)
 {
-  std::vector<fs::path> &successes = *successes_;
-  std::vector<fs::path> &failures  = *failures_;
+  std::vector<std::string> &successes = *successes_;
+  std::vector<std::string> &failures  = *failures_;
 
   for(auto const &tgt_path : tgt_paths_)
     {
@@ -92,13 +92,13 @@ _check_mounted(const struct stat        &src_st_,
 static
 int
 _wait_for_mount(const struct stat               &src_st_,
-                const std::vector<fs::path>     &tgt_paths_,
+                const std::vector<std::string>  &tgt_paths_,
                 const std::chrono::milliseconds &timeout_)
 {
   bool first_loop;
-  std::vector<fs::path> successes;
-  std::vector<fs::path> failures;
-  std::set<fs::path>    tgt_paths;
+  std::vector<std::string> successes;
+  std::vector<std::string> failures;
+  std::set<std::string>    tgt_paths;
   std::chrono::time_point<std::chrono::steady_clock> now;
   std::chrono::time_point<std::chrono::steady_clock> deadline;
 
@@ -120,13 +120,13 @@ _wait_for_mount(const struct stat               &src_st_,
       for(const auto &path : successes)
         {
           tgt_paths.erase(path);
-          SysLog::info("{} is ready",path.string());
+          SysLog::info("{} is ready",path);
         }
 
       if(first_loop)
         {
           for(const auto &path : failures)
-            SysLog::notice("{} is not ready, waiting",path.string());
+            SysLog::notice("{} is not ready, waiting",path);
           first_loop = false;
         }
 
@@ -135,14 +135,14 @@ _wait_for_mount(const struct stat               &src_st_,
     }
 
   for(const auto &path : failures)
-    SysLog::notice("{} not ready within timeout",path.string());
+    SysLog::notice("{} not ready within timeout",path);
 
   return failures.size();
 }
 
 int
-fs::wait_for_mount(const fs::path                  &src_path_,
-                   const std::vector<fs::path>     &tgt_paths_,
+fs::wait_for_mount(const std::string               &src_path_,
+                   const std::vector<std::string>  &tgt_paths_,
                    const std::chrono::milliseconds &timeout_)
 {
   int rv;
@@ -151,7 +151,7 @@ fs::wait_for_mount(const fs::path                  &src_path_,
   rv = fs::stat(src_path_,&src_st);
   if(rv < 0)
     SysLog::error("Error stat'ing mount path: {} ({})",
-                  src_path_.string(),
+                  src_path_,
                   ::strerror(-rv));
 
   for(auto &tgt_path : tgt_paths_)
@@ -163,7 +163,7 @@ fs::wait_for_mount(const fs::path                  &src_path_,
 
       rv = fs::mount(tgt_path);
       SysLog::notice("mount {}: {}",
-                     tgt_path.string(),
+                     tgt_path,
                      ((rv == 0) ? "success" : "fail"));
     }
 

@@ -20,8 +20,6 @@
 
 #include "base_types.h"
 
-#include <string>
-
 
 namespace fs
 {
@@ -35,6 +33,6 @@ namespace fs
             cu64 size_in_kb);
 
   int
-  readahead(const std::string path,
-            cu64               size_in_kb);
+  readahead(const char *path,
+            cu64        size_in_kb);
 }

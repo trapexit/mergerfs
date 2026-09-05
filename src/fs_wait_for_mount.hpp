@@ -17,16 +17,15 @@
 
 #pragma once
 
-#include "fs_path.hpp"
-
 #include <chrono>
+#include <string>
 #include <vector>
 
 
 namespace fs
 {
   int
-  wait_for_mount(const fs::path                  &srcpath,
-                 const std::vector<fs::path>     &tgtpaths,
+  wait_for_mount(const std::string               &srcpath,
+                 const std::vector<std::string>  &tgtpaths,
                  const std::chrono::milliseconds &timeout);
 }

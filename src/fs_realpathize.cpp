@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include <limits.h>
+
 
 void
 fs::realpathize(std::vector<std::string> *strs_)
@@ -32,10 +34,8 @@ fs::realpathize(std::vector<std::string> *strs_)
 
   for(size_t i = 0; i < strs_->size(); i++)
     {
-      rv = fs::realpath((*strs_)[i],resolved_path);
-      if(rv == NULL)
-        continue;
-
-      (*strs_)[i] = rv;
+      rv = fs::realpath((*strs_)[i].c_str(),resolved_path);
+      if(rv != NULL)
+        (*strs_)[i] = rv;
     }
 }

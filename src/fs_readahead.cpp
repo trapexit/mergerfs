@@ -73,8 +73,8 @@ fs::readahead(cu64 dev_,
 }
 
 int
-fs::readahead(const std::string path_,
-              cu64               size_in_kb_)
+fs::readahead(const char *path_,
+              cu64        size_in_kb_)
 {
   int rv;
   struct stat st;

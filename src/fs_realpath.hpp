@@ -18,9 +18,6 @@
 
 #pragma once
 
-#include <string>
-
-#include <limits.h>
 #include <stdlib.h>
 
 
@@ -29,16 +26,16 @@ namespace fs
   static
   inline
   char *
-  realpath(const std::string &path_,
-           char              *resolved_path_)
+  realpath(const char *path_,
+           char       *resolved_path_)
   {
-    return ::realpath(path_.c_str(),resolved_path_);
+    return ::realpath(path_,resolved_path_);
   }
 
   static
   inline
   char *
-  realpath(const std::string &path_)
+  realpath(const char *path_)
   {
     return fs::realpath(path_,NULL);
   }

@@ -22,7 +22,7 @@
 
 
 int
-fs::mount(const std::string &tgt_)
+fs::mount(const char *tgt_)
 {
   return subprocess::call({"mount",tgt_});
 }

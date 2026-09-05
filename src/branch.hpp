@@ -20,7 +20,6 @@
 
 #include "base_types.h"
 #include "strvec.hpp"
-#include "fs_path.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -43,7 +42,7 @@ public:
 public:
   std::variant<u64,const u64*> _minfreespace;
   Mode mode;
-  fs::path path;
+  std::string path;
 
 public:
   Branch();

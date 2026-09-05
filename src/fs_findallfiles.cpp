@@ -27,18 +27,18 @@
 
 void
 fs::findallfiles(const std::vector<std::string> &basepaths_,
-                 const fs::path                 &fusepath_,
+                 const fs::relpath                 &fusepath_,
                  std::vector<std::string>       *paths_)
 {
-  fs::path fullpath;
+  fs::relpath fullpath = fusepath_;
 
   for(const auto &basepath : basepaths_)
     {
-      fullpath = basepath / fusepath_;
+      fullpath.set_prefix(basepath);
 
       if(!fs::exists(fullpath))
         continue;
 
-      paths_->push_back(fullpath);
+      paths_->emplace_back(fullpath.native());
     }
 }

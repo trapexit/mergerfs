@@ -33,6 +33,9 @@
 #include <shared_mutex>
 #include <string>
 
+#include <sys/stat.h>
+
+#include <string.h>
 #include <fnmatch.h>
 
 
@@ -225,13 +228,24 @@ namespace l
     fs::realpathize(&paths);
     for(auto &path : paths)
       {
-        std::error_code ec;
+        struct stat st;
+        int rv;
 
-        if(!std::filesystem::exists(path,ec))
+        rv = ::stat(path.c_str(),&st);
+        if(rv < 0)
           {
-            SysLog::notice("branch `{}` does not currently exist",path);
+            // Distinguish "doesn't exist" (the common case where the
+            // backing storage isn't mounted yet) from harder errors
+            // like permission, name-too-long, ELOOP, etc., which
+            // suggest a config problem rather than transient absence.
+            if(errno == ENOENT)
+              SysLog::notice("branch `{}` does not currently exist",path);
+            else
+              SysLog::warning("branch `{}` could not be stat'd: {}",
+                              path,
+                              strerror(errno));
           }
-        else if(!std::filesystem::is_directory(path,ec))
+        else if(!S_ISDIR(st.st_mode))
           {
             SysLog::warning("branch `{}` is not a directory, skipping",path);
             continue;
@@ -417,14 +431,14 @@ Branches::Impl::to_paths(StrVec &paths_) const
 {
   for(auto &branch : *this)
     {
-      paths_.push_back(branch.path);
+      paths_.emplace_back(branch.path);
     }
 }
 
-std::vector<fs::path>
+std::vector<std::string>
 Branches::Impl::to_paths() const
 {
-  std::vector<fs::path> vp;
+  std::vector<std::string> vp;
 
   for(const auto &branch : *this)
     vp.emplace_back(branch.path);
@@ -484,7 +498,7 @@ Branches::find_and_set_mode_ro()
 {
   Branches::Ptr impl;
   Branches::Ptr new_impl;
-  std::vector<fs::path> ro_paths;
+  std::vector<std::string> ro_paths;
 
   new_impl = std::make_shared<Branches::Impl>(&minfreespace);
 
@@ -524,7 +538,7 @@ Branches::find_and_set_mode_ro()
 
       for(const auto &path : ro_paths)
         SysLog::warning("branch `{}` found to be readonly - setting its mode=RO",
-                        path.string());
+                        path);
 
       return;
     }

@@ -289,11 +289,11 @@ fs::inode::get_algo(void)
   return {};
 }
 
-fs::inode::ReaddirCalc::ReaddirCalc(const fs::path &branch_path_,
-                                    const fs::path &dirpath_)
+fs::inode::ReaddirCalc::ReaddirCalc(const std::string &branch_path_,
+                                    const fs::relpath &dirpath_)
   : _algo(::_algo_from_func(g_func.load())),
-    _branch_seed(::_branch_seed(branch_path_.native())),
-    _fusepath((dirpath_ / "__mergerfs__").native()),
+    _branch_seed(::_branch_seed(branch_path_)),
+    _fusepath(fs::relpath::concat(dirpath_,"__mergerfs__")),
     _filename_offset(_fusepath.size() - std::string_view("__mergerfs__").size())
 {
 }
@@ -337,23 +337,11 @@ fs::inode::ReaddirCalc::calc(const char         *name_,
 
 u64
 fs::inode::calc(const std::string &branch_path_,
-                const std::string &fusepath_,
-                const mode_t       mode_,
-                const ino_t        ino_)
-{
-  return g_func.load()(branch_path_,
-                       fusepath_,
-                       mode_,
-                       ino_);
-}
-
-u64
-fs::inode::calc(const fs::path &branch_path_,
-                const fs::path &fusepath_,
+                const fs::relpath &fusepath_,
                 const mode_t    mode_,
                 const ino_t     ino_)
 {
-  return g_func.load()(branch_path_.native(),
+  return g_func.load()(branch_path_,
                        fusepath_.native(),
                        mode_,
                        ino_);
@@ -361,18 +349,7 @@ fs::inode::calc(const fs::path &branch_path_,
 
 void
 fs::inode::calc(const std::string &branch_path_,
-                const std::string &fusepath_,
-                struct stat       *st_)
-{
-  st_->st_ino = calc(branch_path_,
-                     fusepath_,
-                     st_->st_mode,
-                     st_->st_ino);
-}
-
-void
-fs::inode::calc(const fs::path &branch_path_,
-                const fs::path &fusepath_,
+                const fs::relpath &fusepath_,
                 struct stat    *st_)
 {
   st_->st_ino = calc(branch_path_,
@@ -382,19 +359,8 @@ fs::inode::calc(const fs::path &branch_path_,
 }
 
 void
-fs::inode::calc(const std::string &branch_path_,
-                const std::string &fusepath_,
-                struct fuse_statx *st_)
-{
-  st_->ino = calc(branch_path_,
-                  fusepath_,
-                  st_->mode,
-                  st_->ino);
-}
-
-void
-fs::inode::calc(const fs::path    &branch_path_,
-                const fs::path    &fusepath_,
+fs::inode::calc(const std::string    &branch_path_,
+                const fs::relpath    &fusepath_,
                 struct fuse_statx *st_)
 {
   st_->ino = calc(branch_path_,

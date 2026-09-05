@@ -24,29 +24,26 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
-#include "policy_epall.hpp"
 #include "policy_error.hpp"
-#include "strvec.hpp"
-
-#include <string>
 
 
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
   int error;
   fs::info_t info;
+  fs::relpath fullpath(fusepath_);
 
   error = ENOENT;
   for(auto &branch : *branches_)
     {
       if(branch.ro_or_nc())
         error_and_continue(error,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(error,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -68,19 +65,20 @@ _create(const Branches::Ptr  &branches_,
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
   int error;
   bool readonly;
+  fs::relpath fullpath(fusepath_);
 
   error = ENOENT;
   for(auto &branch : *branches_)
     {
       if(branch.ro())
         error_and_continue(error,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(error,ENOENT);
       rv = fs::statvfs_cache_readonly(branch.path,&readonly);
       if(rv < 0)
@@ -100,12 +98,14 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
+  fs::relpath fullpath(fusepath_);
+
   for(auto &branch : *branches_)
     {
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         continue;
 
       paths_.emplace_back(&branch);
@@ -119,7 +119,7 @@ _search(const Branches::Ptr  &branches_,
 
 int
 Policy::EPAll::Action::operator()(const Branches::Ptr  &branches_,
-                                  const fs::path       &fusepath_,
+                                  const fs::relpath       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
@@ -127,7 +127,7 @@ Policy::EPAll::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPAll::Create::operator()(const Branches::Ptr  &branches_,
-                                  const fs::path       &fusepath_,
+                                  const fs::relpath       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -135,7 +135,7 @@ Policy::EPAll::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPAll::Search::operator()(const Branches::Ptr  &branches_,
-                                  const fs::path       &fusepath_,
+                                  const fs::relpath       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

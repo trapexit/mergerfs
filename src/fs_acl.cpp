@@ -21,16 +21,15 @@
 #include "fs_lgetxattr.hpp"
 #include "fs_path.hpp"
 
-#include <filesystem>
 
 constexpr const char POSIX_ACL_DEFAULT_XATTR[] = "system.posix_acl_default";
 
 
 bool
-fs::acl::dir_has_defaults(const fs::path &fullpath_)
+fs::acl::dir_has_defaults(const fs::relpath &fullpath_)
 {
   int rv;
-  fs::path dirpath;
+  fs::relpath dirpath;
 
   dirpath = fullpath_.parent_path();
 

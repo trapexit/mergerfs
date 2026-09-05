@@ -26,23 +26,21 @@
 #include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "strvec.hpp"
 
-#include <filesystem>
 #include <limits>
-#include <string>
 
 
 static
 Branch*
 _create_1(const Branches::Ptr &branches_,
-          const fs::path      &fusepath_,
+          const fs::relpath      &fusepath_,
           int                 *err_)
 {
   int rv;
   u64 lfs;
   fs::info_t info;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   lfs = std::numeric_limits<u64>::max();
@@ -50,7 +48,7 @@ _create_1(const Branches::Ptr &branches_,
     {
       if(branch.ro_or_nc())
         error_and_continue(*err_,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(*err_,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -72,12 +70,12 @@ _create_1(const Branches::Ptr &branches_,
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int error;
   Branch *branch;
-  fs::path fusepath;
+  fs::relpath fusepath;
 
   error = ENOENT;
   fusepath = fusepath_;
@@ -86,7 +84,7 @@ _create(const Branches::Ptr  &branches_,
       branch = ::_create_1(branches_,fusepath,&error);
       if(branch)
         break;
-      if(fusepath == "/")
+      if(fusepath.empty())
         break;
       fusepath = fusepath.parent_path();
     }
@@ -101,7 +99,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLFS::Action::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplfs(branches_,fusepath_,paths_);
@@ -109,7 +107,7 @@ Policy::MSPLFS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLFS::Create::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -117,7 +115,7 @@ Policy::MSPLFS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPLFS::Search::operator()(const Branches::Ptr  &branches_,
-                                   const fs::path       &fusepath_,
+                                   const fs::relpath       &fusepath_,
                                    std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplfs(branches_,fusepath_,paths_);

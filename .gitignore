@@ -31,3 +31,6 @@ rpmbuild/
 # mkdocs files
 mkdocs/venv
 __pycache__/
+
+# Claude Code session state
+.claude/

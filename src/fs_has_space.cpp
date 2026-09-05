@@ -21,12 +21,10 @@
 #include "fs_statvfs.hpp"
 #include "statvfs_util.hpp"
 
-#include <string>
-
 
 bool
-fs::has_space(const std::string &str_,
-              cs64                size_)
+fs::has_space(const char *str_,
+              cs64        size_)
 {
   int rv;
   struct statvfs st;

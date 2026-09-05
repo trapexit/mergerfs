@@ -1,8 +1,11 @@
 #include "acutest/acutest.h"
 
 #include "config.hpp"
+#include "fs_clonepath.hpp"
 #include "fs_copyfile.hpp"
+#include "fs_exists.hpp"
 #include "fs_inode.hpp"
+#include "fs_path.hpp"
 #include "from_string.hpp"
 #include "hashset.hpp"
 #include "num.hpp"
@@ -12,6 +15,7 @@
 #include "thread_pool.hpp"
 
 #include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <cstring>
 #include <filesystem>
@@ -664,7 +668,7 @@ test_branches_to_paths()
   TEST_CHECK(b.from_string("/tmp/a:/tmp/b:/tmp/c") == 0);
   Branches::Ptr p = b;
 
-  std::vector<fs::path> paths = (*p).to_paths();
+  std::vector<std::string> paths = (*p).to_paths();
   TEST_CHECK(paths.size() == 3);
   TEST_CHECK(paths[0] == "/tmp/a");
   TEST_CHECK(paths[1] == "/tmp/b");
@@ -1322,10 +1326,10 @@ test_config_inodecalc()
 void
 test_fs_inode_readdir_calc_matches_calc()
 {
-  const fs::path branch_path("/mnt/disk1");
-  const std::vector<fs::path> dirpaths = {
-    fs::path(),
-    fs::path("tv/season_01"),
+  const std::string branch_path("/mnt/disk1");
+  const std::vector<fs::relpath> dirpaths = {
+    fs::relpath(),
+    fs::relpath("tv/season_01"),
   };
   const std::vector<std::pair<std::string,mode_t>> entries = {
     {"episode_01.mkv", S_IFREG},
@@ -1354,9 +1358,9 @@ test_fs_inode_readdir_calc_matches_calc()
 
           for(const auto &[name,mode] : entries)
             {
-              const fs::path fullpath = dirpath / name;
-              const u64 expected = fs::inode::calc(branch_path.string(),
-                                                   fullpath.string(),
+              const fs::relpath fullpath = dirpath / name;
+              const u64 expected = fs::inode::calc(branch_path,
+                                                   fullpath,
                                                    mode,
                                                    ino);
               const u64 actual = calc.calc(name.c_str(),
@@ -2969,9 +2973,9 @@ test_fs_copyfile_basic()
   int rv;
   int src_fd;
   struct stat st;
-  fs::path src_path;
-  fs::path dst_path;
-  fs::path tmp_dir;
+  fs::relpath src_path;
+  fs::relpath dst_path;
+  fs::relpath tmp_dir;
   char tmp_template[] = "/tmp/mergerfs-test-copyfile-basic-XXXXXX";
 
   if(::mkdtemp(tmp_template) == nullptr)
@@ -2988,7 +2992,7 @@ test_fs_copyfile_basic()
   TEST_CHECK(src_fd >= 0);
   if(src_fd < 0)
     {
-      std::filesystem::remove_all(tmp_dir);
+      std::filesystem::remove_all(std::filesystem::path(tmp_dir.native()));
       return;
     }
 
@@ -3024,7 +3028,7 @@ test_fs_copyfile_basic()
     }
 
   ::close(src_fd);
-  std::filesystem::remove_all(tmp_dir);
+  std::filesystem::remove_all(std::filesystem::path(tmp_dir.native()));
 }
 
 void
@@ -3032,9 +3036,9 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
 {
   int rv;
   int src_fd;
-  fs::path src_path;
-  fs::path dst_path;
-  fs::path tmp_dir;
+  fs::relpath src_path;
+  fs::relpath dst_path;
+  fs::relpath tmp_dir;
   std::atomic<bool> stop_mutator{false};
   std::atomic<int> mutator_updates{0};
   char tmp_template[] = "/tmp/mergerfs-test-copyfile-race-XXXXXX";
@@ -3053,7 +3057,7 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
   TEST_CHECK(src_fd >= 0);
   if(src_fd < 0)
     {
-      std::filesystem::remove_all(tmp_dir);
+      std::filesystem::remove_all(std::filesystem::path(tmp_dir.native()));
       return;
     }
 
@@ -3085,9 +3089,9 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
   bool found_tmp_file = false;
   std::string tmp_prefix;
   tmp_prefix = ".";
-  tmp_prefix += dst_path.filename().string();
+  tmp_prefix += std::string(dst_path.filename());
   tmp_prefix += "_";
-  for(const auto &entry : std::filesystem::directory_iterator(tmp_dir))
+  for(const auto &entry : std::filesystem::directory_iterator(std::filesystem::path(tmp_dir.native())))
     {
       const std::string name = entry.path().filename().string();
       if(name.rfind(tmp_prefix,0) == 0)
@@ -3099,7 +3103,189 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
   TEST_CHECK(found_tmp_file == false);
 
   ::close(src_fd);
-  std::filesystem::remove_all(tmp_dir);
+  std::filesystem::remove_all(std::filesystem::path(tmp_dir.native()));
+}
+
+// Helper: build a real srcdir/dstdir pair under /tmp, with srcdir
+// pre-populated to contain `rel` as a chain of nested directories.
+// Returns the tmpdir; cleans up on destruction.
+namespace {
+struct ClonepathFixture
+{
+  fs::relpath tmp_dir;
+  fs::relpath srcdir;
+  fs::relpath dstdir;
+
+  ClonepathFixture()
+  {
+    char tmp_template[] = "/tmp/mergerfs-test-clonepath-XXXXXX";
+    if(::mkdtemp(tmp_template) == nullptr)
+      {
+        TEST_CHECK(false);
+        return;
+      }
+    tmp_dir = tmp_template;
+    srcdir  = tmp_dir / "src";
+    dstdir  = tmp_dir / "dst";
+    ::mkdir(srcdir.c_str(),0755);
+    ::mkdir(dstdir.c_str(),0755);
+  }
+
+  ~ClonepathFixture()
+  {
+    if(!tmp_dir.empty())
+      std::filesystem::remove_all(std::filesystem::path(tmp_dir.native()));
+  }
+
+  // Populate srcdir/<rel> as a directory chain.
+  bool make_src_chain(std::string_view rel)
+  {
+    fs::relpath p = srcdir;
+    std::size_t pos = 0;
+    while(pos < rel.size())
+      {
+        std::size_t next = rel.find('/',pos);
+        if(next == std::string_view::npos)
+          next = rel.size();
+        std::string_view component = rel.substr(pos,next - pos);
+        pos = next + 1;
+        if(component.empty())
+          continue;
+        p /= component;
+        if(::mkdir(p.c_str(),0755) < 0 && errno != EEXIST)
+          return false;
+      }
+    return true;
+  }
+};
+}
+
+void
+test_fs_clonepath_empty_relpath()
+{
+  // Empty relpath is a no-op, returns 0.
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath());
+  TEST_CHECK(rv == 0);
+}
+
+void
+test_fs_clonepath_single_component()
+{
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  TEST_CHECK(fix.make_src_chain("a"));
+
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath("a"));
+  TEST_CHECK(rv == 0);
+
+  struct stat st;
+  fs::relpath expect = fix.dstdir / "a";
+  TEST_CHECK(::lstat(expect.c_str(),&st) == 0);
+  TEST_CHECK(S_ISDIR(st.st_mode));
+}
+
+void
+test_fs_clonepath_many_components()
+{
+  // Stack-budget test: a 100-component relpath. The recursive version
+  // would have used ~12 KB * 100 = 1.2 MB of stack just for path
+  // objects; the iterative version uses ~8 KB total.
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  std::string rel;
+  for(int i = 0; i < 100; ++i)
+    {
+      if(!rel.empty()) rel += '/';
+      rel += "d";
+      rel += std::to_string(i);
+    }
+  TEST_CHECK(fix.make_src_chain(rel));
+
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath(rel));
+  TEST_CHECK(rv == 0);
+
+  struct stat st;
+  fs::relpath expect = fix.dstdir / rel;
+  TEST_CHECK(::lstat(expect.c_str(),&st) == 0);
+  TEST_CHECK(S_ISDIR(st.st_mode));
+}
+
+void
+test_fs_clonepath_intermediate_exists()
+{
+  // mkdir on an already-existing intermediate dir must not fail and
+  // must not re-copy metadata; the walk continues to deeper components.
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  TEST_CHECK(fix.make_src_chain("a/b/c"));
+
+  // Pre-create dstdir/a so mkdir hits EEXIST at the first step.
+  fs::relpath pre = fix.dstdir / "a";
+  TEST_CHECK(::mkdir(pre.c_str(),0700) == 0);
+
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath("a/b/c"));
+  TEST_CHECK(rv == 0);
+
+  struct stat st;
+  fs::relpath expect = fix.dstdir / "a/b/c";
+  TEST_CHECK(::lstat(expect.c_str(),&st) == 0);
+  TEST_CHECK(S_ISDIR(st.st_mode));
+}
+
+void
+test_fs_clonepath_non_dir_intermediate()
+{
+  // If an intermediate src component is a regular file, must return
+  // -ENOTDIR.
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  TEST_CHECK(fix.make_src_chain("a"));
+  fs::relpath file = fix.srcdir / "a/b";
+  int fd = ::open(file.c_str(),O_CREAT|O_WRONLY,0644);
+  TEST_CHECK(fd >= 0);
+  if(fd >= 0) ::close(fd);
+
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath("a/b"));
+  TEST_CHECK(rv == -ENOTDIR);
+}
+
+void
+test_fs_clonepath_lstat_failure()
+{
+  // If a src component does not exist, must return -ENOENT.
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  // Don't make any src chain; "missing/dir" doesn't exist.
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath("missing/dir"));
+  TEST_CHECK(rv == -ENOENT);
+}
+
+void
+test_fs_clonepath_double_slash_skip()
+{
+  // Defensive: double-slash in rel form is malformed but should not
+  // re-stat the same path or fail; empty segments are skipped.
+  ClonepathFixture fix;
+  if(fix.tmp_dir.empty()) return;
+
+  TEST_CHECK(fix.make_src_chain("a/b"));
+
+  // "a//b" -- the // produces an empty segment that should be skipped.
+  int rv = fs::clonepath(fix.srcdir,fix.dstdir,fs::relpath("a//b"));
+  TEST_CHECK(rv == 0);
+
+  struct stat st;
+  fs::relpath expect = fix.dstdir / "a/b";
+  TEST_CHECK(::lstat(expect.c_str(),&st) == 0);
+  TEST_CHECK(S_ISDIR(st.st_mode));
 }
 
 void
@@ -3496,8 +3682,8 @@ test_fs_inode_passthrough_returns_raw_ino()
 {
   TEST_CHECK(fs::inode::set_algo("passthrough") == 0);
 
-  const fs::path branch("/mnt/disk1");
-  const fs::path fusepath("some/file");
+  const std::string branch("/mnt/disk1");
+  const fs::relpath fusepath("some/file");
 
   TEST_CHECK(fs::inode::calc(branch, fusepath, S_IFREG, 42) == 42);
   TEST_CHECK(fs::inode::calc(branch, fusepath, S_IFDIR, 999) == 999);
@@ -3507,8 +3693,8 @@ test_fs_inode_passthrough_returns_raw_ino()
 void
 test_fs_inode_different_algos_produce_distinct_inodes()
 {
-  const fs::path branch("/mnt/disk1");
-  const fs::path fusepath("some/file");
+  const std::string branch("/mnt/disk1");
+  const fs::relpath fusepath("some/file");
   const std::vector<std::string> algos = {
     "path-hash",
     "devino-hash",
@@ -3524,6 +3710,758 @@ test_fs_inode_different_algos_produce_distinct_inodes()
 
   for(size_t i = 1; i < inodes.size(); ++i)
     TEST_CHECK(inodes[i] != inodes[0]);
+}
+
+void
+test_fs_relpath_default_construct()
+{
+  fs::relpath p;
+  TEST_CHECK(p.size() == 0);
+  TEST_CHECK(p.empty());
+  TEST_CHECK(p.c_str()[0] == '\0');
+  TEST_CHECK(p.capacity() == fs::relpath::BUF_SIZE - fs::relpath::REL_OFFSET - 1);
+  TEST_CHECK(p.native() == std::string_view{});
+}
+
+void
+test_fs_relpath_construct_from_strings()
+{
+  fs::relpath a("/mnt/disk1");
+  TEST_CHECK(a.size() == 10);
+  TEST_CHECK(a.native() == "/mnt/disk1");
+  TEST_CHECK(std::strcmp(a.c_str(),"/mnt/disk1") == 0);
+
+  std::string s = "/foo/bar";
+  fs::relpath b(s);
+  TEST_CHECK(b == "/foo/bar");
+
+  std::string_view sv = "baz";
+  fs::relpath c(sv);
+  TEST_CHECK(c == "baz");
+
+  fs::relpath empty1((const char*)nullptr);
+  TEST_CHECK(empty1.empty());
+
+  fs::relpath empty2("");
+  TEST_CHECK(empty2.empty());
+}
+
+void
+test_fs_relpath_concat_canonical()
+{
+  // Canonical contract: base has no trailing '/', rel has no leading '/'.
+  // concat inserts exactly one '/' between non-empty base and rel.
+  TEST_CHECK(fs::relpath::concat("/mnt/disk1","foo/bar") == "/mnt/disk1/foo/bar");
+  TEST_CHECK(fs::relpath::concat("a","b") == "a/b");
+
+  // Empty handling: empty side passes the other through, no separator.
+  TEST_CHECK(fs::relpath::concat("","foo") == "foo");
+  TEST_CHECK(fs::relpath::concat("/mnt/disk1","") == "/mnt/disk1");
+  TEST_CHECK(fs::relpath::concat("","").empty());
+}
+
+void
+test_fs_relpath_assign_concat_reuses_capacity()
+{
+  fs::relpath p;
+  const std::size_t cap = p.capacity();
+
+  p.assign_concat("/mnt/disk1","foo/bar");
+  TEST_CHECK(p == "/mnt/disk1/foo/bar");
+  TEST_CHECK(p.capacity() == cap); // no growth
+
+  p.assign_concat("/a","b");
+  TEST_CHECK(p == "/a/b");
+  TEST_CHECK(p.capacity() == cap);
+
+  p.assign_concat("/mnt/disk1","much/longer/sub/path");
+  TEST_CHECK(p == "/mnt/disk1/much/longer/sub/path");
+  TEST_CHECK(p.capacity() == cap);
+}
+
+void
+test_fs_relpath_operator_slash()
+{
+  fs::relpath branch("/mnt/disk1");
+  fs::relpath full = branch / "foo/bar";
+  TEST_CHECK(full == "/mnt/disk1/foo/bar");
+
+  fs::relpath p2("/a");
+  p2 /= "b";
+  TEST_CHECK(p2 == "/a/b");
+
+  // Free-function form via two string_views.
+  fs::relpath mixed = fs::operator/(std::string_view("/x"),std::string_view("y"));
+  TEST_CHECK(mixed == "/x/y");
+}
+
+void
+test_fs_relpath_filename()
+{
+  TEST_CHECK(fs::relpath("/foo/bar").filename() == "bar");
+  TEST_CHECK(fs::relpath("/foo/").filename() == std::string_view{});
+  TEST_CHECK(fs::relpath("/").filename() == std::string_view{});
+  TEST_CHECK(fs::relpath("foo").filename() == "foo");
+  TEST_CHECK(fs::relpath("").filename() == std::string_view{});
+  TEST_CHECK(fs::relpath("foo.txt").filename() == "foo.txt");
+}
+
+void
+test_fs_relpath_parent_path()
+{
+  TEST_CHECK(fs::relpath("/foo/bar").parent_path() == "/foo");
+  TEST_CHECK(fs::relpath("/foo").parent_path() == "/");
+  TEST_CHECK(fs::relpath("/").parent_path() == std::string_view{});
+  TEST_CHECK(fs::relpath("foo").parent_path() == std::string_view{});
+  TEST_CHECK(fs::relpath("").parent_path() == std::string_view{});
+  TEST_CHECK(fs::relpath("/foo/bar/").parent_path() == "/foo/bar");
+  TEST_CHECK(fs::relpath("a/b/c").parent_path() == "a/b");
+}
+
+void
+test_fs_relpath_extension_and_stem()
+{
+  fs::relpath a("/foo/bar.txt");
+  TEST_CHECK(a.extension() == ".txt");
+  TEST_CHECK(a.stem() == "bar");
+
+  fs::relpath b("/foo/.hidden");
+  TEST_CHECK(b.extension() == std::string_view{});
+  TEST_CHECK(b.stem() == ".hidden");
+
+  fs::relpath c("/foo/archive.tar.gz");
+  TEST_CHECK(c.extension() == ".gz");
+  TEST_CHECK(c.stem() == "archive.tar");
+
+  fs::relpath d("/foo/noext");
+  TEST_CHECK(d.extension() == std::string_view{});
+  TEST_CHECK(d.stem() == "noext");
+
+  fs::relpath dot("/foo/.");
+  TEST_CHECK(dot.extension() == std::string_view{});
+}
+
+void
+test_fs_relpath_remove_filename()
+{
+  fs::relpath p("/foo/bar");
+  p.remove_filename();
+  TEST_CHECK(p == "/foo/");
+
+  fs::relpath q("/foo/");
+  q.remove_filename();
+  TEST_CHECK(q == "/foo/");
+
+  fs::relpath r("foo");
+  r.remove_filename();
+  TEST_CHECK(r == "");
+
+  fs::relpath s("/");
+  s.remove_filename();
+  TEST_CHECK(s == "/");
+}
+
+void
+test_fs_relpath_lexically_relative()
+{
+  // Same root: simple suffix.
+  fs::relpath a("/mnt/disk1/data/file.txt");
+  TEST_CHECK(a.lexically_relative("/mnt/disk1") == "data/file.txt");
+
+  // Real symlink-relativization use case from fuse_link.cpp / fuse_rename.cpp:
+  // target relative to the directory holding the link.
+  fs::relpath target("/mnt/disk1/data/file.txt");
+  TEST_CHECK(target.lexically_relative("/mnt/disk1/links")
+             == "../data/file.txt");
+
+  // Identical paths give ".".
+  TEST_CHECK(fs::relpath("/a/b").lexically_relative("/a/b") == ".");
+
+  // Multiple ".." steps.
+  TEST_CHECK(fs::relpath("/x").lexically_relative("/a/b/c") == "../../../x");
+
+  // ".." in base disqualifies the result -- empty so the caller can
+  // distinguish from "" / "." (a successful relativization never
+  // produces empty; it returns "." for equal paths).
+  fs::relpath dotdot_in_base = fs::relpath("/a").lexically_relative("/a/..");
+  TEST_CHECK(dotdot_in_base.empty());
+
+  // Mismatched absoluteness also yields empty.
+  fs::relpath shape_mismatch = fs::relpath("/a").lexically_relative("a");
+  TEST_CHECK(shape_mismatch.empty());
+}
+
+void
+test_fs_relpath_copy_and_move()
+{
+  fs::relpath a("/mnt/disk1/foo");
+  fs::relpath b = a;
+  TEST_CHECK(b == a);
+  TEST_CHECK(b == "/mnt/disk1/foo");
+
+  fs::relpath c;
+  c = a;
+  TEST_CHECK(c == a);
+
+  fs::relpath d(std::move(b));
+  TEST_CHECK(d == "/mnt/disk1/foo");
+
+  fs::relpath e;
+  e = std::move(d);
+  TEST_CHECK(e == "/mnt/disk1/foo");
+
+  // Self-assignment is a no-op.
+  e = e;
+  TEST_CHECK(e == "/mnt/disk1/foo");
+  e = std::move(e);
+  TEST_CHECK(e == "/mnt/disk1/foo");
+}
+
+void
+test_fs_relpath_equality()
+{
+  fs::relpath a("/a/b");
+  fs::relpath b("/a/b");
+  fs::relpath c("/a/c");
+
+  TEST_CHECK(a == b);
+  TEST_CHECK(!(a == c));
+  TEST_CHECK(a != c);
+  TEST_CHECK(a == std::string_view("/a/b"));
+  TEST_CHECK(a != std::string_view("/x"));
+}
+
+void
+test_fs_relpath_implicit_conversions()
+{
+  // The two implicit conversions are the load-bearing pieces of the
+  // drop-in story. Confirm they pick up correctly in overload resolution.
+  fs::relpath p("/etc/hostname");
+
+  // const char* selection: pass to a function taking const char*.
+  auto strlen_via_cstr = [](const char *s) { return std::strlen(s); };
+  TEST_CHECK(strlen_via_cstr(p) == p.size());
+
+  // string_view selection.
+  auto svsize = [](std::string_view sv) { return sv.size(); };
+  TEST_CHECK(svsize(p) == p.size());
+}
+
+void
+test_fs_relpath_resize_and_append()
+{
+  // ReaddirCalc-style: pin a prefix, vary the suffix.
+  fs::relpath p("/mnt/disk1/");
+  const std::size_t prefix = p.size();
+
+  p.append("foo",3);
+  TEST_CHECK(p == "/mnt/disk1/foo");
+
+  p.resize(prefix);
+  TEST_CHECK(p == "/mnt/disk1/");
+
+  p.append(std::string_view("longer_name"));
+  TEST_CHECK(p == "/mnt/disk1/longer_name");
+
+  p.clear();
+  TEST_CHECK(p.empty());
+  TEST_CHECK(p.c_str()[0] == '\0');
+}
+
+void
+test_fs_relpath_construct_stores_verbatim()
+{
+  // _init stores input verbatim; no leading-slash strip. This lets
+  // fs::relpath also hold a fully-built absolute fullpath without
+  // losing the leading '/'.
+  fs::relpath abs("/mnt/disk1");
+  TEST_CHECK(abs == "/mnt/disk1");
+  TEST_CHECK(abs.size() == 10);
+
+  fs::relpath rel("foo/bar");
+  TEST_CHECK(rel == "foo/bar");
+
+  // Empty starts empty.
+  fs::relpath empty;
+  TEST_CHECK(empty.empty());
+
+  // assign() replaces verbatim too.
+  fs::relpath p("foo");
+  p.assign("/etc");
+  TEST_CHECK(p == "/etc");
+  p.assign("bar");
+  TEST_CHECK(p == "bar");
+}
+
+void
+test_fs_relpath_set_prefix()
+{
+  // Hot-path use case: a fusepath stored as canonical rel (no leading
+  // slash), branch_path written into its prefix area in place.
+  // Canonical form throughout (no trailing slash on prefix, no leading
+  // slash on rel).
+  fs::relpath p("foo/bar");
+  TEST_CHECK(p == "foo/bar");
+
+  p.set_prefix("/mnt/disk1");
+  TEST_CHECK(p == "/mnt/disk1/foo/bar");
+
+  // Replace prefix in place.
+  p.set_prefix("/mnt/disk2");
+  TEST_CHECK(p == "/mnt/disk2/foo/bar");
+
+  // Clear prefix returns to the rel.
+  p.clear_prefix();
+  TEST_CHECK(p == "foo/bar");
+
+  // Empty prefix is equivalent to clear_prefix.
+  p.set_prefix("/etc");
+  TEST_CHECK(p == "/etc/foo/bar");
+  p.set_prefix("");
+  TEST_CHECK(p == "foo/bar");
+
+  // Empty rel: prefix becomes the whole path with no separator.
+  fs::relpath e;
+  e.set_prefix("/mnt/disk1");
+  TEST_CHECK(e == "/mnt/disk1");
+}
+
+void
+test_fs_relpath_concat()
+{
+  // concat / assign_concat splice base + '/' + rel, no stripping.
+  // The result is itself an fs::relpath that can be re-prefixed.
+  fs::relpath fullpath = fs::relpath::concat("/mnt/disk1","foo/bar");
+  TEST_CHECK(fullpath == "/mnt/disk1/foo/bar");
+
+  // Re-prefix the result. set_prefix replaces the full prefix area
+  // (which currently contains "/mnt/disk1/").
+  fullpath.set_prefix("/mnt/disk2");
+  TEST_CHECK(fullpath == "/mnt/disk2/foo/bar");
+}
+
+void
+test_fs_relpath_prepend()
+{
+  // libfuse-style backward build: walk leaf->root, prepending each
+  // ancestor name as "/name". prepend() writes the slash automatically.
+  fs::relpath p;
+  TEST_CHECK(p.empty());
+
+  p.prepend("leaf.txt");
+  TEST_CHECK(p == "/leaf.txt");
+  TEST_CHECK(p.size() == 9);
+
+  p.prepend("intermediate");
+  TEST_CHECK(p == "/intermediate/leaf.txt");
+
+  p.prepend("root");
+  TEST_CHECK(p == "/root/intermediate/leaf.txt");
+
+  // Single-character names work too.
+  fs::relpath q;
+  q.prepend("c");
+  q.prepend("b");
+  q.prepend("a");
+  TEST_CHECK(q == "/a/b/c");
+
+  // Empty-string prepend just adds a slash.
+  fs::relpath r;
+  r.prepend("");
+  TEST_CHECK(r == "/");
+  TEST_CHECK(r.size() == 1);
+}
+
+void
+test_fs_relpath_consolidate_to_rel()
+{
+  // After backward-build via prepend(), data lives at some _start
+  // before REL_OFFSET. consolidate_to_rel() shifts it to the REL anchor
+  // so set_prefix() can be applied by callers downstream.
+  fs::relpath p;
+  p.prepend("leaf.txt");
+  p.prepend("dir");
+  TEST_CHECK(p == "/dir/leaf.txt");
+
+  // Default: keep the leading '/'.
+  p.consolidate_to_rel();
+  TEST_CHECK(p == "/dir/leaf.txt");
+
+  // strip_leading_slash=true: drop the '/' that prepend left at the
+  // front.
+  fs::relpath q;
+  q.prepend("file");
+  q.prepend("dir");
+  TEST_CHECK(q == "/dir/file");
+
+  q.consolidate_to_rel(/*strip_leading_slash=*/true);
+  TEST_CHECK(q == "dir/file");
+
+  // Now in canonical mergerfs form: rel without leading '/'. set_prefix
+  // is applied in place by the caller's per-branch loop.
+  q.set_prefix("/branch");
+  TEST_CHECK(q == "/branch/dir/file");
+
+  // Idempotent: consolidating an already-canonical-rel path is a no-op.
+  fs::relpath r("foo/bar");
+  r.consolidate_to_rel();
+  TEST_CHECK(r == "foo/bar");
+
+  // Empty path: strip_leading_slash should be safe (no leading '/' to
+  // strip, no underflow).
+  fs::relpath s;
+  s.consolidate_to_rel(/*strip_leading_slash=*/true);
+  TEST_CHECK(s.empty());
+
+  const std::size_t rel_capacity = fs::relpath::BUF_SIZE - fs::relpath::REL_OFFSET - 1;
+
+  // Boundary: enough components to land exactly at REL_OFFSET bytes
+  // (each prepend adds component_size + 1 for the slash). After
+  // strip_leading_slash this is exactly rel_capacity. Math is
+  // parameterized off REL_OFFSET so this test scales with the buffer
+  // size; with the symmetric 8 KB layout this is 4 components of 1023
+  // bytes each = 4096 bytes total, consolidating to 4095 = rel_capacity.
+  constexpr std::size_t component_count = 4;
+  static_assert((fs::relpath::REL_OFFSET % component_count) == 0,
+                "boundary test assumes REL_OFFSET divides evenly");
+  const std::size_t component_size = (fs::relpath::REL_OFFSET / component_count) - 1;
+  const std::string max_component(component_size,'m');
+  fs::relpath max_rel;
+  for(std::size_t i = 0; i < component_count; ++i)
+    max_rel.prepend(max_component);
+  TEST_CHECK(max_rel.size() == rel_capacity + 1);
+
+  max_rel.consolidate_to_rel(/*strip_leading_slash=*/true);
+  TEST_CHECK(max_rel.size() == rel_capacity);
+  TEST_CHECK(max_rel.prefix().empty());
+  TEST_CHECK(max_rel.rel().size() == rel_capacity);
+
+  // Note: with the symmetric BUF_SIZE = 2 * REL_OFFSET layout, the
+  // "prepend fits in the prefix area but consolidate_to_rel overflows
+  // the rel area" window collapses to a single byte and is unreachable
+  // with strip_leading_slash=true (the strip absorbs the off-by-one).
+}
+
+void
+test_fs_relpath_clear_resets_state()
+{
+  // clear() must return to the canonical empty state regardless of
+  // prior contents, so that subsequent prepend() works. This is the
+  // libfuse try_get_path contract.
+  fs::relpath p("/mnt/disk1/foo");
+  TEST_CHECK(!p.empty());
+
+  p.clear();
+  TEST_CHECK(p.empty());
+
+  // prepend() must work after clear().
+  p.prepend("file");
+  p.prepend("dir");
+  TEST_CHECK(p == "/dir/file");
+
+  // Round-trip through consolidate_to_rel(strip=true) → set_prefix.
+  p.consolidate_to_rel(/*strip_leading_slash=*/true);
+  TEST_CHECK(p == "dir/file");
+  p.set_prefix("/branch");
+  TEST_CHECK(p == "/branch/dir/file");
+}
+
+void
+test_fs_relpath_self_aliasing()
+{
+  // assign_concat / operator/= must handle the case where one of the
+  // inputs aliases *this's own buffer (e.g. `p /= "x"`). Naive ordering
+  // writes the rel slot first, which corrupts the base if base aliases.
+  fs::relpath a("a");
+  a /= "b";
+  TEST_CHECK(a == "a/b");
+
+  fs::relpath foo("foo/bar");
+  foo /= "baz";
+  TEST_CHECK(foo == "foo/bar/baz");
+
+  // Leading-slash self-aliasing too.
+  fs::relpath abs("/mnt/disk1");
+  abs /= "data";
+  TEST_CHECK(abs == "/mnt/disk1/data");
+
+  // Repeated /=
+  fs::relpath p("a");
+  p /= "b";
+  p /= "c";
+  p /= "d";
+  TEST_CHECK(p == "a/b/c/d");
+
+  // assign_concat with native() as the base
+  fs::relpath q("rel");
+  q.assign_concat(q.native(),"more");
+  TEST_CHECK(q == "rel/more");
+}
+
+void
+test_fs_relpath_prefix_and_rel_accessors()
+{
+  // Path with no prefix set: prefix() empty, rel() is the whole thing.
+  fs::relpath p("foo/bar");
+  TEST_CHECK(p.prefix().empty());
+  TEST_CHECK(p.rel() == "foo/bar");
+
+  // After set_prefix the views reflect each region.
+  p.set_prefix("/mnt/disk1");
+  TEST_CHECK(p.prefix() == "/mnt/disk1/");
+  TEST_CHECK(p.rel() == "foo/bar");
+  TEST_CHECK(p == "/mnt/disk1/foo/bar"); // native is the concatenation
+
+  // clear_prefix resets prefix() to empty.
+  p.clear_prefix();
+  TEST_CHECK(p.prefix().empty());
+  TEST_CHECK(p.rel() == "foo/bar");
+
+  // For a path constructed verbatim with a leading slash, the data
+  // sits at REL_OFFSET as the rel; prefix() is empty.
+  fs::relpath abs("/etc/hostname");
+  TEST_CHECK(abs.prefix().empty());
+  TEST_CHECK(abs.rel() == "/etc/hostname");
+  TEST_CHECK(abs.rel() == abs.native());
+}
+
+void
+test_fs_relpath_resize_zero_fills()
+{
+  // Growing via resize must zero-fill the new bytes so a subsequent
+  // read of [old_size, new_size) doesn't return garbage from a
+  // previous use of the buffer.
+  fs::relpath p("foo");
+  p.append("dirty",5); // _buf now contains "foodirty"
+  TEST_CHECK(p == "foodirty");
+
+  p.resize(3); // back to "foo"
+  TEST_CHECK(p == "foo");
+  TEST_CHECK(p.size() == 3);
+
+  // Grow back to 8 bytes. Bytes 3..7 must be '\0', not the leftover
+  // "dirty" content.
+  p.resize(8);
+  TEST_CHECK(p.size() == 8);
+  // The whole path read as a string_view should be "foo\0\0\0\0\0".
+  TEST_CHECK(p.native().size() == 8);
+  for(std::size_t i = 3; i < 8; i++)
+    TEST_CHECK(p.native()[i] == '\0');
+  // c_str() stops at the first '\0' so it reads "foo".
+  TEST_CHECK(std::strcmp(p.c_str(),"foo") == 0);
+
+  // Shrinking truncates and writes a NUL at the new end.
+  p.resize(2);
+  TEST_CHECK(p == "fo");
+  TEST_CHECK(p.c_str()[2] == '\0');
+}
+
+void
+test_fs_relpath_rel_size_invariant()
+{
+  // _rel_size is internal but visible through rel(). Verify it stays
+  // consistent across the full set of mutations: assign_concat,
+  // set_prefix (must NOT touch rel size), clear_prefix, append,
+  // resize, remove_filename, clear, copy/move, swap.
+  fs::relpath p;
+  p.assign_concat("/mnt/disk1","foo/bar");
+  TEST_CHECK(p.rel() == "foo/bar");        // rel cached as 7
+  TEST_CHECK(p.rel().size() == 7);
+
+  // set_prefix only changes the prefix area; rel must be unchanged.
+  p.set_prefix("/mnt/disk2");
+  TEST_CHECK(p.rel() == "foo/bar");
+  TEST_CHECK(p.rel().size() == 7);
+
+  // Replace with a different-length prefix; rel still unchanged.
+  p.set_prefix("/x");
+  TEST_CHECK(p == "/x/foo/bar");
+  TEST_CHECK(p.rel() == "foo/bar");
+
+  // clear_prefix drops prefix; rel unchanged.
+  p.clear_prefix();
+  TEST_CHECK(p == "foo/bar");
+  TEST_CHECK(p.rel() == "foo/bar");
+  TEST_CHECK(p.size() == 7);
+
+  // append extends the rel.
+  p.append("/baz",4);
+  TEST_CHECK(p == "foo/bar/baz");
+  TEST_CHECK(p.rel() == "foo/bar/baz");
+
+  // resize shrinks; rel shrinks with it.
+  p.resize(3);
+  TEST_CHECK(p == "foo");
+  TEST_CHECK(p.rel() == "foo");
+
+  // remove_filename truncates to the directory form.
+  p.assign_concat("/mnt","a/b");
+  TEST_CHECK(p == "/mnt/a/b");
+  TEST_CHECK(p.rel() == "a/b");
+  p.remove_filename();
+  TEST_CHECK(p == "/mnt/a/");
+  TEST_CHECK(p.rel() == "a/");
+
+  // Construct from a leading-'/' literal: stored verbatim, so the
+  // entire payload is the rel.
+  fs::relpath abs("/etc/hostname");
+  TEST_CHECK(abs.rel() == "/etc/hostname");
+
+  // clear resets size; rel is empty.
+  abs.clear();
+  TEST_CHECK(abs.empty());
+  TEST_CHECK(abs.rel().empty());
+
+  // Copy/move preserve _rel_size (visible via rel()).
+  fs::relpath src;
+  src.assign_concat("/p","r");
+  fs::relpath cpy = src;
+  TEST_CHECK(cpy.rel() == "r");
+  fs::relpath mv = std::move(src);
+  TEST_CHECK(mv.rel() == "r");
+
+  // Swap exchanges _rel_size too.
+  fs::relpath a;
+  a.assign_concat("/x","aaa");
+  fs::relpath b;
+  b.assign_concat("/y","bbbb");
+  a.swap(b);
+  TEST_CHECK(a.rel() == "bbbb");
+  TEST_CHECK(b.rel() == "aaa");
+}
+
+void
+test_fs_relpath_swap()
+{
+  // Swap two paths with content in both the prefix area and rel.
+  fs::relpath a = fs::relpath::concat("/x","mnt/disk1");
+  fs::relpath b("foo/bar");
+  TEST_CHECK(a == "/x/mnt/disk1");
+  TEST_CHECK(b == "foo/bar");
+
+  a.swap(b);
+  TEST_CHECK(a == "foo/bar");
+  TEST_CHECK(b == "/x/mnt/disk1");
+
+  // Swap between leading-'/' and rel-form paths.
+  fs::relpath abs("/etc/hostname");
+  fs::relpath rel("relpath");
+  abs.swap(rel);
+  TEST_CHECK(abs == "relpath");
+  TEST_CHECK(rel == "/etc/hostname");
+
+  // Self-swap is a no-op.
+  fs::relpath c("self");
+  c.swap(c);
+  TEST_CHECK(c == "self");
+}
+
+void
+test_fs_relpath_set_prefix_oversize()
+{
+  // Oversized-prefix fallback: when a prefix won't fit in front of
+  // the default rel anchor (REL_OFFSET), set_prefix shifts the rel
+  // rightward so the full BUF_SIZE-1 can be used. Unreachable under
+  // Linux PATH_MAX but the class supports it for correctness.
+  fs::relpath p("foo");
+  TEST_CHECK(p.size() == 3);
+  TEST_CHECK(p.rel() == "foo");
+
+  // 5000-byte prefix exceeds REL_OFFSET (4096) but the total path
+  // (5000 + 1 + 3) fits in BUF_SIZE-1.
+  const std::size_t big_prefix_len = 5000;
+  std::string big_prefix(big_prefix_len,'A');
+  p.set_prefix(big_prefix);
+  TEST_CHECK(p.size() == big_prefix_len + 1 + 3);
+  TEST_CHECK(p.native().substr(0,big_prefix_len) == big_prefix);
+  TEST_CHECK(p.native().substr(big_prefix_len) == "/foo");
+  TEST_CHECK(p.rel() == "foo");
+  TEST_CHECK(p.prefix() == big_prefix + "/");
+
+  // A subsequent fitting prefix still works (rel stays at its grown
+  // anchor; this is allowed since the prefix area can be larger than
+  // REL_OFFSET without harm). Verify the prefix slice and that several
+  // back-to-back fast-path calls in a row leave a clean buffer (the
+  // per-branch loop pattern).
+  p.set_prefix("/branch");
+  TEST_CHECK(p == "/branch/foo");
+  TEST_CHECK(p.rel() == "foo");
+  TEST_CHECK(p.prefix() == "/branch/");
+
+  p.set_prefix("/another");
+  TEST_CHECK(p == "/another/foo");
+  TEST_CHECK(p.rel() == "foo");
+  TEST_CHECK(p.prefix() == "/another/");
+
+  p.set_prefix("/x");
+  TEST_CHECK(p == "/x/foo");
+  TEST_CHECK(p.rel() == "foo");
+  TEST_CHECK(p.prefix() == "/x/");
+
+  // Oversized prefix with empty rel: no separator, prefix becomes the
+  // whole path, can fill up to BUF_SIZE-1.
+  fs::relpath e;
+  std::string max_prefix(fs::relpath::BUF_SIZE - 1,'C');
+  e.set_prefix(max_prefix);
+  TEST_CHECK(e.size() == fs::relpath::BUF_SIZE - 1);
+  TEST_CHECK(e.native() == max_prefix);
+}
+
+void
+test_fs_relpath_root_nodeid_dispatch_contract()
+{
+  // libfuse's try_get_path() walks leaf-to-root. Two cases produce an
+  // empty fs::relpath after the call:
+  //   1. nodeid == FUSE_ROOT_ID: the walk has zero components to
+  //      prepend, so an empty path is the legitimate result. The
+  //      dispatcher (fuse_lib_getattr / fuse_lib_setattr /
+  //      fuse_lib_statx_path) issues a path-based op for this case.
+  //   2. ESTALE was masked above (a nameless node, e.g. an unlinked
+  //      open file): try_get_path's error path resets the buffer to
+  //      empty, so the caller observes empty here too. The
+  //      dispatcher falls back to the fh-based op (fXXX(0)) which
+  //      lets mergerfs find the file via OpenFiles by handle.
+  //
+  // The dispatcher discriminator is (nodeid == FUSE_ROOT_ID), not
+  // empty() alone. Lock the no-allocation, no-leading-slash contract
+  // of the empty path here so a future change to clear() / prepend() /
+  // consolidate_to_rel() doesn't silently flip the discriminator.
+  fs::relpath p;
+  p.clear();                                          // libfuse start state
+  p.consolidate_to_rel(/*strip_leading_slash=*/false); // zero prepends
+  TEST_CHECK(p.empty());
+  TEST_CHECK(p.size() == 0);
+  TEST_CHECK(p.native() == std::string_view{});
+  TEST_CHECK(p.c_str()[0] == '\0');
+
+  // The path-vs-fh dispatcher uses empty() as part of the test; make
+  // sure the implicit conversion to const char* yields a non-null,
+  // empty C string (callers may pass it to fs::* wrappers that take
+  // const char*).
+  const char *cs = p;
+  TEST_CHECK(cs != nullptr);
+  TEST_CHECK(cs[0] == '\0');
+
+  // After consolidate_to_rel(strip=true) on a zero-prepend path the
+  // result is also empty (the strip is a no-op when the first byte
+  // isn't '/'; _size > 0 guards prevent underflow).
+  fs::relpath q;
+  q.clear();
+  q.consolidate_to_rel(/*strip_leading_slash=*/true);
+  TEST_CHECK(q.empty());
+
+  // A non-root path (one prepend, then consolidate with strip) yields
+  // canonical-rel form: "name", no leading slash. Combined with the
+  // empty cases above, the dispatcher sees:
+  //   nodeid == FUSE_ROOT_ID, empty()  -> path-based op (root)
+  //   nodeid != FUSE_ROOT_ID, empty()  -> fh-based op (nameless)
+  //   nodeid != FUSE_ROOT_ID, !empty() -> path-based op (named)
+  fs::relpath r;
+  r.clear();
+  r.prepend("file");
+  r.consolidate_to_rel(/*strip_leading_slash=*/true);
+  TEST_CHECK(!r.empty());
+  TEST_CHECK(r == "file");
 }
 
 void
@@ -3754,6 +4692,13 @@ TEST_LIST =
     {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
+    {"fs_clonepath_empty_relpath",test_fs_clonepath_empty_relpath},
+    {"fs_clonepath_single_component",test_fs_clonepath_single_component},
+    {"fs_clonepath_many_components",test_fs_clonepath_many_components},
+    {"fs_clonepath_intermediate_exists",test_fs_clonepath_intermediate_exists},
+    {"fs_clonepath_non_dir_intermediate",test_fs_clonepath_non_dir_intermediate},
+    {"fs_clonepath_lstat_failure",test_fs_clonepath_lstat_failure},
+    {"fs_clonepath_double_slash_skip",test_fs_clonepath_double_slash_skip},
     {"str_eq_nullptr",test_str_eq_nullptr},
     {"str_startswith_char_nullptr",test_str_startswith_char_nullptr},
     {"str_from_u64_suffixes",test_str_from_u64_suffixes},
@@ -3777,6 +4722,33 @@ TEST_LIST =
     {"fs_inode_set_algo_invalid",test_fs_inode_set_algo_invalid},
     {"fs_inode_passthrough_returns_raw_ino",test_fs_inode_passthrough_returns_raw_ino},
     {"fs_inode_different_algos_produce_distinct_inodes",test_fs_inode_different_algos_produce_distinct_inodes},
+    {"fs_path_default_construct",test_fs_relpath_default_construct},
+    {"fs_path_construct_from_strings",test_fs_relpath_construct_from_strings},
+    {"fs_path_concat_canonical",test_fs_relpath_concat_canonical},
+    {"fs_path_assign_concat_reuses_capacity",test_fs_relpath_assign_concat_reuses_capacity},
+    {"fs_path_operator_slash",test_fs_relpath_operator_slash},
+    {"fs_path_filename",test_fs_relpath_filename},
+    {"fs_path_parent_path",test_fs_relpath_parent_path},
+    {"fs_path_extension_and_stem",test_fs_relpath_extension_and_stem},
+    {"fs_path_remove_filename",test_fs_relpath_remove_filename},
+    {"fs_path_lexically_relative",test_fs_relpath_lexically_relative},
+    {"fs_path_copy_and_move",test_fs_relpath_copy_and_move},
+    {"fs_relpath_equality",test_fs_relpath_equality},
+    {"fs_relpath_implicit_conversions",test_fs_relpath_implicit_conversions},
+    {"fs_relpath_resize_and_append",test_fs_relpath_resize_and_append},
+    {"fs_relpath_construct_stores_verbatim",test_fs_relpath_construct_stores_verbatim},
+    {"fs_relpath_set_prefix",test_fs_relpath_set_prefix},
+    {"fs_relpath_concat",test_fs_relpath_concat},
+    {"fs_relpath_prepend",test_fs_relpath_prepend},
+    {"fs_relpath_consolidate_to_rel",test_fs_relpath_consolidate_to_rel},
+    {"fs_relpath_clear_resets_state",test_fs_relpath_clear_resets_state},
+    {"fs_relpath_self_aliasing",test_fs_relpath_self_aliasing},
+    {"fs_relpath_prefix_and_rel_accessors",test_fs_relpath_prefix_and_rel_accessors},
+    {"fs_relpath_resize_zero_fills",test_fs_relpath_resize_zero_fills},
+    {"fs_relpath_rel_size_invariant",test_fs_relpath_rel_size_invariant},
+    {"fs_relpath_swap",test_fs_relpath_swap},
+    {"fs_relpath_set_prefix_oversize",test_fs_relpath_set_prefix_oversize},
+    {"fs_relpath_root_nodeid_dispatch_contract",test_fs_relpath_root_nodeid_dispatch_contract},
     {"rnd_rand64_basic",test_rnd_rand64_basic},
     {"rnd_rand64_max",test_rnd_rand64_max},
     {"rnd_rand64_range",test_rnd_rand64_range},
