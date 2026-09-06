@@ -119,11 +119,32 @@ Config::Config()
   proxy_ioprio(false),
   read_thread_count(fuse_cfg.read_thread_count),
   readahead(0),
+  /* pipe_max_size=0: no sysctl write (default). Non-zero: write value
+     to /proc/sys/fs/pipe-max-size BEFORE FUSE INIT so the msgbuf pipe
+     cache, the reply bounce pipe, and the fuse_msg_size clamp all see
+     the raised cap. Root-only knob; failures log at info level (cannot
+     open sysctl / write failed) and the mount proceeds with the
+     current kernel value. */
+  pipe_max_size(0),
   readdir("seq"),
   rename_exdev(RenameEXDEV::ENUM::PASSTHROUGH),
   scheduling_priority(-10),
   security_capability(true),
   statfs(StatFS::ENUM::BASE),
+  /* 2026-08-30 pooled bench verdict on tmpfs branches (4 runs x
+     REPS=9, n=36/cell): seq_write +20.8%, seq_read +52.4%,
+     small_write +5.0%, small_read +12.1%. 4K cells regress (-16%
+     write on cold mounts, -4..-12% read). Only the READ side of that
+     regression is excluded by a size gate: read replies below 128 KiB
+     use the copy path (fuse_lib_read, fuse.cpp), so 4K reads never hit
+     splice. Writes have no equivalent gate - fuse_ll_buf_receive_splice
+     (fuse_lowlevel.cpp) stages every FUSE_WRITE payload into the pipe
+     regardless of size - so the measured 4K write regression applies
+     in full under this default. Defaults ON per pre-committed rule
+     anyway: the small_write/seq_write/seq_read gains outweigh it in
+     the pooled numbers above, but "excluded by the gates" was true
+     only for reads. */
+  splice(true),
   statfs_ignore(StatFSIgnore::ENUM::NONE),
   symlinkify(false),
   symlinkify_timeout(3600),
@@ -174,6 +195,8 @@ Config::Config()
     process_thread_queue_depth.ro =
     read_thread_count.ro =
     scheduling_priority.ro =
+    pipe_max_size.ro =
+    splice.ro =
     true;
   _congestion_threshold.display =
     _gid.display =
@@ -273,6 +296,7 @@ Config::Config()
   _map["passthrough.max-stack-depth"] = &passthrough_max_stack_depth;
   _map["pid"]                         = &pid;
   _map["pin-threads"]                 = &pin_threads;
+  _map["pipe-max-size"]               = &pipe_max_size;
   _map["posix-acl"]                   = &posix_acl;
   _map["process-thread-count"]        = &process_thread_count;
   _map["process-thread-queue-depth"]  = &process_thread_queue_depth;
@@ -284,9 +308,21 @@ Config::Config()
   _map["rename-exdev"]                = &rename_exdev;
   _map["scheduling-priority"]         = &scheduling_priority;
   _map["security-capability"]         = &security_capability;
+  /* Bare splice-read/write/move (no "no-" prefix) were accepted no-ops
+     on master (shipped since 2.35.0, see deprecated_options.md) before
+     ever being restored here. They must stay registered - even though
+     they predate and are unrelated to the single splice=BOOL knob -
+     or Config::set() returns -ENOATTR for them (after the
+     underscore->hyphen normalization below, this also covers the
+     splice_read/splice_write/splice_move spellings), _process_opt()
+     treats that as OPT_KEEP, and the token gets forwarded to the
+     kernel's mount-option parser as unrecognized, failing the mount
+     with EINVAL - the exact class of regression fixed for "noforget"
+     elsewhere in this same change. */
   _map["splice-move"]                 = &_dummy;
   _map["splice-read"]                 = &_dummy;
   _map["splice-write"]                = &_dummy;
+  _map["splice"]                      = &splice;
   _map["srcmounts"]                   = &_srcmounts;
   _map["statfs"]                      = &statfs;
   _map["statfs-ignore"]               = &statfs_ignore;

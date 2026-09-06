@@ -2,6 +2,7 @@
 
 #include "fuse_req_ctx.h"
 #include "fuse_conn_info.hpp"
+#include "fuse_msgbuf_t.h"
 
 struct fuse_session;
 
@@ -12,6 +13,7 @@ struct fuse_req_t
   struct fuse_session *se;
   int fd;
   fuse_conn_info_t conn;
+  fuse_msgbuf_t *msgbuf = nullptr;
   unsigned int ioctl_64bit : 1;
 };
 

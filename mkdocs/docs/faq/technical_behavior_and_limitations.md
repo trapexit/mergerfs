@@ -215,13 +215,20 @@ If `mergerfs` doesn't work as a type it could be due to how the
 permissions.
 
 
-## Why was splice support removed?
+## Why was splice support removed and then restored?
 
-After a lot of testing over the years, splicing always appeared to
-at best, provide equivalent performance, and in some cases, worse
-performance. Splice is not supported on other platforms forcing a
-traditional read/write fallback to be provided. The splice code was
-removed to simplify the codebase.
+Splice support was originally removed after testing showed it, at
+best, provided equivalent performance and in some cases worse.
+It was restored in 2026 after a rewrite for the current transport
+layer: request receive staging, fd-referenced read replies, and a
+128 KiB threshold below which read replies stay on the copy path
+(write requests stage their payload through a pipe at any size). On
+tmpfs branches the restored paths benchmark at seq_read +52%,
+seq_write +21%. See [splice](../config/splice.md) and
+[pipe-max-size](../config/pipe-max-size.md) in the options
+documentation. Splice remains
+unavailable on platforms that lack it; the copy path is the
+fallback everywhere.
 
 
 ## How does mergerfs handle credentials?

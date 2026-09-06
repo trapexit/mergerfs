@@ -17,6 +17,7 @@
 #define FMT_HEADER_ONLY
 
 #include "config.hpp"
+#include "fuse_cfg.hpp"
 #include "ef.hpp"
 #include "errno.hpp"
 #include "fmt/core.h"
@@ -25,6 +26,7 @@
 #include "fs_statvfs_cache.hpp"
 #include "hw_cpu.hpp"
 #include "num.hpp"
+#include "pipe_max_size.hpp"
 #include "policy.hpp"
 #include "str.hpp"
 #include "syslog.hpp"
@@ -290,6 +292,26 @@ _cleanup_options()
 {
   if(!cfg.symlinkify)
     cfg.symlinkify_timeout = -1;
+
+  /* splice backing lives in fuse_cfg so fuse_lowlevel_new_common can
+     select the receive path before FUSE::init ever runs. fuse_init only
+     flips bits off if the kernel didn't advertise the capability. The
+     single cfg.splice knob drives all three axes. */
+  fuse_cfg.splice_move  = bool(cfg.splice);
+  fuse_cfg.splice_read  = bool(cfg.splice);
+  fuse_cfg.splice_write = bool(cfg.splice);
+
+  /* pipe-max-size: early sysctl write for root-run mergerfs so the
+     reply bounce pipe and msgbuf receive pipes see the larger capacity
+     when they are first created (and the fuse_msg_size clamp in
+     fuse_init.cpp reads the raised value when negotiating INIT). */
+  if((u64)cfg.pipe_max_size != 0)
+    {
+      if(!pipe_max_size::write((u64)cfg.pipe_max_size))
+        SysLog::info("pipe-max-size: unable to raise sysctl to {}"
+                     " (not root, or write failed); keeping kernel default",
+                     (u64)cfg.pipe_max_size);
+    }
 }
 
 namespace options

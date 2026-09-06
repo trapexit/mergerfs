@@ -19,6 +19,12 @@ function or have been replaced. **They should not be used.**
 * **remember-nodes**: Use `never-forget-nodes`.
 * **noforget**: Use `never-forget-nodes`.
 * **nonempty**: Does nothing.
+* **no-splice-read**: Does nothing. Use [splice=false](splice.md) to
+  disable splice.
+* **no-splice-write**: Does nothing. Use [splice=false](splice.md) to
+  disable splice.
+* **no-splice-move**: Does nothing. Use [splice=false](splice.md) to
+  disable splice.
 * **splice_move**: Does nothing.
 * **splice_read**: Does nothing.
 * **splice_write**: Does nothing.

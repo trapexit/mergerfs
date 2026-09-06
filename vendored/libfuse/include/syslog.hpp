@@ -31,6 +31,13 @@ namespace SysLog
   open()
   {
     const char *ident = "mergerfs";
+    /* Deliberately NOT LOG_PERROR: that would echo every SysLog call
+       in the whole process (not just the splice fallback warnings) to
+       stderr, doubling log volume under systemd/journald setups where
+       stderr is also journal-captured. The splice fallback loggers
+       (fuse_splice_fallback_log / msgbuf_splice_fallback_log) print to
+       stderr themselves instead, scoping the "visible in foreground
+       runs" behavior to the messages that actually need it. */
     const int   option = (LOG_CONS|LOG_PID);
     const int   facility = LOG_USER;
 

@@ -63,6 +63,7 @@
 #include "fuse_opendir.hpp"
 #include "fuse_poll.hpp"
 #include "fuse_read.hpp"
+#include "fuse_read_buf.hpp"
 #include "fuse_readdir.hpp"
 #include "fuse_readdir_plus.hpp"
 #include "fuse_readlink.hpp"
@@ -83,6 +84,7 @@
 #include "fuse_unlink.hpp"
 #include "fuse_utimens.hpp"
 #include "fuse_write.hpp"
+#include "fuse_write_buf.hpp"
 
 #include "fuse.h"
 
@@ -147,6 +149,20 @@ _get_fuse_operations(struct fuse_operations &ops_,
   ops_.unlink          = FUSE::unlink;
   ops_.utimens         = FUSE::utimens;
   ops_.write           = (nullrw_ ? FUSE::write_null : FUSE::write);
+  /* write_buf is held NULL under nullrw: FUSE::write_null discards the
+     buffer without reading it. NOTE the receive path still stages the
+     payload in the pipe when splice is on (staging is gated on
+     fuse_cfg.splice_write, not on ops registration) - write_null
+     never dereferences the data pointer, and msgbuf_free's bounded
+     drain discards the leftover pipe bytes. Any future nullrw write
+     implementation that reads the buffer must handle payload-in-pipe. */
+  ops_.write_buf       = ((nullrw_ || !cfg.splice) ? nullptr : FUSE::write_buf);
+  /* read_buf is held NULL under nullrw (read_null already skips all
+     I/O - nothing on the branch to splice from).  When splice is on,
+     read_buf returns a bufvec referencing the branch fd and the
+     kernel splices the payload straight from the branch into /dev/fuse
+     via a pipe. */
+  ops_.read_buf        = ((nullrw_ || !cfg.splice) ? nullptr : FUSE::read_buf);
 
   return;
 }

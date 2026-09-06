@@ -84,6 +84,8 @@ nav:
   - config/proxy-ioprio.md
   - config/link-cow.md
   - config/fuse-msg-size.md
+  - config/splice.md
+  - config/pipe-max-size.md
   - config/follow-symlinks.md
   - config/link-exdev.md
   - config/rename-exdev.md

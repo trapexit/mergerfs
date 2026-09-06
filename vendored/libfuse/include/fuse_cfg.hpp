@@ -49,6 +49,16 @@ public:
   int process_thread_queue_depth = 2;
   std::string pin_threads = "false";
 
+  /* 2026-08-29 fd-splice benchmark: seq_write +8%..+16%, seq_read
+     +19%..+46%, small_write ~0%/+6%, small_read +15%..+17% in both
+     runs -> Step 8 rule satisfied, defaults ON.
+     Prior mem-bounce baseline (vmsplice payload, no read_buf fd
+     reply) had small_read at -22%, so this path depends on the fd-
+     referenced read_buf being wired. */
+  bool splice_read  = true;
+  bool splice_write = true;
+  bool splice_move  = true;
+
   u16 request_timeout = 0;
 };
 

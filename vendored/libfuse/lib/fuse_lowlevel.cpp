@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/file.h>
+#include <sys/ioctl.h>
 
 #define PARAM(inarg) (((char*)(inarg)) + sizeof(*(inarg)))
 #define OFFSET_MAX 0x7fffffffffffffffLL
@@ -118,6 +119,20 @@ fuse_send_msg(const int     fd_,
 
   return 0;
 }
+
+/* ---------------------------------------------------------------------------
+ * splice fallback logging
+ *
+ * Every path that silently degrades splice behavior (pipe sizing
+ * fallbacks, sysctl read failures, splice(2) errors) logs once per
+ * process so operators can see why splice went quiet, without spamming
+ * per-request logs on a busy mount. The logger itself (and the pipe
+ * sizing helpers below) live in fuse_msgbuf.cpp/.hpp, shared with the
+ * receive-side pipe plumbing there.
+ * ------------------------------------------------------------------------- */
+#include "syslog.hpp"
+
+#include <array>
 
 #define MAX_ERRNO 4095
 
@@ -420,6 +435,457 @@ fuse_reply_buf(fuse_req_t *req,
   return send_reply_ok(req, buf, size);
 }
 
+/*
+ * Kernel 5.x removed vmsplice() of user pages into /dev/fuse directly
+ * (EBADF): vmsplice targets a pipe, always has. Use the classic
+ * pipe-bounce: vmsplice header+data pages into a per-thread pipe, then
+ * splice(2) that pipe into the fuse device so the kernel sees a single
+ * contiguous reply message.
+ *
+ * Thread-local pipe so read-reply pages are shared with the splice
+ * receive worker that created them; lazily sized to pipe-max.
+ */
+
+/* Thread-local reply bounce pipe. Wrapped in a tiny RAII struct
+   (rather than a bare thread_local int[2] + a free "close" function)
+   so its destructor runs automatically at thread exit and closes both
+   fds: a POD array has no such hook, and the previous free-function
+   equivalent of this destructor had zero call sites anywhere in the
+   tree, silently leaking 2 fds per worker thread for the life of the
+   process on every mount that ever serviced a >=128KiB read reply or
+   a splice-move reply.
+
+   ensure/ready/drain/vmspliceIn/spliceOut are methods on the struct
+   itself, rather than free functions taking no arguments and reaching
+   into the g_reply_pipe global implicitly - same shape as Mutex/
+   LockGuard (mutex.hpp) and FileInfo (src/fileinfo.hpp) elsewhere in
+   this codebase. */
+struct _ReplyPipe
+{
+  int fd[2] = {-1,-1};
+  u32 cap   = 0;
+
+  ~_ReplyPipe()
+  {
+    if(fd[0] != -1) ::close(fd[0]);
+    if(fd[1] != -1) ::close(fd[1]);
+  }
+
+  int     ensure();
+  bool    ready(size_t needed, size_t slots);
+  void    drain();
+  ssize_t vmspliceIn(struct iovec *iov, int iovcnt);
+  ssize_t spliceOut(int dst_fd, size_t total);
+};
+
+static thread_local _ReplyPipe g_reply_pipe;
+
+/* Everything below through _fuse_reply_data_splice_move uses
+   vmsplice(2)/splice(2)/SPLICE_F_MOVE/SPLICE_F_NONBLOCK/F_SETPIPE_SZ,
+   all Linux-only. On other platforms only the public
+   fuse_reply_data_splice_fd entry point needs to exist (fuse.cpp
+   calls it unconditionally); it always reports "nothing committed,
+   fall back" so callers transparently use the portable read/write
+   path, matching the documented behavior ("splice remains
+   unavailable on platforms that lack it; the copy path is the
+   fallback everywhere"). */
+#if defined(__linux__)
+
+int
+_ReplyPipe::ensure()
+{
+  if(fd[0] != -1)
+    return 0;
+
+  int rv = ::pipe2(fd,O_CLOEXEC);
+  if(rv == -1)
+    {
+      fd[0] = -1;
+      fd[1] = -1;
+      return -errno;
+    }
+
+  /* size to whatever the kernel will let an unprivileged user have.
+     pipe-max-size read and F_SETPIPE_SZ-with-retry are shared with
+     msgbuf_ensure_pipe (fuse_msgbuf.cpp) so the two can't disagree
+     about the pipe's real capacity. */
+  {
+    u32 pipe_max = fuse_effective_pipe_max();
+
+    /* F_SETPIPE_SZ failure is non-fatal here (unlike msgbuf_ensure_pipe):
+       pipe just stays default-size and splice will short-write, which
+       ready()'s cap check below already handles. */
+    rv = fuse_pipe_set_size(fd[0],pipe_max,/*retry_unconditionally_=*/true,
+                            splice_fallback_tag_t::REPLY_PIPE_FSETPIPE_ANY,
+                            splice_fallback_tag_t::REPLY_PIPE_FSETPIPE_EP);
+    cap = (rv > 0) ? (u32)rv : 65536;
+  }
+
+  return 0;
+}
+
+void
+_ReplyPipe::drain()
+{
+  /* Discard whatever is still queued in the bounce pipe after an
+     error mid-reply: without this, the NEXT fuse_reply_data on this
+     thread would prepend stale bytes to its fresh one, corrupting the
+     wire stream. */
+  std::array<char,65536> buf;
+
+  fuse_drain_pipe_fd(fd[0],buf.data(),buf.size());
+}
+
+/* vmsplice iov (header + payload) into the pipe. Returns -errno
+ * only when nothing was moved. */
+ssize_t
+_ReplyPipe::vmspliceIn(struct iovec *iov_,
+                       int           iovcnt_)
+{
+  size_t done = 0;
+  size_t want = iov_length(iov_,iovcnt_);
+
+  while(done < want)
+    {
+      ssize_t res = vmsplice(fd[1],iov_,iovcnt_,SPLICE_F_MOVE|SPLICE_F_NONBLOCK);
+      if(res == -1)
+        {
+          int e = errno;
+          if(e == EINTR)
+            continue;
+          if(done == 0)
+            return -e;
+          return -EIO;
+        }
+      if(res == 0)
+        return -EIO;
+      done += res;
+      /* advance iov */
+      {
+        size_t left = res;
+        int    i = 0;
+        for(; i < iovcnt_ && left > 0; )
+          {
+            if(iov_[i].iov_len <= left)
+              {
+                left -= iov_[i].iov_len;
+                i++;
+              }
+            else
+              {
+                iov_[i].iov_base  = (char*)iov_[i].iov_base + left;
+                iov_[i].iov_len  -= left;
+                left = 0;
+              }
+          }
+        if(i > 0)
+          {
+            memmove(&iov_[0],&iov_[i],(iovcnt_ - i) * sizeof(struct iovec));
+            iovcnt_ -= i;
+          }
+      }
+    }
+
+  return (ssize_t)done;
+}
+
+/* Drain the pipe into the fuse device. Returns -errno only when nothing
+ * was moved to the device; once any bytes land, they form the start of
+ * an atomic reply message and the caller must NOT retry with writev. */
+ssize_t
+_ReplyPipe::spliceOut(const int dst_fd_,
+                      size_t    total_)
+{
+  size_t done = 0;
+
+  while(done < total_)
+    {
+      ssize_t res = ::splice(fd[0],nullptr,
+                             dst_fd_,nullptr,
+                             total_ - done,
+                             SPLICE_F_MOVE);
+      if(res == -1)
+        {
+          int e = errno;
+          if(e == EINTR)
+            continue;
+          if(done == 0)
+            return -e;
+          return -EIO;
+        }
+      if(res == 0)
+        {
+          /* pipe empty but caller expected more - shouldn't happen since
+             we vmspliced exactly _total_. */
+          return -EIO;
+        }
+      done += res;
+    }
+
+  return (ssize_t)done;
+}
+
+/* Splice payload from a source fd (branch file) into the reply pipe,
+ * header first via vmsplice. Wire is untouched until the final
+ * pipe->/dev/fuse splice, so any failure before that is
+ * fallback-safe.
+ *
+ * Public splice-from-fd reply. Return semantics:
+ *  0   success, req consumed (freed), caller does NOT fuse_req_free
+ *  -1  nothing committed to the wire; caller must fall back to another
+ *      reply mechanism (or pread) and free req there
+ * -EIO wire committed a partial message; caller just frees req
+ */
+static
+int
+_fuse_reply_data_splice_fd(fuse_req_t   *req_,
+                           const int     src_fd_,
+                           const off_t   pos_,
+                           size_t        size_);
+
+int
+fuse_reply_data_splice_fd(fuse_req_t    *req_,
+                          const int      src_fd_,
+                          const off_t    pos_,
+                          const size_t   size_)
+{
+  int rv = _fuse_reply_data_splice_fd(req_,src_fd_,pos_,size_);
+  if(rv == -1)
+    return -1;
+
+  fuse_req_free(req_);
+
+  return rv;
+}
+
+/* Number of pipe ring slots a single source segment consumes. A pipe's
+   capacity is enforced in whole page-sized slots, not bytes: each page
+   touched by a segment - including a partial first and last page -
+   becomes its own pipe buffer. */
+static
+size_t
+_pipe_slots(const uintptr_t base_,
+            const size_t    len_)
+{
+  size_t ps = (pagesize > 0) ? pagesize : 4096;
+
+  if(len_ == 0)
+    return 0;
+
+  return (((base_ % ps) + len_ + ps - 1) / ps);
+}
+
+/* Shared by both reply-splice variants below: ensure the thread-local
+   reply pipe exists and can hold needed_ bytes in slots_ ring slots,
+   logging the same two fallback tags either variant would have logged
+   inline. */
+bool
+_ReplyPipe::ready(size_t needed_,
+                  size_t slots_)
+{
+  if(ensure() != 0)
+    {
+      fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_PIPE_ENSURE);
+      return false;
+    }
+
+  /* Pipe capacity guard: we need header + payload to fit, else splice
+     would block with no reader on /dev/fuse advanced. cap is sized to
+     max pipe-max >= msgbuf but we verify explicitly. The byte check
+     alone is not sufficient: the kernel limits a pipe to cap/pagesize
+     slots and every partial page (the 16 byte header especially)
+     burns a whole one, so a byte-wise fitting message can still fill
+     the ring and block forever. */
+  if(needed_ > cap)
+    {
+      fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_PIPE_CAP);
+      return false;
+    }
+
+  if(slots_ > (cap / ((pagesize > 0) ? pagesize : 4096)))
+    {
+      fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_PIPE_CAP);
+      return false;
+    }
+
+  return true;
+}
+
+/* Shared by both reply-splice variants below: a partial write to
+   /dev/fuse after any bytes reached the wire poisons the connection
+   (unlike every other, milder fallback condition in these functions),
+   so - unlike those - it's always logged, not just once per process. */
+static
+void
+_reply_splice_desync_log(const char *variant_)
+{
+  SysLog::error("splice reply: partial write to /dev/fuse"
+                " ({}); connection may be desynced",variant_);
+  fprintf(stderr,"mergerfs: splice reply: partial write to /dev/fuse"
+          " (%s); connection may be desynced\n",variant_);
+}
+
+static
+int
+_fuse_reply_data_splice_fd(fuse_req_t   *req_,
+                           const int     src_fd_,
+                           const off_t   pos_,
+                           size_t        size_)
+{
+  struct fuse_out_header out;
+  struct iovec iov[1];
+
+  out.unique = req_->ctx.unique;
+  out.error  = 0;
+  out.len    = (u32)(sizeof(out) + size_);
+
+  if(fuse_cfg.debug)
+    fuse_debug_data_out(req_->ctx.unique,size_);
+
+  size_t total = sizeof(out) + size_;
+  size_t slots = (_pipe_slots((uintptr_t)&out,sizeof(out)) +
+                  _pipe_slots((uintptr_t)pos_,size_));
+  if(!g_reply_pipe.ready(total,slots))
+    return -1;
+
+  iov[0].iov_base = &out;
+  iov[0].iov_len  = sizeof(out);
+
+  ssize_t rh = g_reply_pipe.vmspliceIn(iov,1);
+  if(rh != (ssize_t)sizeof(out))
+    {
+      fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_VMSPLICE_HDR);
+      g_reply_pipe.drain();
+      return -1;
+    }
+
+
+  /* fd -> pipe: kernel-internal copy from page cache into pipe ring.
+     Short return = EOF or a transient failure; either way the wire is
+     still clean and the caller can fall back to a plain pread. */
+  {
+    size_t done = 0;
+
+    while(done < size_)
+      {
+        off_t off = pos_ + (off_t)done;
+
+        /* SPLICE_F_NONBLOCK applies to the pipe end only (the file read
+           still blocks as needed): if the slot accounting in ready()
+           ever under-estimates, this returns EAGAIN and we degrade to
+           the copy path instead of blocking forever with no reader. */
+        ssize_t res = ::splice(src_fd_,&off,
+                               g_reply_pipe.fd[1],nullptr,
+                               size_ - done,
+                               SPLICE_F_MOVE|SPLICE_F_NONBLOCK);
+        if(res == -1)
+          {
+            if(errno == EINTR)
+              continue;
+            fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_FD_SPLICE);
+            g_reply_pipe.drain();
+            return -1;
+          }
+        if(res == 0)
+          {
+            /* short read at EOF: drain partial payload and let the
+               caller reprobe with pread so ERR/EOF padding matches
+               the normal path. */
+            fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_FD_SPLICE);
+            g_reply_pipe.drain();
+            return -1;
+          }
+        done += res;
+      }
+  }
+
+  ssize_t sent = g_reply_pipe.spliceOut(req_->fd,total);
+  if(sent == -EIO)
+    {
+      /* partial wire send: the request is poisoned, but any bytes
+         still queued in the bounce pipe must be drained or the next
+         reply on this thread would be prefixed with stale bytes. */
+      _reply_splice_desync_log("fd-splice read reply");
+      g_reply_pipe.drain();
+      return -EIO;
+    }
+  if(sent < 0)
+    {
+      /* nothing reached the wire; the wire is clean and the caller
+         may fall back to pread. Contract is {0,-1,-EIO} - never
+         propagate a raw -errno (the public wrapper frees the req for
+         any rv != -1, and callers only guard 0/-EIO/-1). */
+      g_reply_pipe.drain();
+      return -1;
+    }
+
+  return 0;
+}
+
+static
+int
+_fuse_reply_data_splice_move(fuse_req_t   *req,
+                             struct iovec *iov_,
+                             int           iovcnt_)
+{
+  size_t want  = iov_length(iov_,iovcnt_);
+  size_t slots = 0;
+  for(int i = 0; i < iovcnt_; i++)
+    slots += _pipe_slots((uintptr_t)iov_[i].iov_base,iov_[i].iov_len);
+  if(!g_reply_pipe.ready(want,slots))
+    return -1;
+
+  ssize_t total = g_reply_pipe.vmspliceIn(iov_,iovcnt_);
+  if(total < 0)
+    {
+      g_reply_pipe.drain();
+      return -1;
+    }
+  if((size_t)total != want)
+    {
+      g_reply_pipe.drain();
+      return -EIO;
+    }
+
+  ssize_t n = g_reply_pipe.spliceOut(req->fd,(size_t)total);
+  if(n < 0)
+    {
+      g_reply_pipe.drain();
+      /* -EIO when a partial message reached the wire (poisoned req);
+         anything else means nothing moved - caller may fall back to
+         writev. Never a raw -errno: the fallthrough caller only
+         distinguishes 0 / -EIO / fallback. */
+      if(n == -EIO)
+        _reply_splice_desync_log("splice-move reply");
+      return (n == -EIO) ? -EIO : -1;
+    }
+  if((size_t)n != (size_t)total)
+    {
+      g_reply_pipe.drain();
+      return -EIO;
+    }
+
+  /* All sent; reply complete from kernel's point of view. */
+  return 0;
+}
+
+#else /* !defined(__linux__) */
+
+int
+fuse_reply_data_splice_fd(fuse_req_t    *req_,
+                          const int      src_fd_,
+                          const off_t    pos_,
+                          const size_t   size_)
+{
+  (void)req_; (void)src_fd_; (void)pos_; (void)size_;
+
+  /* -1: nothing committed to the wire; caller falls back to a plain
+     pread + fuse_reply_data. */
+  return -1;
+}
+
+#endif /* defined(__linux__) */
+
 int
 fuse_reply_data(fuse_req_t   *req,
                 char         *buf_,
@@ -435,10 +901,48 @@ fuse_reply_data(fuse_req_t   *req,
   iov[1].iov_len  = bufsize_;
 
   out.unique = req->ctx.unique;
-  out.error = 0;
+  out.error  = 0;
+  /* fuse_send_msg computes out->len from iov_len on entry; when we take
+     the pipe-bounce path we bypass it, so set len here too. */
+  out.len    = (u32)(sizeof(out) + bufsize_);
 
   if(fuse_cfg.debug)
     fuse_debug_data_out(req->ctx.unique,bufsize_);
+
+  /* Pipe-bounce splice_move reply: page-aligned payload moved
+     zero-copy into the kernel's reply queue. Gated at 128 KiB (the
+     same threshold as the fd-splice reply path); sub-threshold
+     replies stay on writev - measured: 4K payloads lose ~30% on the
+     pipe path, 128K+ gains ~14-19%. Returns:
+       0  - success (reply sent)
+      -EIO - partial move/transmit: the request is poisoned, do NOT
+            fall back to writev or the kernel will see a duplicated prefix
+      <  other -errno - nothing moved; caller may fall back to writev
+  */
+#if defined(__linux__)
+  if(bufsize_ >= FUSE_SPLICE_MIN_SIZE && fuse_cfg.splice_move)
+    {
+      /* _ReplyPipe::vmspliceIn destructively advances its iov on a
+         partial vmsplice; the writev fallthrough below must see the
+         ORIGINAL header+payload, so pass a copy, never our stack
+         array. */
+      struct iovec spiov[2] = {iov[0], iov[1]};
+
+      res = _fuse_reply_data_splice_move(req,spiov,2);
+      if(res == 0)
+        {
+          fuse_req_free(req);
+          return 0;
+        }
+      if(res == -EIO)
+        {
+          fuse_req_free(req);
+          return res;
+        }
+      fuse_splice_fallback_log(splice_fallback_tag_t::REPLY_SPLICE_MOVE_WRITEV);
+      /* fall through to writev */
+    }
+#endif /* defined(__linux__) */
 
   res = fuse_send_msg(req->fd,iov,2);
   fuse_req_free(req);
@@ -1000,6 +1504,12 @@ do_init(fuse_req_t            *req,
         f.conn.capable |= FUSE_CAP_BIG_WRITES;
       if(inargflags & FUSE_DONT_MASK)
         f.conn.capable |= FUSE_CAP_DONT_MASK;
+      if(inargflags & FUSE_SPLICE_WRITE)
+        f.conn.capable |= FUSE_CAP_SPLICE_WRITE;
+      if(inargflags & FUSE_SPLICE_MOVE)
+        f.conn.capable |= FUSE_CAP_SPLICE_MOVE;
+      if(inargflags & FUSE_SPLICE_READ)
+        f.conn.capable |= FUSE_CAP_SPLICE_READ;
       if(inargflags & FUSE_POSIX_ACL)
         f.conn.capable |= FUSE_CAP_POSIX_ACL;
       if(inargflags & FUSE_CACHE_SYMLINKS)
@@ -1074,6 +1584,12 @@ do_init(fuse_req_t            *req,
     outargflags |= FUSE_BIG_WRITES;
   if(f.conn.want & FUSE_CAP_DONT_MASK)
     outargflags |= FUSE_DONT_MASK;
+  if(f.conn.want & FUSE_CAP_SPLICE_WRITE)
+    outargflags |= FUSE_SPLICE_WRITE;
+  if(f.conn.want & FUSE_CAP_SPLICE_MOVE)
+    outargflags |= FUSE_SPLICE_MOVE;
+  if(f.conn.want & FUSE_CAP_SPLICE_READ)
+    outargflags |= FUSE_SPLICE_READ;
   if(f.conn.want & FUSE_CAP_POSIX_ACL)
     outargflags |= FUSE_POSIX_ACL;
   if(f.conn.want & FUSE_CAP_CACHE_SYMLINKS)
@@ -1606,6 +2122,169 @@ fuse_ll_buf_receive_read(struct fuse_session *se_,
   return rv;
 }
 
+/*
+ * read(2)-loop that reads exactly 'len_' bytes from 'fd_' into 'buf_'.
+ * Returns 0 on success, -errno on error.
+ */
+static
+int
+fuse_ll_read_full(const int fd_,
+                  char     *buf_,
+                  const u32 len_)
+{
+  u32 done = 0;
+
+  while(done < len_)
+    {
+      ssize_t rv = read(fd_,buf_ + done,len_ - done);
+      if(rv == -1)
+        {
+          if(errno == EINTR)
+            continue;
+          return -errno;
+        }
+      if(rv == 0)
+        return -EIO;
+
+      done += rv;
+    }
+
+  return 0;
+}
+
+
+/* splice(2)/SPLICE_F_MOVE are Linux-only; this whole receive path
+   (and its selection in fuse_lowlevel_new_common below) is compiled
+   only on Linux. Other platforms always use the portable
+   fuse_ll_buf_receive_read receive function. */
+#if defined(__linux__)
+static
+int
+fuse_ll_buf_receive_splice(struct fuse_session *se_,
+                           int                  fd_,
+                           fuse_msgbuf_t       *msgbuf_)
+{
+  if(!f.got_init)
+    return fuse_ll_buf_receive_read(se_,fd_,msgbuf_);
+
+  /* fuse_init may have disabled splice at INIT time (e.g. sysctl
+     pipe-max-size too small). The receive fn was selected before INIT
+     ran, so re-check here and take the plain read path cleanly
+     rather than failing per-msgbuf into the fallback. */
+  if(!fuse_cfg.splice_read && !fuse_cfg.splice_write)
+    return fuse_ll_buf_receive_read(se_,fd_,msgbuf_);
+
+  if(msgbuf_ensure_pipe(msgbuf_) != 0)
+    {
+      fuse_splice_fallback_log(splice_fallback_tag_t::RECEIVE_MSGBUF_PIPE);
+      return fuse_ll_buf_receive_read(se_,fd_,msgbuf_);
+    }
+
+  /* One pipe-limited read = one whole FUSE request (pipe sized >= max
+     request by the max_pages clamp in fuse_init). */
+  ssize_t splice_n = splice(fd_,nullptr,msgbuf_->pipefd[1],nullptr,msgbuf_->size,SPLICE_F_MOVE);
+  if(splice_n == -1)
+    {
+      int err = errno;
+      if(err == EINTR)
+        return -EINTR;
+      /* splice(2) not usable on this combination; fall back to the
+         read path for this message only. fuse_cfg.splice_read/write
+         are deliberately left set - a single failure here (e.g. a
+         transient ENOMEM) should not permanently disable splice for
+         the whole mount; if the failure is systemic every subsequent
+         message will simply retry and fall back the same way. */
+      fuse_splice_fallback_log(splice_fallback_tag_t::RECEIVE_SPLICE_ERR);
+      return fuse_ll_buf_receive_read(se_,fd_,msgbuf_);
+    }
+
+  if(splice_n < (int)sizeof(struct fuse_in_header))
+    {
+      fprintf(stderr,"fuse: short splice from fuse device: %zu < %zu\n",
+              splice_n,sizeof(struct fuse_in_header));
+      return -EIO;
+    }
+
+  /* Pull the fixed-size header back into memory. */
+  ssize_t rv = fuse_ll_read_full(msgbuf_->pipefd[0],
+                                msgbuf_->mem,
+                                sizeof(struct fuse_in_header));
+  if(rv != 0)
+    return (int)rv;
+
+  struct fuse_in_header *in = (struct fuse_in_header*)msgbuf_->mem;
+
+  /* Header sanity: in->len <= what splice actually moved. */
+  if(in->len > (u32)splice_n)
+    {
+      fprintf(stderr,"fuse: splice header size %u exceeds move %zu\n",
+              in->len,splice_n);
+      return -EIO;
+    }
+
+  /* Header sanity: in->len must be at least large enough to hold the
+     fixed fuse_in_header, or the subtraction below underflows (u32)
+     into a huge value that would then be used as a read length -
+     draining whatever's left in the pipe and blocking the worker
+     thread forever on the now-empty pipe (the write end stays open,
+     so read() blocks rather than returning EOF). A well-behaved
+     kernel never sends this; guard anyway since this path (unlike the
+     plain read receive) does arithmetic on in->len before the generic
+     opcode dispatch ever sees it. */
+  if(in->len < sizeof(struct fuse_in_header))
+    {
+      fprintf(stderr,"fuse: splice header size %u smaller than fuse_in_header\n",
+              in->len);
+      return -EIO;
+    }
+
+  u32 hdrlen = in->len - sizeof(struct fuse_in_header);
+
+  if(in->opcode == FUSE_WRITE && fuse_cfg.splice_write)
+    {
+      /* Also copy the write_in header out of the pipe so fuse_lib_write
+         can parse it without touching the pipe. */
+      u32 write_hdr = sizeof(struct fuse_write_in);
+
+      /* Same underflow guard as above, sized for this opcode: a
+         WRITE request must be at least header + fuse_write_in, or
+         both this read (fixed write_hdr length, could ask for more
+         than the pipe will ever hold) and the payload computation
+         below (which would underflow) are wrong. */
+      if(hdrlen < write_hdr)
+        {
+          fprintf(stderr,"fuse: splice WRITE request too short for"
+                  " fuse_write_in: %u < %u\n",
+                  hdrlen,write_hdr);
+          return -EIO;
+        }
+
+      int wirv = fuse_ll_read_full(msgbuf_->pipefd[0],
+                                  msgbuf_->mem + sizeof(struct fuse_in_header),
+                                  write_hdr);
+      if(wirv != 0)
+        return wirv;
+
+      /* Payload stays in the pipe for write_buf zero-copy. */
+      u32 payload = in->len - sizeof(struct fuse_in_header) - write_hdr;
+      msgbuf_->pipe_used = payload;
+      return (int)splice_n;
+    }
+
+  /* Non-write path: move the rest of the request out of the pipe and
+     into the msgbuf so downstream processing is identical to read(). */
+  rv = fuse_ll_read_full(msgbuf_->pipefd[0],
+                        msgbuf_->mem + sizeof(struct fuse_in_header),
+                        hdrlen);
+  if(rv != 0)
+    return (int)rv;
+
+  msgbuf_->pipe_used = 0;
+
+  return in->len;
+}
+#endif /* defined(__linux__) */
+
 static
 void
 fuse_ll_buf_process_read(struct fuse_session *se_,
@@ -1637,6 +2316,7 @@ fuse_ll_buf_process_read(struct fuse_session *se_,
   req->se         = se_;
   req->fd         = fd_;
   req->ioctl_64bit = 0;
+  req->msgbuf     = (fuse_msgbuf_t*)msgbuf_;
 
   err = ENOSYS;
   if(in->opcode >= FUSE_MAXOPS)
@@ -1683,6 +2363,7 @@ fuse_ll_buf_process_read_init(struct fuse_session *se_,
   req->ctx.umask  = 0;
   req->se         = se_;
   req->fd         = fd_;
+  req->msgbuf     = (fuse_msgbuf_t*)msgbuf_;
 
   err = EIO;
   if(in->opcode != FUSE_INIT)
@@ -1726,10 +2407,24 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
   memcpy(&f.op,op,op_size);
   f.owner = getuid();
 
-  se = fuse_session_new(&f,
-                        (void*)fuse_ll_buf_receive_read,
-                        (void*)fuse_ll_buf_process_read_init,
-                        (void*)fuse_ll_destroy);
+  {
+    /* Splice-capable receive needs a pipe buffer per msgbuf.
+       fuse_ll_buf_receive_splice only exists on Linux (see its
+       definition above); other platforms always take the portable
+       read() receive path. */
+#if defined(__linux__)
+    if(fuse_cfg.splice_read || fuse_cfg.splice_write)
+      se = fuse_session_new(&f,
+                            (void*)fuse_ll_buf_receive_splice,
+                            (void*)fuse_ll_buf_process_read_init,
+                            (void*)fuse_ll_destroy);
+    else
+#endif
+      se = fuse_session_new(&f,
+                            (void*)fuse_ll_buf_receive_read,
+                            (void*)fuse_ll_buf_process_read_init,
+                            (void*)fuse_ll_destroy);
+  }
 
   if(!se)
     goto out_free;

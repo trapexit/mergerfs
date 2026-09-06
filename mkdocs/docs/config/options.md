@@ -123,6 +123,16 @@ config file.
   directory and symlink to it.
 * **[readahead](readahead.md)=UINT**: Set readahead (in kilobytes) for
   mergerfs and branches if greater than 0. (default: 0)
+* **[splice](splice.md)=BOOL**: Enable the kernel's splice syscall to
+  move data between the FUSE device and the underlying filesystems
+  without copying through user space. Read replies of 128KiB or larger
+  are spliced; smaller read replies use the copy path. Writes stage
+  their payload through a pipe at any size. Falls back automatically
+  when unsupported. (default: true)
+* **[pipe-max-size](pipe-max-size.md)=SIZE**: The value to write to
+  /proc/sys/fs/pipe-max-size at mount time, needed only when
+  fuse-msg-size exceeds the current limit while splice is enabled.
+  Root-only; unprivileged mounts log and clamp instead. (default: 0)
 * **posix-acl=BOOL**: Enable POSIX ACL support (if supported by kernel
   and underlying filesystem). (default: false)
 * **async-read=BOOL**: Perform reads asynchronously. If disabled or

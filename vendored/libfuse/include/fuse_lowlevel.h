@@ -284,6 +284,11 @@ int fuse_reply_copy_file_range_64(fuse_req_t *req, size_t count);
  */
 int fuse_reply_buf(fuse_req_t *req, const char *buf, size_t size);
 
+int fuse_reply_data_splice_fd(fuse_req_t    *req,
+                              const int      src_fd,
+                              const off_t    pos,
+                              const size_t   size);
+
 int fuse_reply_data(fuse_req_t *req,
                     char       *buf,
                     size_t      bufsize);

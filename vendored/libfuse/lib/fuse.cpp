@@ -2326,15 +2326,78 @@ fuse_lib_open(fuse_req_t            *req_,
   free_path(hdr_->nodeid,fusepath);
 }
 
+/* Shared by fuse_lib_read_fd_splice's fallback path and fuse_lib_read's
+   own body: allocate a page-aligned msgbuf, run the plain ops.read
+   into it, and reply. */
+static
+void
+fuse_lib_read_mem(fuse_req_t             *req_,
+                  const fuse_file_info_t *ffi_,
+                  const size_t            size_,
+                  const off_t             offset_)
+{
+  fuse_msgbuf_t *msgbuf = msgbuf_alloc_page_aligned();
+  if(msgbuf == nullptr)
+    {
+      fuse_reply_err(req_,ENOMEM);
+      return;
+    }
+
+  int res = f.ops.read(&req_->ctx,
+                       ffi_,
+                       msgbuf->mem,
+                       size_,
+                       offset_);
+  if(res >= 0)
+    fuse_reply_data(req_,msgbuf->mem,res);
+  else
+    fuse_reply_err(req_,res);
+  msgbuf_free(msgbuf);
+}
+
+static
+void
+fuse_lib_read_fd_splice(fuse_req_t            *req_,
+                        struct fuse_in_header *hdr_,
+                        fuse_file_info_t      *ffi_,
+                        struct fuse_read_in   *arg_)
+{
+  struct fuse_bufvec buf;
+
+  int res = f.ops.read_buf(&req_->ctx,
+                           ffi_,
+                           &buf,
+                           arg_->size,
+                           arg_->offset);
+  /* read_buf returning <0 means "not applicable" (e.g. O_DIRECT fd,
+     memory pressure): fall straight to the mem-buffer read path. It
+     never returns a user-visible error value. */
+  if(res == 0 &&
+     (buf.count == 1) &&
+     (buf.buf[0].flags & FUSE_BUF_IS_FD) &&
+     (buf.buf[0].flags & FUSE_BUF_FD_SEEK))
+    {
+      const int src_fd = buf.buf[0].fd;
+      const off_t pos  = buf.buf[0].pos;
+      const size_t sz  = buf.buf[0].size;
+
+      int sv = fuse_reply_data_splice_fd(req_,src_fd,pos,sz);
+      if(sv == 0 || sv == -EIO)
+        return;
+      /* sv == -1: nothing committed to the wire. Fall through to the
+         mem-buffer read path as if read_buf had not been set. */
+    }
+
+  fuse_lib_read_mem(req_,ffi_,arg_->size,arg_->offset);
+}
+
 static
 void
 fuse_lib_read(fuse_req_t            *req_,
               struct fuse_in_header *hdr_)
 {
-  int res;
   fuse_file_info_t ffi = {};
   struct fuse_read_in *arg;
-  fuse_msgbuf_t *msgbuf;
 
   arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
   ffi.fh = arg->fh;
@@ -2344,25 +2407,24 @@ fuse_lib_read(fuse_req_t            *req_,
       ffi.lock_owner = arg->lock_owner;
     }
 
-  msgbuf = msgbuf_alloc_page_aligned();
-  if(msgbuf == NULL)
+  /* fd-referenced read_buf: kernel splices payload straight from the
+     branch fd via a pipe into /dev/fuse - data never crosses
+     userspace. Wire only when the mount negotiated splice_read and
+     the fs registered read_buf and the request size is large enough
+     for kernel-side page moves to beat the memcpy. Threshold = 128K:
+     kernel sends bs=128K reads at exactly 131072 bytes (verified in
+     strace), so small_read still hits the fd path; <128K skips the
+     two extra syscalls where they cost more than they save. */
+  if(f.ops.read_buf != nullptr &&
+     fuse_cfg.splice_read &&
+     arg->size >= FUSE_SPLICE_MIN_SIZE &&
+     (req_->conn.want & FUSE_CAP_SPLICE_READ))
     {
-      fuse_reply_err(req_,ENOMEM);
+      fuse_lib_read_fd_splice(req_,hdr_,&ffi,arg);
       return;
     }
 
-  res = f.ops.read(&req_->ctx,
-                   &ffi,
-                   msgbuf->mem,
-                   arg->size,
-                   arg->offset);
-
-  if(res >= 0)
-    fuse_reply_data(req_,msgbuf->mem,res);
-  else
-    fuse_reply_err(req_,res);
-
-  msgbuf_free(msgbuf);
+  fuse_lib_read_mem(req_,&ffi,arg->size,arg->offset);
 }
 
 static
@@ -2371,29 +2433,56 @@ fuse_lib_write(fuse_req_t            *req_,
                struct fuse_in_header *hdr_)
 {
   int res;
-  char *data;
   fuse_file_info_t ffi = {};
   struct fuse_write_in *arg;
 
   arg     = (fuse_write_in*)fuse_hdr_arg(hdr_);
   ffi.fh  = arg->fh;
   ffi.writepage = !!(arg->write_flags & 1);
-  if(req_->conn.proto_minor < 9)
-    {
-      data = ((char*)arg) + FUSE_COMPAT_WRITE_IN_SIZE;
-    }
-  else
+  if(req_->conn.proto_minor >= 9)
     {
       ffi.flags = arg->flags;
       ffi.lock_owner = arg->lock_owner;
-      data = (char*)PARAM(arg);
     }
 
-  res = f.ops.write(&req_->ctx,
-                    &ffi,
-                    data,
-                    arg->size,
-                    arg->offset);
+  /* Splice-capable receive left the write payload in the pipe and
+     staged write_in into req_->msgbuf->mem. */
+  if(f.ops.write_buf != nullptr &&
+     req_->msgbuf != nullptr &&
+     req_->msgbuf->pipe_used > 0)
+    {
+      struct fuse_bufvec bufv;
+
+      bufv = fuse_bufvec_fd(req_->msgbuf->pipefd[0],arg->offset,arg->size,
+                            FUSE_BUF_IS_FD);
+
+      res = f.ops.write_buf(&req_->ctx,&ffi,&bufv,arg->offset);
+
+      /* Only clear pipe_used when the handler consumed the whole
+         payload: a short write leaves the remainder queued in the
+         pipe, and releasing a dirty pipe into the process-global
+         cache (fuse_msgbuf.cpp's g_cached_pipes) would corrupt the
+         next request staged into it. On partial
+         success pipe_used stays set and msgbuf_free's bounded drain
+         consumes the remainder. */
+      if(res >= 0 && (size_t)res == arg->size)
+        req_->msgbuf->pipe_used = 0;
+    }
+  else
+    {
+      char *data;
+
+      data = ((req_->conn.proto_minor < 9) ?
+              (((char*)arg) + FUSE_COMPAT_WRITE_IN_SIZE) :
+              (char*)PARAM(arg));
+
+      res = f.ops.write(&req_->ctx,
+                        &ffi,
+                        data,
+                        arg->size,
+                        arg->offset);
+    }
+
   if(res >= 0)
     fuse_reply_write(req_,res);
   else

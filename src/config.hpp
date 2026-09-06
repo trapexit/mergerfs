@@ -156,11 +156,26 @@ public:
   ProxyIOPrio    proxy_ioprio;
   TFSRef<int>    read_thread_count;
   ConfigU64      readahead;
+  /* Root-only knob: written to /proc/sys/fs/pipe-max-size during
+     option cleanup so the vendored libfuse reply/receive pipes can
+     carry a fuse message larger than the default 1 MiB. Value 0 ==
+     leave sysctl alone (default); unprivileged writes are silently
+     dropped so non-root mounts don't spam warnings. Tied to msgbuf
+     sizing: fuse_msg_size clamp in fuse_init.cpp reads the same
+     sysctl; receive-pipe capacity and reply bounce-pipe capacity
+     read it at ensure time. So raising pipe-max-size at mount time
+     unlocks fuse_msg_size > 1 MiB end-to-end on kernels that allow
+     the larger messages. */
+  ConfigU64      pipe_max_size;
   FUSE::ReadDir  readdir;
   RenameEXDEV    rename_exdev;
   ConfigINT      scheduling_priority;
   ConfigBOOL     security_capability;
   StatFS         statfs;
+  /* Master splice switch. The old per-axis splice-read/write/move and
+     no-splice-read/write/move spellings are accepted as no-ops (see
+     _dummy) and do not affect this knob. */
+  ConfigBOOL     splice;
   StatFSIgnore   statfs_ignore;
   ConfigBOOL     symlinkify;
   ConfigS64      symlinkify_timeout;
@@ -170,11 +185,11 @@ private:
   TFSRef<int>      _congestion_threshold;
   Debug            _debug;
   CfgDummy         _dummy;
+  CfgNoforget      _never_forget_nodes;
   TFSRef<s64>      _gid;
   TFSRef<int>      _max_background;
   TFSRef<fs::path> _mount;
   TFSRef<fs::path> _mountpoint;
-  CfgNoforget      _never_forget_nodes;
   CfgNoforget      _noforget;
   CfgNoforget      _remember;
   CfgNoforget      _remember_nodes;

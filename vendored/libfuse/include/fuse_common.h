@@ -85,6 +85,9 @@ struct fuse_file_info_t
  * FUSE_CAP_EXPORT_SUPPORT: filesystem handles lookups of "." and ".."
  * FUSE_CAP_BIG_WRITES: filesystem can handle write size larger than 4kB
  * FUSE_CAP_DONT_MASK: don't apply umask to file mode on create operations
+ * FUSE_CAP_SPLICE_WRITE: ability to use splice() to write to the fuse device
+ * FUSE_CAP_SPLICE_MOVE: ability to move data to the fuse device with splice()
+ * FUSE_CAP_SPLICE_READ: ability to use splice() to read from the fuse device
  * FUSE_CAP_IOCTL_DIR: ioctl support on directories
  * FUSE_CAP_CACHE_SYMLINKS: cache READLINK responses
  */
@@ -94,6 +97,11 @@ struct fuse_file_info_t
 #define FUSE_CAP_EXPORT_SUPPORT       (1ULL << 4)
 #define FUSE_CAP_BIG_WRITES           (1ULL << 5)
 #define FUSE_CAP_DONT_MASK            (1ULL << 6)
+/* Same values as the FUSE_SPLICE_WRITE/MOVE/READ wire
+   flags in fuse_kernel.h */
+#define FUSE_CAP_SPLICE_WRITE         (1ULL << 7)
+#define FUSE_CAP_SPLICE_MOVE          (1ULL << 8)
+#define FUSE_CAP_SPLICE_READ          (1ULL << 9)
 #define FUSE_CAP_FLOCK_LOCKS          (1ULL << 10)
 #define FUSE_CAP_IOCTL_DIR            (1ULL << 11)
 #define FUSE_CAP_READDIR_PLUS         (1ULL << 13)
@@ -315,6 +323,61 @@ struct fuse_buf {
   off_t pos;
 };
 
+/* Gather buffer declarations */
+#define FUSE_BUFVEC_INIT(size__)                                        \
+  /* cppcheck-suppress unassignedVariable */                            \
+  (struct fuse_bufvec) {                                                \
+    /* .count= */ 1,                                                    \
+    /* .idx =  */ 0,                                                    \
+    /* .off =  */ 0,                                                    \
+    { /* .size =  */ (size__), /* .flags = */ (enum fuse_buf_flags) 0, \
+      /* .mem =   */ nullptr,    /* .fd = */ -1, /* .pos = */ 0, }      \
+  }
+
+struct fuse_bufvec {
+  /**
+   * Number of buffers in the array
+   */
+  size_t count;
+
+  /**
+   * Current buffer index
+   */
+  size_t idx;
+
+  /**
+   * Current offset in the buffer
+   */
+  size_t off;
+
+  /**
+   * Array of buffers
+   */
+  struct fuse_buf buf[1];
+};
+
+/**
+ * Get the total size of data in a fuse buffer vector
+ *
+ * @param bufv buffer vector
+ * @return computed number of bytes
+ */
+size_t fuse_buf_size(const struct fuse_bufvec *bufv);
+
+/**
+ * Copy data from one buffer vector to another
+ *
+ * This is mostly useful for a filesystem that uses
+ * buffers to refer to the data being written or read
+ *
+ * @param dstv destination buffer vector
+ * @param srcv source buffer vector
+ * @param flags flags passed to the buffer copy
+ * @return actual number of bytes copied or -errno on error
+ */
+ssize_t fuse_buf_copy(struct fuse_bufvec *dstv, struct fuse_bufvec *srcv,
+                      enum fuse_buf_copy_flags flags);
+
 /* ----------------------------------------------------------- *
  * Signal handling					       *
  * ----------------------------------------------------------- */
@@ -341,3 +404,27 @@ int fuse_set_signal_handlers(struct fuse_session *se);
 void fuse_remove_signal_handlers(struct fuse_session *se);
 
 EXTERN_C_END
+
+/* C++-only convenience, deliberately declared OUTSIDE EXTERN_C_BEGIN/
+   EXTERN_C_END above: this is not part of the C-linkage libfuse-
+   compatible API, just a small typed factory used by the splice
+   read/write handlers (src/fuse_read_buf.cpp, src/fuse_write_buf.cpp,
+   vendored/libfuse/lib/fuse.cpp's fuse_lib_write) so they build a
+   single-entry, fd-referencing fuse_bufvec through one call instead of
+   each hand-assigning buf[0].flags/fd/pos individually. */
+static
+inline
+struct fuse_bufvec
+fuse_bufvec_fd(const int            fd_,
+               const off_t          pos_,
+               const size_t         size_,
+               const fuse_buf_flags flags_)
+{
+  struct fuse_bufvec bufv = FUSE_BUFVEC_INIT(size_);
+
+  bufv.buf[0].flags = flags_;
+  bufv.buf[0].fd    = fd_;
+  bufv.buf[0].pos   = pos_;
+
+  return bufv;
+}

@@ -201,11 +201,20 @@ struct fuse_operations
                const char             *data,
                size_t                  size,
                off_t                   off);
+  int (*write_buf)(const fuse_req_ctx_t *,
+                   const fuse_file_info_t *,
+                   struct fuse_bufvec     *,
+                   off_t);
   int (*read)(const fuse_req_ctx_t *,
               const fuse_file_info_t *ffi,
               char                   *buf,
               size_t                  size,
               off_t                   off);
+  int (*read_buf)(const fuse_req_ctx_t *,
+                  const fuse_file_info_t *,
+                  struct fuse_bufvec     *bufp,
+                  size_t                  size,
+                  off_t                   off);
   int (*fallocate)(const fuse_req_ctx_t *,
                    const uint64_t,
                    int,
