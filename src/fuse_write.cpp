@@ -27,6 +27,7 @@
 #include "fs_pwrite.hpp"
 #include "fs_pwriten.hpp"
 #include "ioprio.hpp"
+#include "qos.hpp"
 #include "state.hpp"
 
 #include "scope_guard/scope_guard.hpp"
@@ -202,6 +203,12 @@ FUSE::write(const fuse_req_ctx_t   *ctx_,
             off_t                   offset_)
 {
   ioprio::SetFrom iop(ctx_->pid);
+  qos::Apply q(ctx_);
+
+  // Charged and, if over rate, slept for before any FileInfo lock is
+  // taken. Sleeping while holding fi->mutex would stall every other
+  // writer to the same file regardless of its class.
+  qos::throttle(q.cls(),count_);
 
   return ::_write(ctx_,ffi_,buf_,count_,offset_);
 }

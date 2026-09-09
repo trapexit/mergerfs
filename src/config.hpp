@@ -35,6 +35,7 @@
 #include "config_passthrough_io.hpp"
 #include "config_pid.hpp"
 #include "config_proxy_ioprio.hpp"
+#include "config_qos.hpp"
 #include "config_rename_exdev.hpp"
 #include "config_set.hpp"
 #include "config_statfs.hpp"
@@ -154,6 +155,12 @@ public:
   TFSRef<int>    process_thread_count;
   TFSRef<int>    process_thread_queue_depth;
   ProxyIOPrio    proxy_ioprio;
+  QoS            qos;
+  QoSRules       qos_rules;
+  QoSRuleSet     qos_ruleset;
+  QoSStats       qos_stats;
+  QoSMaxSleepers qos_max_sleepers;
+  QoSMaxSleepMS  qos_max_sleep_ms;
   TFSRef<int>    read_thread_count;
   ConfigU64      readahead;
   FUSE::ReadDir  readdir;

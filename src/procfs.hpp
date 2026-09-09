@@ -27,4 +27,8 @@ namespace procfs
   void init();
   void shutdown();
   std::string get_name(const int tid);
+
+  // Raw contents of /proc/<pid>/cgroup with the trailing newline
+  // removed. Empty when the process is gone or unreadable.
+  std::string get_cgroup(const int pid);
 }
