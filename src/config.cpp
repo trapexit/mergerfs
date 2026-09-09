@@ -117,6 +117,7 @@ Config::Config()
   process_thread_count(fuse_cfg.process_thread_count),
   process_thread_queue_depth(fuse_cfg.process_thread_queue_depth),
   proxy_ioprio(false),
+  qos(false),
   read_thread_count(fuse_cfg.read_thread_count),
   readahead(0),
   readdir("seq"),
@@ -281,6 +282,14 @@ Config::Config()
   _map["readahead"]                   = &readahead;
   _map["remember"]                    = &_remember;
   _map["remember-nodes"]              = &_remember_nodes;
+  _map["qos"]                         = &qos;
+  _map["qos.distress-factor"]         = &qos_distress_factor;
+  _map["qos.distress-ms"]             = &qos_distress_ms;
+  _map["qos.max-sleep-ms"]            = &qos_max_sleep_ms;
+  _map["qos.max-sleepers"]            = &qos_max_sleepers;
+  _map["qos.rules"]                   = &qos_rules;
+  _map["qos.ruleset"]                 = &qos_ruleset;
+  _map["qos.stats"]                   = &qos_stats;
   _map["rename-exdev"]                = &rename_exdev;
   _map["scheduling-priority"]         = &scheduling_priority;
   _map["security-capability"]         = &security_capability;
