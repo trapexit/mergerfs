@@ -28,10 +28,13 @@
 #include <sstream>
 
 using qos::Class;
+using qos::Condition;
+using qos::Direction;
 using qos::Field;
-using qos::Op;
+using qos::MatchOp;
 using qos::Rule;
 using qos::RuleSet;
+using qos::Subject;
 
 
 std::string
@@ -144,28 +147,56 @@ qos::parse_size(const std::string_view s_,
 }
 
 bool
-Rule::matches(const std::string &cgroup_,
-              const std::string &comm_,
-              const u32          uid_,
-              const u32          gid_) const
+qos::Condition::matches(const Subject &s_) const
 {
+  const std::string *subject;
+
   switch(field)
     {
     case Field::UID:
-      return (uid_ == number);
+      return (s_.uid == number);
     case Field::GID:
-      return (gid_ == number);
+      return (s_.gid == number);
+    case Field::OP:
+      return (s_.dir == dir);
     case Field::CGROUP:
-    case Field::COMM:
+      subject = s_.cgroup;
       break;
+    case Field::COMM:
+      subject = s_.comm;
+      break;
+    case Field::CMDLINE:
+      subject = s_.cmdline;
+      break;
+    case Field::PATH:
+      subject = s_.path;
+      break;
+    default:
+      return false;
     }
 
-  const std::string &subject = ((field == Field::CGROUP) ? cgroup_ : comm_);
+  if(subject == nullptr)
+    return false;
 
-  if(op == Op::EQ)
-    return (subject == pattern);
+  if(op == MatchOp::EQ)
+    return (*subject == pattern);
 
-  return (::fnmatch(pattern.c_str(),subject.c_str(),0) == 0);
+  // FNM_PATHNAME is deliberately not set: a rule reading
+  // "path ~ /TV/*" is expected to cover everything beneath /TV, which
+  // is what an administrator writing a folder rule means.
+  return (::fnmatch(pattern.c_str(),subject->c_str(),0) == 0);
+}
+
+bool
+qos::Rule::matches(const Subject &s_) const
+{
+  for(const auto &cond : conditions)
+    {
+      if(!cond.matches(s_))
+        return false;
+    }
+
+  return true;
 }
 
 const Class *
@@ -181,18 +212,65 @@ RuleSet::find_class(const std::string_view name_) const
 }
 
 const Class *
-RuleSet::classify(const std::string &cgroup_,
-                  const std::string &comm_,
-                  const u32          uid_,
-                  const u32          gid_) const
+RuleSet::classify(const Subject &s_) const
 {
   for(const auto &rule : _rules)
     {
-      if(rule.matches(cgroup_,comm_,uid_,gid_))
+      if(rule.matches(s_))
         return rule.cls;
     }
 
   return _default;
+}
+
+u64
+RuleSet::capacity(const std::string &resource_) const
+{
+  auto i = _capacity.find(resource_);
+
+  if(i != _capacity.end())
+    return i->second;
+
+  return _capacity_default;
+}
+
+u64
+RuleSet::floor_for(const Class       *cls_,
+                   const std::string &resource_) const
+{
+  if(cls_->floor)
+    return cls_->floor;
+
+  if(cls_->floor_pct == 0)
+    return 0;
+
+  const u64 cap = capacity(resource_);
+  if(cap == 0)
+    return 0;
+
+  return ((cap * cls_->floor_pct) / 100);
+}
+
+u64
+RuleSet::rate_for(const Class       *cls_,
+                  const std::string &resource_) const
+{
+  if(cls_->rate)
+    return cls_->rate;
+
+  if(cls_->pct == 0)
+    return 0;
+
+  const u64 cap = capacity(resource_);
+
+  // No capacity known for this resource means a percentage cannot be
+  // turned into a number. Running unlimited is the safe reading: a
+  // guessed ceiling would throttle traffic against a figure nobody
+  // supplied.
+  if(cap == 0)
+    return 0;
+
+  return ((cap * cls_->pct) / 100);
 }
 
 RuleSet::Ptr
@@ -209,14 +287,57 @@ RuleSet::make_default()
 
 namespace
 {
+  // Whitespace separated, except that a token may be wrapped in single
+  // or double quotes to keep spaces in it. Necessary rather than
+  // decorative: the process names this has to match include
+  // "Plex Transcoder" and "Plex Media Scanner", and a command line is
+  // nothing but spaces.
   std::vector<std::string>
   tokenize(const std::string &line_)
   {
     std::vector<std::string> tokens;
-    std::istringstream iss(line_);
     std::string tok;
+    bool in_tok = false;
+    char quote = '\0';
 
-    while(iss >> tok)
+    for(std::size_t i = 0; i < line_.size(); i++)
+      {
+        const char c = line_[i];
+
+        if(quote)
+          {
+            if(c == quote)
+              quote = '\0';
+            else
+              tok += c;
+            continue;
+          }
+
+        if((c == '"') || (c == '\''))
+          {
+            // A quote starts a token even when empty, so that '' is a
+            // deliberate empty pattern rather than nothing at all.
+            quote  = c;
+            in_tok = true;
+            continue;
+          }
+
+        if(std::isspace(static_cast<unsigned char>(c)))
+          {
+            if(in_tok)
+              {
+                tokens.push_back(tok);
+                tok.clear();
+                in_tok = false;
+              }
+            continue;
+          }
+
+        tok += c;
+        in_tok = true;
+      }
+
+    if(in_tok)
       tokens.push_back(tok);
 
     return tokens;
@@ -234,6 +355,12 @@ namespace
       *field_ = Field::UID;
     else if(s_ == "gid")
       *field_ = Field::GID;
+    else if(s_ == "cmdline")
+      *field_ = Field::CMDLINE;
+    else if(s_ == "path")
+      *field_ = Field::PATH;
+    else if(s_ == "op")
+      *field_ = Field::OP;
     else
       return -EINVAL;
 
@@ -281,6 +408,19 @@ RuleSet::parse(const std::string_view text_,
 
           for(std::size_t i = 2; i < tokens.size(); i++)
             {
+              // `protect` is a bare flag rather than key=value.
+              if(tokens[i] == "protect")
+                {
+                  cls->protect = true;
+                  continue;
+                }
+
+              if(tokens[i] == "critical")
+                {
+                  cls->critical = true;
+                  continue;
+                }
+
               const std::size_t eq = tokens[i].find('=');
               if(eq == std::string::npos)
                 return fail(fmt::format("expected key=value, got '{}'",tokens[i]));
@@ -302,13 +442,50 @@ RuleSet::parse(const std::string_view text_,
                 }
               else if(key == "rate")
                 {
-                  if(qos::parse_size(val,&cls->rate))
-                    return fail(fmt::format("invalid rate '{}'",val));
+                  if(!val.empty() && (val.back() == '%'))
+                    {
+                      const std::string num = val.substr(0,val.size() - 1);
+                      char *end = nullptr;
+                      const unsigned long pct = ::strtoul(num.c_str(),&end,10);
+                      if((end == num.c_str()) || (*end != '\0') ||
+                         (pct == 0) || (pct > 100))
+                        return fail(fmt::format("percentage must be 1-100: '{}'",val));
+                      cls->pct = static_cast<u32>(pct);
+                    }
+                  else if(qos::parse_size(val,&cls->rate))
+                    {
+                      return fail(fmt::format("invalid rate '{}'",val));
+                    }
                 }
               else if(key == "burst")
                 {
                   if(qos::parse_size(val,&cls->burst))
                     return fail(fmt::format("invalid burst '{}'",val));
+                }
+              else if(key == "yield")
+                {
+                  char *end = nullptr;
+                  const unsigned long y = ::strtoul(val.c_str(),&end,10);
+                  if((end == val.c_str()) || (*end != '\0') || (y > 100))
+                    return fail(fmt::format("yield must be 0-100: '{}'",val));
+                  cls->yield = static_cast<u32>(y);
+                }
+              else if(key == "floor")
+                {
+                  if(!val.empty() && (val.back() == '%'))
+                    {
+                      const std::string num = val.substr(0,val.size() - 1);
+                      char *end = nullptr;
+                      const unsigned long pct = ::strtoul(num.c_str(),&end,10);
+                      if((end == num.c_str()) || (*end != '\0') ||
+                         (pct == 0) || (pct > 100))
+                        return fail(fmt::format("floor percentage must be 1-100: '{}'",val));
+                      cls->floor_pct = static_cast<u32>(pct);
+                    }
+                  else if(qos::parse_size(val,&cls->floor))
+                    {
+                      return fail(fmt::format("invalid floor '{}'",val));
+                    }
                 }
               else
                 {
@@ -318,63 +495,127 @@ RuleSet::parse(const std::string_view text_,
 
           // A bucket with no explicit depth holds one second of
           // traffic, which is enough to absorb a readahead burst
-          // without letting an idle class bank unlimited credit.
-          if(cls->rate && (cls->burst == 0))
-            cls->burst = cls->rate;
-          if(cls->burst < cls->rate)
+          // without letting an idle class bank unlimited credit. For
+          // a percentage rate the depth can only be resolved once the
+          // serving resource is known, so it is left at zero here.
+          if(cls->rate && (cls->burst < cls->rate))
             cls->burst = cls->rate;
 
-          cls->tokens = cls->burst;
+          if(cls->protect)
+            rs->_has_protected = true;
 
           if((cls->ioprio != qos::UNSET) ||
              (cls->nice   != qos::UNSET) ||
-             (cls->rate   != 0))
+             cls->limited() ||
+             cls->adaptive() ||
+             cls->protect ||
+             cls->critical)
             rs->_inert = false;
 
           rs->_classes.push_back(std::move(cls));
         }
+      else if(tokens[0] == "capacity")
+        {
+          if(tokens.size() != 3)
+            return fail("expected: capacity <branch-path|default> <rate>");
+
+          u64 rate;
+          if(qos::parse_size(tokens[2],&rate))
+            return fail(fmt::format("invalid capacity '{}'",tokens[2]));
+
+          if(tokens[1] == "default")
+            rs->_capacity_default = rate;
+          else
+            rs->_capacity[tokens[1]] = rate;
+        }
       else if(tokens[0] == "match")
         {
-          if(tokens.size() != 6)
-            return fail("expected: match <field> <=|~> <pattern> -> <class>");
-          if(tokens[4] != "->")
-            return fail(fmt::format("expected '->', got '{}'",tokens[4]));
-
           Rule rule{};
+          std::size_t i = 1;
 
-          if(::parse_field(tokens[1],&rule.field))
-            return fail(fmt::format("unknown field '{}'",tokens[1]));
-
-          if(tokens[2] == "=")
-            rule.op = Op::EQ;
-          else if(tokens[2] == "~")
-            rule.op = Op::GLOB;
-          else
-            return fail(fmt::format("unknown operator '{}'",tokens[2]));
-
-          if((rule.field == Field::UID) || (rule.field == Field::GID))
+          // Conditions are (field, operator, pattern) triples running
+          // up to the arrow. Every one must match for the rule to
+          // fire.
+          while((i < tokens.size()) && (tokens[i] != "->"))
             {
-              if(rule.op != Op::EQ)
-                return fail("uid/gid only support the '=' operator");
+              if((i + 2) >= tokens.size())
+                return fail("expected: match <field> <=|~> <pattern> ... -> <class>");
 
-              char *end = nullptr;
-              const unsigned long n = ::strtoul(tokens[3].c_str(),&end,10);
-              if((end == tokens[3].c_str()) || (*end != '\0'))
-                return fail(fmt::format("invalid uid/gid '{}'",tokens[3]));
-              rule.number = static_cast<u32>(n);
+              Condition cond{};
+
+              if(::parse_field(tokens[i],&cond.field))
+                return fail(fmt::format("unknown field '{}'",tokens[i]));
+
+              if(tokens[i+1] == "=")
+                cond.op = MatchOp::EQ;
+              else if(tokens[i+1] == "~")
+                cond.op = MatchOp::GLOB;
+              else
+                return fail(fmt::format("unknown operator '{}'",tokens[i+1]));
+
+              cond.pattern = tokens[i+2];
+
+              switch(cond.field)
+                {
+                case Field::UID:
+                case Field::GID:
+                  {
+                    if(cond.op != MatchOp::EQ)
+                      return fail("uid/gid only support the '=' operator");
+
+                    char *end = nullptr;
+                    const unsigned long n = ::strtoul(cond.pattern.c_str(),&end,10);
+                    if((end == cond.pattern.c_str()) || (*end != '\0'))
+                      return fail(fmt::format("invalid uid/gid '{}'",cond.pattern));
+                    cond.number = static_cast<u32>(n);
+                  }
+                  break;
+
+                case Field::OP:
+                  if(cond.op != MatchOp::EQ)
+                    return fail("op only supports the '=' operator");
+                  if(cond.pattern == "read")
+                    cond.dir = Direction::READ;
+                  else if(cond.pattern == "write")
+                    cond.dir = Direction::WRITE;
+                  else
+                    return fail(fmt::format("op must be read or write, got '{}'",
+                                            cond.pattern));
+                  break;
+
+                case Field::CGROUP:
+                  rs->_needs_cgroup = true;
+                  break;
+
+                case Field::COMM:
+                  rs->_needs_comm = true;
+                  break;
+
+                case Field::CMDLINE:
+                  rs->_needs_cmdline = true;
+                  break;
+
+                case Field::PATH:
+                  rs->_needs_path = true;
+                  break;
+                }
+
+              rule.conditions.push_back(std::move(cond));
+
+              i += 3;
             }
 
-          rule.pattern = tokens[3];
+          if(rule.conditions.empty())
+            return fail("match needs at least one condition");
+          if((i >= tokens.size()) || (tokens[i] != "->"))
+            return fail("expected '->' after the last condition");
+          if((i + 2) != tokens.size())
+            return fail("expected exactly one class name after '->'");
 
-          rule.cls = rs->find_class(tokens[5]);
+          rule.cls = rs->find_class(tokens[i+1]);
           if(rule.cls == nullptr)
             return fail(fmt::format("unknown class '{}' (classes must be "
-                                    "defined before use)",tokens[5]));
-
-          if(rule.field == Field::CGROUP)
-            rs->_needs_cgroup = true;
-          if(rule.field == Field::COMM)
-            rs->_needs_comm = true;
+                                    "defined before use)",tokens[i+1]));
 
           rs->_rules.push_back(std::move(rule));
         }
@@ -407,8 +648,13 @@ RuleSet::parse(const std::string_view text_,
         }
     }
 
-  if(rs->_rules.empty() && rs->_default->ioprio == qos::UNSET &&
-     rs->_default->nice == qos::UNSET && rs->_default->rate == 0)
+  if(rs->_rules.empty() &&
+     (rs->_default->ioprio == qos::UNSET) &&
+     (rs->_default->nice == qos::UNSET) &&
+     !rs->_default->limited() &&
+     !rs->_default->adaptive() &&
+     !rs->_default->protect &&
+     !rs->_default->critical)
     rs->_inert = true;
 
   return rs;
@@ -419,32 +665,52 @@ RuleSet::to_string() const
 {
   std::string s;
 
+  for(const auto &[resource,rate] : _capacity)
+    s += fmt::format("capacity {} {}\n",resource,rate);
+  if(_capacity_default)
+    s += fmt::format("capacity default {}\n",_capacity_default);
+
   for(const auto &c : _classes)
     {
-      s += fmt::format("class {} ioprio={} nice={} rate={} burst={}\n",
+      s += fmt::format("class {}{}{} ioprio={} nice={} rate={} burst={} "
+                       "yield={} floor={}\n",
                        c->name,
+                       (c->protect ? " protect" : ""),
+                       (c->critical ? " critical" : ""),
                        qos::ioprio::to_string(c->ioprio),
                        ((c->nice == qos::UNSET) ? "unset" : std::to_string(c->nice)),
-                       c->rate,
-                       c->burst);
+                       (c->pct ? fmt::format("{}%",c->pct) : std::to_string(c->rate)),
+                       c->burst,
+                       c->yield,
+                       (c->floor_pct ? fmt::format("{}%",c->floor_pct)
+                                     : std::to_string(c->floor)));
     }
 
   for(const auto &r : _rules)
     {
-      const char *field = "";
-      switch(r.field)
+      s += "match";
+
+      for(const auto &cond : r.conditions)
         {
-        case Field::CGROUP: field = "cgroup"; break;
-        case Field::COMM:   field = "comm";   break;
-        case Field::UID:    field = "uid";    break;
-        case Field::GID:    field = "gid";    break;
+          const char *field = "";
+          switch(cond.field)
+            {
+            case Field::CGROUP: field = "cgroup"; break;
+            case Field::COMM:   field = "comm";   break;
+            case Field::CMDLINE: field = "cmdline"; break;
+            case Field::UID:    field = "uid";    break;
+            case Field::GID:    field = "gid";    break;
+            case Field::PATH:   field = "path";   break;
+            case Field::OP:     field = "op";     break;
+            }
+
+          s += fmt::format(" {} {} {}",
+                           field,
+                           ((cond.op == MatchOp::EQ) ? "=" : "~"),
+                           cond.pattern);
         }
 
-      s += fmt::format("match {} {} {} -> {}\n",
-                       field,
-                       ((r.op == Op::EQ) ? "=" : "~"),
-                       r.pattern,
-                       r.cls->name);
+      s += fmt::format(" -> {}\n",r.cls->name);
     }
 
   if(_default)

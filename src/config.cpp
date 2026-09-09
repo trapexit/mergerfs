@@ -283,6 +283,8 @@ Config::Config()
   _map["remember"]                    = &_remember;
   _map["remember-nodes"]              = &_remember_nodes;
   _map["qos"]                         = &qos;
+  _map["qos.distress-factor"]         = &qos_distress_factor;
+  _map["qos.distress-ms"]             = &qos_distress_ms;
   _map["qos.max-sleep-ms"]            = &qos_max_sleep_ms;
   _map["qos.max-sleepers"]            = &qos_max_sleepers;
   _map["qos.rules"]                   = &qos_rules;

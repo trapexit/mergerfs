@@ -67,19 +67,31 @@ FUSE::read(const fuse_req_ctx_t   *ctx_,
            off_t                   offset_)
 {
   ioprio::SetFrom iop(ctx_->pid);
-  qos::Apply q(ctx_);
   FileInfo *fi;
-
-  qos::throttle(q.cls(),size_);
 
   fi = state.get_fi(ctx_,ffi_->fh);
   if(not fi)
     return -EBADF;
 
-  if(fi->direct_io)
-    return ::_read_direct_io(fi->fd,buf_,size_,offset_);
+  // Classified after the file is known so path rules can see which
+  // file is being read, and so the rate is charged against the branch
+  // actually serving it.
+  qos::Apply q(ctx_,&fi->fusepath.native(),qos::Direction::READ);
+  qos::throttle(q,size_,fi->branch.path.native());
 
-  return ::_read_cached(fi->fd,buf_,size_,offset_);
+  // Timed only for protected classes. How long a player's reads
+  // actually take is the signal the governor throttles everything
+  // else against, so it has to be measured around the real I/O rather
+  // than inferred.
+  const u64 t0 = qos::timing_start(q);
+
+  const int rv = (fi->direct_io
+                  ? ::_read_direct_io(fi->fd,buf_,size_,offset_)
+                  : ::_read_cached(fi->fd,buf_,size_,offset_));
+
+  qos::timing_end(q,fi->branch.path.native(),t0);
+
+  return rv;
 }
 
 int

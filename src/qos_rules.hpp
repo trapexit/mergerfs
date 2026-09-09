@@ -22,41 +22,73 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 
 namespace qos
 {
-  // Which attribute of the calling process a rule tests.
+  // Which attribute of a request a condition tests.
   enum class Field
     {
-     CGROUP,   // contents of /proc/<pid>/cgroup
-     COMM,     // contents of /proc/<pid>/comm
+     CGROUP,   // contents of /proc/<pid>/cgroup -- identifies the container
+     COMM,     // contents of /proc/<pid>/comm   -- identifies the program
      UID,
-     GID
+     GID,
+     CMDLINE,  // full /proc/<pid>/cmdline, arguments joined by spaces
+     PATH,     // path within the pool, e.g. /Movies/Dune (2021)/Dune.mkv
+     OP        // "read" or "write"
     };
 
-  enum class Op
+  enum class MatchOp
     {
      EQ,     // '='  exact string / numeric equality
-     GLOB    // '~'  fnmatch(3) pattern
+     GLOB    // '~'  fnmatch(3) pattern, '/' not treated specially
     };
 
-  struct Rule
-  {
-    Field       field;
-    Op          op;
-    std::string pattern;
-    u32         number;      // parsed form of `pattern` for UID/GID
-    const Class *cls;        // owned by the RuleSet holding this rule
+  enum class Direction
+    {
+     READ,
+     WRITE
+    };
 
-    bool matches(const std::string &cgroup,
-                 const std::string &comm,
-                 const u32          uid,
-                 const u32          gid) const;
+  // Everything a rule can be matched against. Assembled once per
+  // request, and only for the fields some rule actually uses.
+  struct Subject
+  {
+    const std::string *cgroup  = nullptr;
+    const std::string *comm    = nullptr;
+    const std::string *cmdline = nullptr;
+    const std::string *path   = nullptr;
+    u32                uid    = 0;
+    u32                gid    = 0;
+    Direction          dir    = Direction::READ;
   };
 
-  // An immutable, atomically published set of classes and rules.
+  struct Condition
+  {
+    Field       field;
+    MatchOp     op;
+    std::string pattern;
+    u32         number;   // parsed form of `pattern` for UID/GID
+    Direction   dir;      // parsed form of `pattern` for OP
+
+    bool matches(const Subject &) const;
+  };
+
+  // A rule fires when *every* one of its conditions matches, which is
+  // what makes "this program, but only on this folder, and only when
+  // writing" expressible as one rule.
+  struct Rule
+  {
+    std::vector<Condition> conditions;
+    const Class           *cls;   // owned by the RuleSet holding this rule
+
+    bool matches(const Subject &) const;
+  };
+
+  // An immutable, atomically published set of classes, rules and
+  // resource capacities.
   //
   // Loading a rules file builds a whole new RuleSet and swaps it in,
   // so a reload can never expose a half-applied configuration to a
@@ -80,31 +112,54 @@ namespace qos
                      std::string           *err);
 
   public:
-    const Class *classify(const std::string &cgroup,
-                          const std::string &comm,
-                          const u32          uid,
-                          const u32          gid) const;
+    const Class *classify(const Subject &) const;
 
     const Class *find_class(const std::string_view name) const;
+
+    // Measured or declared throughput of `resource` in bytes/sec,
+    // falling back to the `capacity default` line. Zero when nothing
+    // is known, which makes percentage rates unenforceable and is
+    // reported as such.
+    u64 capacity(const std::string &resource) const;
+
+    // Resolves a class's configured rate against the resource
+    // serving the request. Returns 0 for "unlimited".
+    u64 rate_for(const Class *, const std::string &resource) const;
 
     // True when no rule and no class can change a thread's behaviour,
     // letting the hot path skip reading /proc entirely.
     bool inert() const { return _inert; }
 
+    // Which subject fields any rule actually inspects. Each one that
+    // is unused is a file read or a string copy skipped per request.
     bool needs_cgroup() const { return _needs_cgroup; }
     bool needs_comm() const { return _needs_comm; }
+    bool needs_cmdline() const { return _needs_cmdline; }
+    bool needs_path() const { return _needs_path; }
+
+    // True when some class is marked `protect`, which is what turns
+    // the adaptive governor on.
+    bool has_protected() const { return _has_protected; }
+
+    // Resolves a class's floor against the resource.
+    u64 floor_for(const Class *, const std::string &resource) const;
 
     const std::vector<std::unique_ptr<Class>> &classes() const { return _classes; }
 
     std::string to_string() const;
 
   private:
-    std::vector<std::unique_ptr<Class>> _classes;
-    std::vector<Rule>                   _rules;
-    const Class                        *_default = nullptr;
-    bool                                _inert = true;
-    bool                                _needs_cgroup = false;
-    bool                                _needs_comm = false;
+    std::vector<std::unique_ptr<Class>>    _classes;
+    std::vector<Rule>                      _rules;
+    std::unordered_map<std::string,u64>    _capacity;
+    u64                                    _capacity_default = 0;
+    const Class                           *_default = nullptr;
+    bool                                   _inert = true;
+    bool                                   _needs_cgroup = false;
+    bool                                   _needs_comm = false;
+    bool                                   _needs_cmdline = false;
+    bool                                   _needs_path = false;
+    bool                                   _has_protected = false;
   };
 
   // Parses "10M", "1.5MiB", "512K", "1G" and bare byte counts into

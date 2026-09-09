@@ -88,16 +88,60 @@ namespace qos
   extern std::atomic<int> max_sleepers;
   extern std::atomic<u64> max_sleep_ns;
 
+  // What counts as a protected request being in distress: its smoothed
+  // service time must exceed `distress_factor` times the quietest time
+  // that resource has managed, and also exceed `distress_floor_ns`.
+  //
+  // The floor is what stops ordinary jitter tripping the loop, and it
+  // is entirely device dependent -- 50ms is a stall on a spinning disk
+  // and unreachable on NVMe. A flash pool wants single-digit
+  // milliseconds or the governor will never engage.
+  extern std::atomic<u64>    distress_floor_ns;
+  extern std::atomic<double> distress_factor;
+
+  class Apply;
+
   // Path most recently loaded by load_file(), or empty.
   std::string rules_path();
 
   std::string stats();
   void        reset_stats();
 
-  // Charges `bytes` to the class and, if that class is over its rate,
-  // sleeps for as long as the bounds above permit. Called with the
-  // size the caller asked for, before the I/O is issued.
-  void throttle(const Class *, const u64 bytes);
+  // Feedback loop.
+  //
+  // A protected class's service time is the control signal. When reads
+  // for a player start taking materially longer than that same disk
+  // manages when it is quiet, pressure on the resource rises and every
+  // yielding class's allowance shrinks in proportion to its `yield`
+  // rank -- downloads first and hardest, a player's own background
+  // work more gently, playback not at all. When the latency recovers,
+  // or playback stops altogether, pressure decays and the allowances
+  // return to full.
+  //
+  // Returns 0 for a request whose class is not protected, in which
+  // case timing_end does nothing. Keeping the clock read out of the
+  // unprotected path is why this is split in two.
+  u64  timing_start(const Apply &);
+  void timing_end(const Apply &, const std::string &resource, const u64 started);
+
+  // Current backoff for a resource, 0.0 to 1.0. Zero when no protected
+  // class has touched it recently, which is what lets bulk traffic run
+  // flat out on a disk nobody is streaming from.
+  double pressure(const std::string &resource);
+
+  // Records that a class willing to yield has just issued I/O against
+  // a resource, which is what makes it count as contended.
+  void note_yielding(const std::string &resource);
+
+  // Charges `bytes` to the class and, if that class is over its rate
+  // for `resource`, sleeps for as long as the bounds above permit.
+  // Called with the size the caller asked for, before the I/O is
+  // issued.
+  //
+  // `resource` is the branch serving the request, so a rate is a
+  // per-device allowance: a class limited to 10% does not have to
+  // share one budget across seven disks.
+  void throttle(const Apply &, const u64 bytes, const std::string &resource);
 
   // Classifies the calling process and applies its class to this
   // thread. The thread keeps those settings until another request
@@ -109,19 +153,25 @@ namespace qos
   public:
     [[gnu::always_inline]]
     inline
-    Apply(const fuse_req_ctx_t *ctx_)
+    Apply(const fuse_req_ctx_t *ctx_,
+          const std::string    *fusepath_,
+          const Direction       dir_)
     {
       if(qos::enabled())
-        _slow_apply(ctx_);
+        _slow_apply(ctx_,fusepath_,dir_);
     }
 
     // nullptr when QoS is off or the ruleset cannot change anything.
-    const Class *cls() const { return _cls; }
+    const Class   *cls() const { return _cls; }
+    const RuleSet *ruleset() const { return _rs; }
 
   private:
-    void _slow_apply(const fuse_req_ctx_t *);
+    void _slow_apply(const fuse_req_ctx_t *,
+                     const std::string *,
+                     const Direction);
 
   private:
-    const Class *_cls = nullptr;
+    const Class   *_cls = nullptr;
+    const RuleSet *_rs  = nullptr;
   };
 }

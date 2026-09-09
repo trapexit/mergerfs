@@ -22,7 +22,10 @@
 #include "qos.hpp"
 #include "syslog.hpp"
 
+#include "fmt/core.h"
+
 #include <errno.h>
+#include <stdlib.h>
 
 
 QoS::QoS(const bool b_)
@@ -130,7 +133,8 @@ QoSMaxSleepers::from_string(const std::string_view s_)
   rv = str::from(s_,&n);
   if(rv)
     return rv;
-  if(n < 0)
+  // -1 keeps the automatic sizing.
+  if(n < -1)
     return -EINVAL;
 
   qos::max_sleepers.store(n,std::memory_order_relaxed);
@@ -159,6 +163,54 @@ QoSMaxSleepMS::from_string(const std::string_view s_)
 
   qos::max_sleep_ns.store(static_cast<u64>(n) * 1000 * 1000,
                           std::memory_order_relaxed);
+
+  return 0;
+}
+
+std::string
+QoSDistressMS::to_string(void) const
+{
+  return std::to_string(qos::distress_floor_ns.load(std::memory_order_relaxed) /
+                        (1000 * 1000));
+}
+
+int
+QoSDistressMS::from_string(const std::string_view s_)
+{
+  int rv;
+  int n;
+
+  rv = str::from(s_,&n);
+  if(rv)
+    return rv;
+  if(n < 0)
+    return -EINVAL;
+
+  qos::distress_floor_ns.store(static_cast<u64>(n) * 1000 * 1000,
+                               std::memory_order_relaxed);
+
+  return 0;
+}
+
+std::string
+QoSDistressFactor::to_string(void) const
+{
+  return fmt::format("{:.2f}",
+                     qos::distress_factor.load(std::memory_order_relaxed));
+}
+
+int
+QoSDistressFactor::from_string(const std::string_view s_)
+{
+  const std::string str{s_};
+  char *end = nullptr;
+
+  errno = 0;
+  const double v = ::strtod(str.c_str(),&end);
+  if(errno || (end == str.c_str()) || (*end != '\0') || (v < 1.0))
+    return -EINVAL;
+
+  qos::distress_factor.store(v,std::memory_order_relaxed);
 
   return 0;
 }

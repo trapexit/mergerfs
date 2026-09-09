@@ -129,18 +129,11 @@ _move_and_pwriten(char const    *buf_,
 
 static
 int
-_write(const fuse_req_ctx_t   *ctx_,
-       const fuse_file_info_t *ffi_,
-       const char             *buf_,
-       const size_t            count_,
-       const off_t             offset_)
+_write(FileInfo     *fi,
+       const char   *buf_,
+       const size_t  count_,
+       const off_t   offset_)
 {
-  FileInfo *fi;
-
-  fi = state.get_fi(ctx_,ffi_->fh);
-  if(not fi)
-    return -EBADF;
-
   // Concurrent writes can only happen if:
   // 1) writeback-cache is enabled and using page caching
   // 2) parallel_direct_writes is enabled and file has
@@ -203,14 +196,26 @@ FUSE::write(const fuse_req_ctx_t   *ctx_,
             off_t                   offset_)
 {
   ioprio::SetFrom iop(ctx_->pid);
-  qos::Apply q(ctx_);
+  FileInfo *fi;
+
+  fi = state.get_fi(ctx_,ffi_->fh);
+  if(not fi)
+    return -EBADF;
+
+  qos::Apply q(ctx_,&fi->fusepath.native(),qos::Direction::WRITE);
 
   // Charged and, if over rate, slept for before any FileInfo lock is
   // taken. Sleeping while holding fi->mutex would stall every other
   // writer to the same file regardless of its class.
-  qos::throttle(q.cls(),count_);
+  qos::throttle(q,count_,fi->branch.path.native());
 
-  return ::_write(ctx_,ffi_,buf_,count_,offset_);
+  const u64 t0 = qos::timing_start(q);
+
+  const int rv = ::_write(fi,buf_,count_,offset_);
+
+  qos::timing_end(q,fi->branch.path.native(),t0);
+
+  return rv;
 }
 
 int

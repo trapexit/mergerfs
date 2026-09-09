@@ -159,6 +159,8 @@ public:
   QoSRules       qos_rules;
   QoSRuleSet     qos_ruleset;
   QoSStats       qos_stats;
+  QoSDistressMS     qos_distress_ms;
+  QoSDistressFactor qos_distress_factor;
   QoSMaxSleepers qos_max_sleepers;
   QoSMaxSleepMS  qos_max_sleep_ms;
   TFSRef<int>    read_thread_count;

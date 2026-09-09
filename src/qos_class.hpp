@@ -23,6 +23,8 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <memory>
+#include <unordered_map>
 
 
 namespace qos
@@ -72,14 +74,61 @@ namespace qos
     int from_string(const std::string_view, int *value);
   }
 
+  // One token bucket. A class owns one of these per resource it is
+  // limited against -- normally one per branch, so a rate is a
+  // per-device rate rather than a pool-wide one. Two players reading
+  // two different disks do not compete for the same allowance.
+  struct Bucket
+  {
+    std::mutex mutex;
+    u64        tokens   = 0;
+    u64        refilled = 0;
+    bool       primed   = false;
+  };
+
+  // The feedback state for one resource (one branch/spindle).
+  //
+  // This is what makes the policy adaptive rather than a fixed cap:
+  // bulk traffic runs unrestricted on a disk nobody is streaming from,
+  // and only gives way -- gradually, and never to a standstill -- once
+  // a protected class on that same disk starts to suffer.
+  struct Governor
+  {
+    std::mutex mutex;
+
+    // When a protected class last issued I/O here. Bulk classes read
+    // this to answer "is anyone playing off this spindle right now?"
+    u64 protected_at = 0;
+
+    // When a yielding class last issued I/O here. Pressure only rises
+    // while both this and protected_at are recent -- that is the
+    // definition of contention.
+    u64 yielding_at = 0;
+
+    // Exponentially weighted mean service time of protected requests,
+    // and the quietest mean seen so far, which stands in for "what
+    // this disk does when nothing is fighting it".
+    u64 latency_ewma = 0;
+    u64 latency_base = 0;
+
+    // 0.0 == no backoff, 1.0 == full backoff. Moved multiplicatively
+    // up on distress and additively down on recovery, so it reacts
+    // fast to a stutter and returns slowly enough not to oscillate.
+    double pressure = 0.0;
+
+    u64 updated_at = 0;
+
+    // Counters for qos.stats.
+    u64 distress_events = 0;
+  };
+
   // A QoS class is a named bundle of scheduling parameters plus the
-  // token bucket and counters belonging to every request matched to
+  // token buckets and counters belonging to every request matched to
   // it.
   //
-  // The mutable atomics are the only members written after a ruleset
-  // is published; the descriptive members are immutable for the life
-  // of the object, which is what lets the classifier hand out bare
-  // pointers to it.
+  // The descriptive members are immutable once a ruleset is
+  // published, which is what lets the classifier hand out bare
+  // pointers to it. Everything mutable is either atomic or guarded.
   class Class
   {
   public:
@@ -94,19 +143,58 @@ namespace qos
     int ioprio = qos::UNSET;
     int nice   = qos::UNSET;
 
-    // 0 == unlimited. `burst` is the bucket depth and defaults to one
-    // second of `rate` when a rate is set.
+    // A rate is either absolute (`rate` bytes/sec) or a share of the
+    // serving resource's measured capacity (`pct` percent). Both zero
+    // means unlimited.
     u64 rate  = 0;
+    u32 pct   = 0;
+    // Bucket depth. Zero means "one second of whatever the rate
+    // resolves to", which cannot be precomputed for a percentage.
     u64 burst = 0;
 
+    // Latency of this class's requests is the signal the governor
+    // controls against, and it is never itself throttled.
+    bool protect = false;
+
+    // Never delayed, and never a control signal.
+    //
+    // This exists for the services playback *synchronously waits on*
+    // rather than playback itself -- Plex's EasyAudioEncoder is the
+    // canonical case: a transcode of EAC3/TrueHD/DTS audio writes to
+    // EAE and blocks until it answers. Slowing such a helper slows the
+    // stream that is waiting on it, so the "bulk" it appears to be
+    // doing must be left alone. Getting this wrong is a priority
+    // inversion: the machinery meant to protect playback stalls it.
+    bool critical = false;
+
+    // True when this class must never be delayed for any reason.
+    bool immune() const { return (protect || critical); }
+
+    // How strongly this class gives way as pressure rises, 0-100.
+    // 0 never yields; 100 yields its whole allowance at full
+    // pressure. This is the priority ladder: downloads yield hardest,
+    // a player's background work yields some, playback yields none.
+    u32 yield = 0;
+
+    // Never back off below this, so a yielding class is slowed rather
+    // than stopped. Either absolute bytes/sec or a percentage of the
+    // resource's capacity.
+    u64 floor     = 0;
+    u32 floor_pct = 0;
+
+    bool limited() const { return ((rate != 0) || (pct != 0)); }
+    bool adaptive() const { return (yield != 0); }
+
   public:
-    // Token bucket, guarded by `bucket_mutex`. `tokens` is in bytes
-    // and `refilled` is a CLOCK_MONOTONIC nanosecond stamp. All three
-    // are only touched when `rate` is non-zero, so classes without a
-    // rate never take the lock.
-    mutable std::mutex       bucket_mutex;
-    mutable u64              tokens{0};
-    mutable u64              refilled{0};
+    // Buckets are created on first use and keyed by resource name
+    // (a branch path, or "pool" when the branch is unknown). Seven
+    // branches means seven entries, so a plain map under a mutex is
+    // cheaper than anything cleverer.
+    mutable std::mutex                           buckets_mutex;
+    mutable std::unordered_map<std::string,
+                               std::unique_ptr<Bucket>> buckets;
+
+    Bucket *bucket_for(const std::string &resource) const;
 
   public:
     // Counters, reported via the qos.stats config key.

@@ -71,6 +71,22 @@ public:
   int from_string(const std::string_view) final;
 };
 
+// qos.distress-ms=<int>
+class QoSDistressMS : public ToFromString
+{
+public:
+  std::string to_string(void) const final;
+  int from_string(const std::string_view) final;
+};
+
+// qos.distress-factor=<float>
+class QoSDistressFactor : public ToFromString
+{
+public:
+  std::string to_string(void) const final;
+  int from_string(const std::string_view) final;
+};
+
 // qos.max-sleep-ms=<int>
 class QoSMaxSleepMS : public ToFromString
 {
