@@ -2,7 +2,8 @@
 
 If using path preservation and a  `rename`  fails with `EXDEV`:
 
-1. Move file from `/branch/a/b/c` to `/branch/.mergerfs_rename_exdev/a/b/c`.
+1. Move file from `/mnt/hdd/disk0/a/b/c` to
+   `/mnt/hdd/disk0/.mergerfs_rename_exdev/a/b/c`.
 2. symlink the rename's `newpath` to the moved file.
 
 The  `target`  value is determined by the value of  `rename-exdev`.

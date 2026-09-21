@@ -105,7 +105,7 @@ The way in which mergerfs behaves is controlled by the
 
 ```
 A         +      B        =       C
-/disk1           /disk2           /merged
+/mnt/hdd/disk0   /mnt/hdd/disk1   /media
 |                |                |
 +-- /dir1        +-- /dir1        +-- /dir1
 |   |            |   |            |   |

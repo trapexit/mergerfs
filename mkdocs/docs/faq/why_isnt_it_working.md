@@ -81,7 +81,7 @@ where it was created.
 $ sudo touch /mnt/mergerfs/new-file
 $ sudo getfattr -n user.mergerfs.allpaths /mnt/mergerfs/new-file
 # file: mnt/mergerfs/new-file
-user.mergerfs.allpaths="/mnt/hdd/drive1/new-file"
+user.mergerfs.allpaths="/mnt/hdd/disk0/new-file"
 ```
 
 If the location of the file is where it should be according to the
