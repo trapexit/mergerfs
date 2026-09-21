@@ -66,23 +66,68 @@ branches](config/branches.md#branch-setup).
 
 ```
 # Two positional options: `:` colon separated branches and mountpoint
-mergerfs -o opt[,opt...] /branch0:/branch1 /mountpoint
+mergerfs -o opt[,opt...] /mnt/hdd/disk0:/mnt/hdd/disk1:/mnt/hdd/disk2 /media
 # or list of positional options where the last is the mountpoint
-mergerfs -o opt[,opt...] /branch0 /branch1 /mountpoint
+mergerfs -o opt[,opt...] /mnt/hdd/disk0 /mnt/hdd/disk1 /mnt/hdd/disk2 /media
 # or set mountpoint via -o mountpoint
-mergerfs -o mountpoint=/mountpoint /branch0 /branch1
+mergerfs -o mountpoint=/media /mnt/hdd/disk0 /mnt/hdd/disk1 /mnt/hdd/disk2
 ```
 
 ```
-mergerfs -o cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false /mnt/hdd0:/mnt/hdd1 /media
+mergerfs -o cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false /mnt/hdd/disk0:/mnt/hdd/disk1:/mnt/hdd/disk2 /media
 ```
 
 
 ### /etc/fstab
 
 ```
-/mnt/hdd0:/mnt/hdd1 /media mergerfs cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false 0 0
+/mnt/hdd/disk0:/mnt/hdd/disk1:/mnt/hdd/disk2 /media mergerfs cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false 0 0
 ```
+
+### systemd mount dependencies
+
+On a `systemd` based system, no custom service or setup script is
+needed when the branch filesystems and mergerfs are all configured in
+`/etc/fstab`. Add
+[`x-systemd.requires-mounts-for=`](https://www.freedesktop.org/software/systemd/man/latest/systemd.mount.html#x-systemd.wants-mounts-for=)
+once for each branch mount target in the mergerfs entry:
+
+```fstab
+LABEL=disk0 /mnt/hdd/disk0 ext4 defaults 0 2
+LABEL=disk1 /mnt/hdd/disk1 ext4 defaults 0 2
+LABEL=disk2 /mnt/hdd/disk2 ext4 defaults 0 2
+/mnt/hdd/disk0:/mnt/hdd/disk1:/mnt/hdd/disk2 /media mergerfs cache.files=off,category.create=pfrd,func.getattr=newest,dropcacheonclose=false,x-systemd.requires-mounts-for=/mnt/hdd/disk0,x-systemd.requires-mounts-for=/mnt/hdd/disk1,x-systemd.requires-mounts-for=/mnt/hdd/disk2 0 0
+```
+
+Replace the example labels and filesystem types with those used by the
+system. `systemd` creates `Requires=` and `After=` dependencies from
+the mergerfs mount to `mnt-hdd-disk0.mount`,
+`mnt-hdd-disk1.mount`, and `mnt-hdd-disk2.mount`. It starts those
+mounts first and does not start the mergerfs mount if a required mount
+fails. This checks the mount units, not merely whether the
+`/mnt/hdd/diskN` directories exist.
+
+After editing `/etc/fstab`, reload the generated units:
+
+```shell
+sudo systemctl daemon-reload
+```
+
+The dependencies apply the next time `/media` is mounted and on
+subsequent boots.
+
+When using a service such as the
+[`mergerfs-media.service`](#systemd-simple) example below instead of an
+`/etc/fstab` mergerfs entry, add the equivalent directive to its
+`[Unit]` section:
+
+```systemd
+RequiresMountsFor=/mnt/hdd/disk0 /mnt/hdd/disk1 /mnt/hdd/disk2
+```
+
+`RequiresMountsFor=` adds both the requirement and ordering
+dependencies, so separate `Requires=` and `After=` entries for these
+mounts are unnecessary.
 
 ### /etc/fstab w/ config file
 
@@ -114,10 +159,9 @@ resolve the symlinks and use the real path.
 `ls -lh /etc/mergerfs/branches/media/*`
 
 ```text
-lrwxrwxrwx 1 root root 21 Aug  4  2023 hdd00 -> /mnt/hdd/hdd00
-lrwxrwxrwx 1 root root 21 Aug  4  2023 hdd01 -> /mnt/hdd/hdd01
-lrwxrwxrwx 1 root root 21 Aug  4  2023 hdd02 -> /mnt/hdd/hdd02
-lrwxrwxrwx 1 root root 21 Aug  4  2023 hdd03 -> /mnt/hdd/hdd03
+lrwxrwxrwx 1 root root 14 Aug  4  2023 disk0 -> /mnt/hdd/disk0
+lrwxrwxrwx 1 root root 14 Aug  4  2023 disk1 -> /mnt/hdd/disk1
+lrwxrwxrwx 1 root root 14 Aug  4  2023 disk2 -> /mnt/hdd/disk2
 ```
 
 ### systemd (simple)
@@ -127,6 +171,7 @@ lrwxrwxrwx 1 root root 21 Aug  4  2023 hdd03 -> /mnt/hdd/hdd03
 ```systemd title="mergerfs-media.service" linenums="1"
 [Unit]
 Description=mergerfs /media service
+RequiresMountsFor=/mnt/hdd/disk0 /mnt/hdd/disk1 /mnt/hdd/disk2
 After=local-fs.target network.target
 
 [Service]
@@ -138,8 +183,9 @@ ExecStart=/usr/bin/mergerfs \
   -o category.create=pfrd \
   -o func.getattr=newest \
   -o dropcacheonclose=false \
-  /mnt/hdd0 \
-  /mnt/hdd1 \
+  /mnt/hdd/disk0 \
+  /mnt/hdd/disk1 \
+  /mnt/hdd/disk2 \
   /media
 ExecStop=/usr/bin/umount /media
 # Or if you need fusermount
@@ -193,8 +239,9 @@ WantedBy=default.target
 ```systemd title="mergerfs-media.service" linenums="1"
 [Unit]
 Description=mergerfs /media service
+RequiresMountsFor=/mnt/hdd/disk0 /mnt/hdd/disk1 /mnt/hdd/disk2
 Requires=setup-for-mergerfs.service
-After=local-fs.target network.target prepare-for-mergerfs.service
+After=local-fs.target network.target setup-for-mergerfs.service
 
 [Service]
 Type=simple
@@ -205,8 +252,9 @@ ExecStart=/usr/bin/mergerfs \
   -o category.create=pfrd \
   -o func.getattr=newest \
   -o dropcacheonclose=false \
-  /mnt/hdd0 \
-  /mnt/hdd1 \
+  /mnt/hdd/disk0 \
+  /mnt/hdd/disk1 \
+  /mnt/hdd/disk2 \
   /media
 ExecStop=/usr/bin/umount /media
 # Or if you need fusermount

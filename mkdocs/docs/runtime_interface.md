@@ -110,7 +110,7 @@ situation and continue to be able to access the xattr interface.
 
 ```
 [trapexit:/mnt/mergerfs] $ getfattr -d .mergerfs
-user.mergerfs.branches="/mnt/a=RW:/mnt/b=RW"
+user.mergerfs.branches="/mnt/hdd/disk0=RW:/mnt/hdd/disk1=RW"
 user.mergerfs.minfreespace="4294967295"
 user.mergerfs.moveonenospc="false"
 ...
@@ -122,9 +122,9 @@ user.mergerfs.category.search="mfs"
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.category.create .mergerfs
 user.mergerfs.category.search="prfd"
 
-[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.branches -v '+</mnt/c=RO' .mergerfs
+[trapexit:/mnt/mergerfs] $ setfattr -n user.mergerfs.branches -v '+</mnt/hdd/disk2=RO' .mergerfs
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.branches .mergerfs
-user.mergerfs.branches="/mnt/c=RO:/mnt/a=RW:/mnt/b=RW"
+user.mergerfs.branches="/mnt/hdd/disk2=RO:/mnt/hdd/disk0=RW:/mnt/hdd/disk1=RW"
 ```
 
 ### Commands
@@ -172,7 +172,7 @@ to set them will result in an error.
 
 ```
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.fullpath test
-user.mergerfs.fullpath="/mnt/a/test"
+user.mergerfs.fullpath="/mnt/hdd/disk0/test"
 [trapexit:/mnt/mergerfs] $ getfattr -n user.mergerfs.allpaths .
-user.mergerfs.allpaths="/mnt/a\000/mnt/b\000/mnt/c"
+user.mergerfs.allpaths="/mnt/hdd/disk0\000/mnt/hdd/disk1\000/mnt/hdd/disk2"
 ```

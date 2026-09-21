@@ -38,6 +38,32 @@ These files and xattrs are used to help `mergerfs` know whether or not
 a directory happens to be a branch or is the underlying directory
 mount point.
 
+## Paths which appear after startup
+
+The [`branches` resolution process](branches.md#resolution) runs before
+this option starts waiting. A missing literal path is retained as a
+branch, so a configuration such as `/mnt/hdd/disk0/foobar` can work
+when `/mnt/hdd/disk0` is mounted asynchronously and `foobar` only
+becomes visible afterward, provided the path then meets one of the
+"mounted" conditions above.
+
+For each branch which is not ready, mergerfs first runs `mount` once
+with the full branch path as the target and then polls that same path
+until the timeout expires. It does not create the path, try to mount
+its parent, or rerun `mount`. In the example above, the initial
+`mount /mnt/hdd/disk0/foobar` may fail while the path is absent. If
+another service mounts `/mnt/hdd/disk0` and
+`/mnt/hdd/disk0/foobar` appears and meets one of the "mounted"
+conditions before the deadline, mergerfs detects it during polling
+and continues.
+
+Globs are different. If `/mnt/hdd/disk0/*` has no matches during
+branch resolution, the literal path `/mnt/hdd/disk0/*` is retained.
+The mount wait does not expand it again after `/mnt/hdd/disk0`
+becomes available. Ensure the parent filesystem is mounted before
+mergerfs, configure a literal branch path, or update `branches`
+through the runtime API once the paths exist.
+
 
 **NOTE:** If on a `systemd` based system and using `fstab` it is a
 good idea to set the mount option

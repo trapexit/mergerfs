@@ -92,15 +92,15 @@ If you always want the directory information from the one with the
 most recent mtime then use the `newest` policy for `getattr`.
 
 
-### 'mv /mnt/pool/foo /mnt/disk1/foo' removes 'foo'
+### 'mv /mnt/pool/foo /mnt/hdd/disk0/foo' removes 'foo'
 
 This is not a bug.
 
 Run in verbose mode to better understand what's happening:
 
 ```
-$ mv -v /mnt/pool/foo /mnt/disk1/foo
-copied '/mnt/pool/foo' -> '/mnt/disk1/foo'
+$ mv -v /mnt/pool/foo /mnt/hdd/disk0/foo
+copied '/mnt/pool/foo' -> '/mnt/hdd/disk0/foo'
 removed '/mnt/pool/foo'
 $ ls /mnt/pool/foo
 ls: cannot access '/mnt/pool/foo': No such file or directory

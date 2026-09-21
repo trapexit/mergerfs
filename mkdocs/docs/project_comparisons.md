@@ -23,9 +23,9 @@ and offers better performance. As of 2020, the author of mhddfs has
 Below is an example of mhddfs and mergerfs setup to work similarly.
 
 ```
-mhddfs -o mlimit=4G,allow_other /mnt/drive1,/mnt/drive2 /mnt/pool
+mhddfs -o mlimit=4G,allow_other /mnt/hdd/disk0,/mnt/hdd/disk1 /mnt/pool
 
-mergerfs -o minfreespace=4G,category.create=ff /mnt/drive1:/mnt/drive2 /mnt/pool
+mergerfs -o minfreespace=4G,category.create=ff /mnt/hdd/disk0:/mnt/hdd/disk1 /mnt/pool
 ```
 
 

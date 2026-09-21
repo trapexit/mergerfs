@@ -14,7 +14,7 @@ Branches currently have two options which can be set. A
 included in a policy calculation and a individual
 [minfreespace](#minfreespace) value. The values are set by
 prepending an `=` at the end of a branch designation and using commas
-as delimiters. Example: `/mnt/drive=RW,1234`
+as delimiters. Example: `/mnt/hdd/disk0=RW,1234`
 
 
 ### branch mode
@@ -34,6 +34,33 @@ Same purpose and syntax as the [global option](minfreespace.md) but
 specific to the branch. Defaults to the global value.
 
 
+### resolution
+
+Each colon-delimited branch designation is resolved independently when
+the `branches` option is parsed, both at startup and when it is updated
+through the runtime API:
+
+1. The path portion is expanded as a glob.
+2. If the glob matches one or more directories, each match becomes a
+   branch.
+3. If the glob has no matches, mergerfs logs a notice and keeps the
+   configured path unchanged as a single, literal branch.
+4. mergerfs resolves each resulting path with `realpath`. If that
+   succeeds, the canonical path is stored. If it fails, typically
+   because the path does not exist yet, the unchanged path is stored.
+5. A path which exists but is not a directory is logged and skipped. A
+   path which does not exist is logged but retained.
+
+Consequently, a literal branch such as `/mnt/hdd/disk0/foobar` may be
+configured before it exists and can become usable after
+`/mnt/hdd/disk0` is mounted. Branch resolution is not repeated in the
+background, however. If `/mnt/hdd/disk0/*` has no matches when it is
+resolved, mergerfs stores the literal path `/mnt/hdd/disk0/*`;
+directories which match it later are not discovered automatically.
+Update `branches` through the runtime API or restart mergerfs to
+resolve the glob again.
+
+
 ### globbing
 
 To make it easier to include multiple branches mergerfs supports
@@ -42,18 +69,18 @@ MUST be escaped when using via the shell else the shell itself will
 apply the glob itself.**
 
 ```
-# mergerfs /mnt/hdd\*:/mnt/ssd /media
+# mergerfs /mnt/hdd/\*:/mnt/ssd/\* /media
 ```
 
-The above line will use all directories in /mnt prefixed with **hdd**
-as well as **ssd**.
+The above line will use all directories within `/mnt/hdd` and
+`/mnt/ssd`.
 
 To have the pool mounted at boot or otherwise accessible from related
 tools use `/etc/fstab`.
 
 ```
 # <file system>        <mount point>  <type>    <options>             <dump>  <pass>
-/mnt/hdd*:/mnt/ssd    /media          mergerfs  minfreespace=16G      0       0
+/mnt/hdd/*:/mnt/ssd/*  /media          mergerfs  minfreespace=16G      0       0
 ```
 
 **NOTE:** The globbing is done at mount or when updated using the

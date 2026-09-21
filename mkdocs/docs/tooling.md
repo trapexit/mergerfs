@@ -105,7 +105,8 @@ to `.bashrc`.
 
 ### Docker and Podman usage
 
-Assume `/mnt/fs0` and `/mnt/fs1` are pooled with mergerfs at `/media`.
+Assume `/mnt/hdd/disk0` and `/mnt/hdd/disk1` are pooled with mergerfs
+at `/media`.
 
 All mergerfs branch paths _must_ be bind mounted into the container at
 the same path as found on the host so the preload library can see
@@ -134,8 +135,8 @@ docker run \
   -e LD_PRELOAD=/usr/lib/mergerfs/preload.so \
   -v /usr/lib/mergerfs/preload.so:/usr/lib/mergerfs/preload.so:ro \
   -v /media:/media \
-  -v /mnt/fs0:/mnt/fs0 \
-  -v /mnt/fs1:/mnt/fs1 \
+  -v /mnt/hdd/disk0:/mnt/hdd/disk0 \
+  -v /mnt/hdd/disk1:/mnt/hdd/disk1 \
   ubuntu:latest \
   bash
 ```
