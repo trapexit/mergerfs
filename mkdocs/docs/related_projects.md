@@ -27,9 +27,9 @@
   disk arrays, storing parity information for data recovery in the
   event of up to six disk failures.
 * [nonraid](https://github.com/qvr/nonraid): NonRAID is a fork of the
-  unRAID system's open-source md_unraid kernel driver enabling
-  UnRAID-style storage arrays with parity protection outside of the
-  commercial UnRAID system.
+  Unraid system's open-source md_unraid kernel driver enabling
+  Unraid-style storage arrays with parity protection outside of the
+  commercial Unraid system.
 * [rclone](https://rclone.org): a command-line program to manage
   files on cloud storage. It is a feature-rich alternative to cloud
   vendors' web storage interfaces. rclone's
@@ -43,10 +43,10 @@
 * [Proxmox](https://www.proxmox.com): Proxmox is a popular, Debian
   based, virtualization platform. Users tend to install mergerfs on
   the host and pass the mount into containers.
-* [UnRAID](https://unraid.net): "Unraid is a powerful, easy-to-use
+* [Unraid](https://unraid.net): "Unraid is a powerful, easy-to-use
   operating system for self-hosted servers and network-attached
-  storage." While UnRAID has its own union filesystem it isn't
-  uncommon to see UnRAID users leverage mergerfs given the differences
+  storage." While Unraid has its own union filesystem it isn't
+  uncommon to see Unraid users leverage mergerfs given the differences
   in the technologies. There is a [plugin available by
   Rysz](https://forums.unraid.net/topic/144999-plugin-mergerfs-for-unraid-support-topic)
   to ease installation and setup.
