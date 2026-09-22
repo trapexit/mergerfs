@@ -2,6 +2,11 @@
 
 There are no solutions, only trade-offs.
 
+This page includes both direct pooling alternatives and adjacent storage
+technologies that solve different problems. Compare their operating layer,
+failure domain, redundancy model, and platform requirements rather than only
+their apparent pool capacity.
+
 
 ## mhddfs
 
@@ -15,14 +20,17 @@ and security issues. mergerfs provides a superset of mhddfs' features
 and offers better performance. As of 2020, the author of mhddfs has
 [moved to using mergerfs.](https://romanrm.net/mhddfs#update)
 
-* **Better than mergerfs for:** legacy setups that already depend on
-  mhddfs-specific behavior and do not need newer features.
+* **Better than mergerfs for:** Nothing?
 * **Worse than mergerfs for:** most modern deployments due to maintenance
   status, feature coverage, and reliability.
 
-Below is an example of mhddfs and mergerfs setup to work similarly.
+Below is an example of mhddfs and mergerfs set up to behave similarly.
+mhddfs falls back to the drive with the most free space when every drive
+has less than `mlimit` free; mergerfs with
+[minfreespace](config/minfreespace.md) filters those branches instead and
+may fail the create if none qualify.
 
-```
+```sh
 mhddfs -o mlimit=4G,allow_other /mnt/hdd/disk0,/mnt/hdd/disk1 /mnt/pool
 
 mergerfs -o minfreespace=4G,category.create=ff /mnt/hdd/disk0:/mnt/hdd/disk1 /mnt/pool
@@ -46,10 +54,11 @@ available in most Linux distros, making it harder to get installed for
 the average user. Development has been largely dormant for years.
 
 While aufs can often offer better peak performance due to being
-primarily kernel-based (at least when `passthrough.io` is disabled in
-mergerfs), mergerfs provides more configurability and is generally
-easier to use. mergerfs, however, does not offer the overlay /
-copy-on-write (CoW) features which aufs has.
+primarily kernel-based (at least when
+[passthrough.io](config/passthrough.md) is disabled in mergerfs),
+mergerfs provides more configurability and is generally easier to use.
+mergerfs, however, does not offer the overlay / copy-on-write (CoW)
+features which aufs has.
 
 * **Better than mergerfs for:** kernel-level overlay/CoW workloads where
   that behavior is required.
@@ -92,9 +101,10 @@ overlay/CoW-style layering, while mergerfs' primary feature is
 policy-based pooling and placement across multiple regular writable
 filesystems.
 
-Since unionfs-fuse, as the name suggests, is a FUSE-based technology
-it can be used without elevated privileges that kernel solutions such
-as unionfs, aufs, and overlayfs require.
+As a FUSE filesystem, unionfs-fuse can often be mounted by an
+unprivileged user when the system's FUSE configuration permits it. Kernel
+solutions such as unionfs, aufs, and overlayfs normally require additional
+privileges.
 
 * **Better than mergerfs for:** overlay-style unions with copy-on-write
   semantics in userspace.
@@ -106,10 +116,10 @@ as unionfs, aufs, and overlayfs require.
 
 * [https://docs.kernel.org/filesystems/overlayfs.html](https://docs.kernel.org/filesystems/overlayfs.html)
 
-overlayfs is effectively the functional successor to unionfs,
-unionfs-fuse, and aufs and is widely used by Linux container platforms
-such as Docker and Podman. Both overlayfs and FUSE were originally
-created by Miklos Szeredi.
+overlayfs is effectively the successor to unionfs, unionfs-fuse, and
+aufs and is widely used by Linux container platforms such as Docker and
+Podman. Both overlayfs and FUSE were originally created by Miklos
+Szeredi.
 
 If your use case is layering a writable filesystem on top of read-only
 filesystems then you should look first to overlayfs. Its feature set
@@ -121,12 +131,34 @@ however is very different from mergerfs and solves different problems.
   flexible branch selection policies across many existing filesystems.
 
 
+## fuse-overlayfs
+
+* [https://github.com/containers/fuse-overlayfs](https://github.com/containers/fuse-overlayfs)
+
+fuse-overlayfs implements overlayfs-style lower, upper, and work directories
+in userspace. Its primary use case is rootless containers, where a kernel
+overlayfs mount may not be available.
+
+Like unionfs-fuse and kernel overlayfs, it provides layering and copy-up
+semantics rather than mergerfs-style placement across a pool of writable
+filesystems.
+
+* **Better than mergerfs for:** rootless container and other unprivileged
+  overlay workloads.
+* **Worse than mergerfs for:** general storage pooling across independent
+  writable filesystems.
+
+
 ## RAID0, JBOD, SPAN, drive concatenation, striping
 
 * [RAID0](https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_0)
 * [JBOD](https://en.wikipedia.org/wiki/Non-RAID_drive_architectures#JBOD)
 * [SPAN](https://en.wikipedia.org/wiki/Non-RAID_drive_architectures#Concatenation_(SPAN,_BIG))
 * [striping](https://en.wikipedia.org/wiki/Data_striping)
+
+"JBOD" is ambiguous: it can also mean disks exposed independently with
+no aggregation. In this section it refers only to concatenated or spanned
+layouts.
 
 These are block device technologies which, in some form, aggregate
 devices into what appears to be a single device on which a traditional
@@ -162,12 +194,12 @@ allow the pool to continue to run should one device fail and rebuild
 the data once the device is replaced.
 
 mergerfs offers no parity or redundancy features so in that regard the
-technologies are not comparable. [SnapRAID](https://www.snapraid.it)
-or [NonRAID](https://github.com/qvr/nonraid) can be used in
-combination with mergerfs to provide redundancy. Unlike traditional
-RAID5 or RAID6 SnapRAID works with drives of different sizes and can
-have more than 2 parity drives. Parity calculations with SnapRAID are
-not done in real-time but NonRAID's are.
+technologies are not comparable. [SnapRAID](https://www.snapraid.it) or
+NonRAID (see [below](#nonraid)) can be used in combination with mergerfs
+to provide redundancy. Unlike traditional RAID5 or RAID6, SnapRAID works
+with drives of different sizes and can have more than 2 parity drives.
+Parity calculations with SnapRAID are not done in real-time but
+NonRAID's are.
 
 For more details and comparison of SnapRAID to related technologies
 see [https://www.snapraid.it/compare](https://www.snapraid.it/compare).
@@ -204,7 +236,7 @@ data on that disk.
 ## mdadm
 
 * [https://en.wikipedia.org/wiki/Mdadm](https://en.wikipedia.org/wiki/Mdadm)
-* [https://raid.wiki.kernel.org/index.php/A_guide_to_mdadm](https://raid.wiki.kernel.org/index.php/A_guide_to_mdadm)
+* [https://docs.kernel.org/admin-guide/md.html](https://docs.kernel.org/admin-guide/md.html)
 
 `mdadm` is Linux userspace tooling for configuring and managing software
 RAID arrays provided by the kernel `md` driver. It can build RAID0/1/4/5/6/10
@@ -226,7 +258,7 @@ be combined with tools like SnapRAID or NonRAID when redundancy is needed.
 ## device mapper
 
 * [https://en.wikipedia.org/wiki/Device_mapper](https://en.wikipedia.org/wiki/Device_mapper)
-* [https://docs.kernel.org/admin-guide/device-mapper](https://docs.kernel.org/admin-guide/device-mapper)
+* [https://docs.kernel.org/admin-guide/device-mapper/index.html](https://docs.kernel.org/admin-guide/device-mapper/index.html)
 
 Device mapper is a kernel framework for creating virtual block devices
 from one or more underlying devices. Technologies such as LVM,
@@ -244,11 +276,11 @@ later pool if desired.
   across many independent, already-formatted filesystems.
 
 
-## UnRAID
+## Unraid
 
 * [https://unraid.net](https://unraid.net)
 
-UnRAID is a full OS platform that offers pooled storage with integrated
+Unraid is a full OS platform that offers pooled storage with integrated
 real-time parity. Compared with mergerfs, its main advantage is that it
 bundles pooling and parity in one product, while mergerfs is a
 standalone Linux pooling filesystem without built-in redundancy. For
@@ -257,8 +289,8 @@ approach is also preferable.
 
 For semi-static data, mergerfs + [SnapRAID](https://www.snapraid.it)
 provides a similar, but not real-time, solution.
-[NonRAID](https://github.com/qvr/nonraid) (see below) is a
-fork of UnRAID's parity calculation solution and can also be used with
+[NonRAID](https://github.com/qvr/nonraid) (see [below](#nonraid)) is a
+fork of Unraid's parity calculation solution and can also be used with
 mergerfs.
 
 * **Better than mergerfs for:** turnkey pooling plus integrated real-time
@@ -272,7 +304,7 @@ mergerfs.
 * [https://github.com/qvr/nonraid](https://github.com/qvr/nonraid)
 
 [NonRAID](https://github.com/qvr/nonraid#how-it-works) is a fork of
-UnRAID's storage array kernel driver. Effectively it is like RAID5 at
+Unraid's storage array kernel driver. Effectively it is like RAID5 at
 the block device layer without treating the collection of devices as a
 single device. Each device gets a virtual block device associated with
 it which can be formatted with the filesystem of the user's choice and
@@ -293,7 +325,7 @@ be used with mergerfs for those looking for a unified view.
 
 ## ZFS
 
-* [https://en.wikipedia.org/wiki/ZFS](https://en.wikipedia.org/wiki/ZFS)
+* [https://openzfs.github.io/openzfs-docs](https://openzfs.github.io/openzfs-docs)
 
 ZFS is an advanced filesystem that combines storage pooling,
 snapshots, data integrity checking, and built-in RAID-like redundancy
@@ -313,72 +345,78 @@ without built-in redundancy.
 
 ## ZFS AnyRAID
 
-* [https://github.com/openzfs/zfs/discussions/16773](https://github.com/openzfs/zfs/discussions/16773)
+* [Announcement](https://docs.hexos.com/blog/2025-05-22)
+* [Development update](https://docs.hexos.com/blog/2026-7-15)
 
-[ZFS AnyRAID](https://github.com/openzfs/zfs/discussions/16773)
-([announcement](https://hexos.com/blog/introducing-zfs-anyraid-sponsored-by-eshtek))
-is a feature under development for ZFS intended to provide more
-flexibility in pools by allowing mixed-capacity disks while
-maintaining live redundancy.
+ZFS AnyRAID is under development to support mixed-capacity disks while
+retaining ZFS redundancy. The planned layouts include mirrored and RAID-Z
+variants, along with rebalancing and pool contraction work.
 
-If released, ZFS AnyRAID would offer some of the flexibility associated
-with mergerfs-style mixed-capacity expansion, but with built-in
-redundancy inside ZFS. mergerfs already provides that mixed-size,
-add-drives-anytime flexibility today, albeit without built-in
-redundancy. If you need redundancy with that flexibility, ZFS AnyRAID
-could become an option when available; until then, mergerfs remains the
-simpler currently available choice for mixed-capacity pooling, with
-redundancy and integrity available via SnapRAID and/or NonRAID.
+Availability is still landing in OpenZFS. Published notes indicate initial
+mirror layouts may ship in a 2.4.x release, with broader RAID-Z variants,
+rebalancing, and pool contraction targeted for later releases. Treat
+release and downstream product-integration dates as roadmap targets
+rather than commitments.
+
+Where available, AnyRAID would offer some of the mixed-size flexibility
+associated with mergerfs while retaining redundancy inside ZFS. mergerfs
+provides mixed-size, add-drives-anytime pooling today, but without
+built-in redundancy; SnapRAID or NonRAID can provide separate
+protection.
 
 * **Better than mergerfs for:** users who want mixed-capacity flexibility
   and built-in live redundancy in one filesystem stack.
-* **Worse than mergerfs for:** users who need mature availability now and
-  the simplest add-drives-anytime workflow without redundancy overhead.
+* **Worse than mergerfs for:** users who need production availability now or
+  want to pool existing filesystems without migrating data.
 
 
-## Bcachefs
+## bcachefs
 
 * [https://bcachefs.org](https://bcachefs.org)
 
-Bcachefs is a modern copy-on-write filesystem for Linux designed for
-multi-device storage aggregation. It includes integrated features such
-as checksumming, snapshots, compression, encryption, and redundancy.
+bcachefs is a modern copy-on-write filesystem for Linux designed for
+multi-device storage aggregation. It includes integrated features such as
+checksumming, snapshots, compression, encryption, and redundancy.
 
-Compared with mergerfs, bcachefs is a full integrated filesystem with
-built-in checksumming, snapshots, compression, and redundancy, while
-mergerfs is a lightweight pooling layer over existing filesystems.
-Bcachefs is still evolving and should be evaluated carefully for
-production use.
+Compared with mergerfs, bcachefs is a full integrated filesystem, while
+mergerfs is a lightweight pooling layer over existing filesystems. Beginning
+with Linux 6.18, bcachefs is no longer distributed in the mainline kernel; the
+project now distributes it as an external DKMS module. It remains actively
+developed, but deployments must account for kernel compatibility and its
+shorter operational history.
 
 * **Better than mergerfs for:** integrated CoW filesystem features,
   checksumming, snapshots, compression, and built-in multi-device
   redundancy.
-* **Worse than mergerfs for:** conservative production setups prioritizing
-  maturity, simplicity, and broad long-term deployment stability.
+* **Worse than mergerfs for:** pooling existing filesystems without
+  reformatting, mainline-kernel availability, and per-disk native access.
 
 
-## Btrfs Single Data Profile
+## Btrfs multi-device filesystems
 
-* [https://btrfs.readthedocs.io](https://btrfs.readthedocs.io)
+* [https://btrfs.readthedocs.io/en/latest/Volume-management.html](https://btrfs.readthedocs.io/en/latest/Volume-management.html)
 
-[Btrfs'](https://btrfs.readthedocs.io) `single` data profile is a
-multi-device Btrfs mode that can spread data across drives without
-adding redundancy.
+Btrfs can combine multiple devices in one filesystem and select separate
+allocation profiles for data and metadata. The `single` data profile spreads
+one copy of data across available devices without redundancy; other profiles
+provide mirroring, striping, or parity with different capacity and failure
+trade-offs.
 
-Compared with mergerfs, Btrfs `single` is managed as one integrated
-filesystem, while mergerfs pools separate existing filesystems. In
-Btrfs `single`, losing one device can impact the whole filesystem;
-with mergerfs, loss is typically limited to data on the failed disk.
+Compared with mergerfs, multi-device Btrfs is one integrated filesystem,
+while mergerfs pools separate existing filesystems. Losing a device from a
+`single` profile can make the whole Btrfs filesystem incomplete. Redundant
+profiles change that risk, but the member devices still are not independently
+mountable filesystems.
 
-* **Better than mergerfs for:** integrated multi-device management in one
-  filesystem namespace.
-* **Worse than mergerfs for:** users who value per-disk failure isolation
-  and easy independent recovery.
+* **Better than mergerfs for:** integrated checksumming, snapshots, balancing,
+  and selectable redundancy profiles.
+* **Worse than mergerfs for:** pooling existing mixed filesystem types,
+  per-disk native access, and failure isolation without redundancy.
 
 
 ## StableBit's DrivePool
 
-* [https://stablebit.com](https://stablebit.com)
+* [https://stablebit.com/DrivePool/Features](https://stablebit.com/DrivePool/Features)
 
 DrivePool is a commercial storage pooling product for Windows that
 combines multiple drives into a single volume and includes balancing
@@ -399,19 +437,17 @@ external-tool composability.
 
 * [https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/overview](https://learn.microsoft.com/en-us/windows-server/storage/storage-spaces/overview)
 
-Windows Storage Spaces is Microsoft's software-defined storage
-platform for Windows Server and Windows Pro. It aggregates multiple
-physical disks into logical storage pools with built-in redundancy
-options (mirroring, parity) and automatic performance optimization
-through tiered caching.
+Windows Storage Spaces is Microsoft's block-level storage virtualization
+platform for Windows. It aggregates physical disks into storage pools from
+which virtual disks can be created with simple, mirror, or parity layouts.
+Supported Windows Server configurations can also use faster media as a
+Storage Bus Cache.
 
-Storage Spaces is Windows-only and requires more planning upfront due
-to redundancy options and RAID-like features. mergerfs is
-Linux-focused and takes a simpler approach, pooling existing
-filesystems without built-in redundancy. If you need a Windows
-solution with integrated data protection, Storage Spaces is a good
-choice. For Linux users seeking lightweight pooling without redundancy
-overhead, mergerfs is the better option.
+Unlike mergerfs, Storage Spaces manages the member devices below the
+filesystem and stripes or mirrors data according to the selected layout.
+This can provide integrated resilience and one contiguous volume, but member
+disks are not independently readable filesystems. mergerfs instead pools
+existing filesystems and leaves their files directly accessible.
 
 * **Better than mergerfs for:** Windows environments needing integrated
   pooling, resilience, and tiering in the platform stack.
@@ -437,6 +473,25 @@ Plan 9 isn't a widely used OS so this comparison is mostly academic.
   namespace composition is a core OS feature.
 * **Worse than mergerfs for:** Linux users due to ecosystem relevance and
   practical deployment availability.
+
+
+## 9P
+
+* [https://en.wikipedia.org/wiki/9P_(protocol)](https://en.wikipedia.org/wiki/9P_(protocol))
+
+[9P](https://en.wikipedia.org/wiki/9P_(protocol)) is a filesystem
+protocol from the Plan 9 operating system used to access files over a
+network between systems.
+
+Compared with mergerfs, 9P is a network filesystem protocol, while
+mergerfs is a local Linux FUSE filesystem for pooling directories and
+filesystems under one mount with branch policies. Like the Plan 9 binds
+comparison above, this is mostly academic for typical mergerfs users.
+
+* **Better than mergerfs for:** lightweight network filesystem protocol
+  use between compatible systems.
+* **Worse than mergerfs for:** local Linux filesystem pooling because it
+  does not provide mergerfs-like branch policies or pooling semantics.
 
 
 ## SnapRAID pooling
@@ -498,7 +553,7 @@ given the differing feature sets and focuses of the two projects.
 ## distributed filesystems
 
 * [AFS](https://www.openafs.org)
-* [Ceph/CephFS](https://ceph.io)
+* [Ceph/CephFS](https://docs.ceph.com/en/latest/cephfs/)
 * [GlusterFS](https://www.gluster.org)
 * [LizardFS](https://lizardfs.com)
 * [MooseFS](https://moosefs.com)
@@ -539,8 +594,8 @@ pooling through normal POSIX filesystem calls.
 
 Given its design nofs is not suited for general usage as third-party
 applications will not be able to take advantage of the unioning
-behavior it offers. It is primarily for more simple situations where
-something like mergerfs is unable to be used.
+behavior it offers. It is primarily for simpler situations where
+mergerfs cannot be used.
 
 * **Better than mergerfs for:** constrained environments where a FUSE
   mount is not possible but command-style union behavior is acceptable.
@@ -548,32 +603,34 @@ something like mergerfs is unable to be used.
   usable by arbitrary third-party applications.
 
 
-## policyfs
+## PolicyFS
 
 * [https://policyfs.org](https://policyfs.org)
 * [https://github.com/hieutdo/policyfs](https://github.com/hieutdo/policyfs)
 
-policyfs is a Linux FUSE storage daemon that unifies multiple storage
+PolicyFS is a Linux FUSE storage daemon that unifies multiple storage
 paths under a single mountpoint, similarly to mergerfs. Its
 distinguishing features are explicit path-pattern-based routing rules
 for placement, and an optional SQLite metadata index that can serve
 `readdir` and `getattr` operations without spinning up HDDs.
 
-Compared with mergerfs, policyfs emphasizes explicit path-based routing
-and optional metadata indexing, while mergerfs emphasizes a broad,
-policy-driven pooling model with longer operational history and wider
-adoption. It doesn't try limiting spinup as doing so fundimentally is
-in [conflict with other features.](faq/limit_drive_spinup.md)
+Compared with mergerfs, PolicyFS emphasizes explicit path-based routing,
+scheduled SSD-to-HDD movement, and optional metadata indexing. mergerfs
+emphasizes a broader policy-driven pooling model with longer operational
+history and wider application compatibility. mergerfs does not try to prevent
+metadata operations from waking branches because doing so fundamentally
+[conflicts with other features.](faq/limit_drive_spinup.md)
 
-Due to the nature of PolicyFS it can not really be used while changing
-files out-of-band and with the delayed writeback of metadata and
-unlinking there is a greater risk of inconsistancy in error
-conditions.
+PolicyFS's indexed storage deliberately defers some delete, rename, and
+attribute operations until a maintenance job runs. Out-of-band changes require
+the index to be refreshed, and its documentation identifies limits around
+`O_DIRECT`, advisory locks, NFS re-export, and full POSIX coverage. Those are
+material trade-offs, not only maturity differences.
 
-* **Better than mergerfs for:** explicit path-based routing and optional
-  metadata indexing to reduce HDD spin-ups.
-* **Worse than mergerfs for:** users prioritizing project maturity,
-  adoption, performance, and long-established operational behavior.
+* **Better than mergerfs for:** explicit path-based routing, scheduled
+  tiering, and metadata indexing designed to reduce HDD spin-ups.
+* **Worse than mergerfs for:** broad POSIX compatibility, immediate mutation
+  semantics on every branch, and long-established operational behavior.
 
 
 ## Greyhole
@@ -593,22 +650,4 @@ Linux FUSE mount for local pooling via standard POSIX filesystem calls.
 * **Better than mergerfs for:** Samba-centric environments that need
   built-in per-share redundancy in the same tool.
 * **Worse than mergerfs for:** general-purpose local filesystem pooling
-  outside Samba and heavy small-file churn workloads.
-
-
-## 9P
-
-* [https://en.wikipedia.org/wiki/9P_(protocol)](https://en.wikipedia.org/wiki/9P_(protocol))
-
-[9P](https://en.wikipedia.org/wiki/9P_(protocol)) is a filesystem
-protocol from the Plan 9 operating system used to access files over a
-network between systems.
-
-Compared with mergerfs, 9P is a network filesystem protocol, while
-mergerfs is a local Linux FUSE filesystem for pooling directories and
-filesystems under one mount with branch policies.
-
-* **Better than mergerfs for:** lightweight network filesystem protocol
-  use between compatible systems.
-* **Worse than mergerfs for:** local Linux filesystem pooling because it
-  does not provide mergerfs-like branch policies or pooling semantics.
+  outside Samba, and for heavy small-file churn workloads.
