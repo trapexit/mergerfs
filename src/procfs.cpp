@@ -105,3 +105,72 @@ procfs::get_name(const int tid_)
 
   return commpath.data();
 }
+
+std::string
+procfs::get_cgroup(const int pid_)
+{
+  int fd;
+  int rv;
+  std::array<char,1024> buf;
+  fmt::format_to_n_result<char*> frv;
+
+  if(g_PROCFS_DIR_FD < 0)
+    fatal::abort("procfs::get_cgroup called before procfs::init()");
+
+  frv = fmt::format_to_n(buf.data(),buf.size()-1,"{}/cgroup",pid_);
+  frv.out[0] = '\0';
+
+  fd = fs::openat(g_PROCFS_DIR_FD,buf.data(),O_RDONLY);
+  if(fd < 0)
+    return {};
+  DEFER { fs::close(fd); };
+
+  rv = fs::read(fd,buf.data(),buf.size()-1);
+  if(rv <= 0)
+    return {};
+
+  if(buf[rv-1] == '\n')
+    rv--;
+  buf[rv] = '\0';
+
+  return buf.data();
+}
+
+std::string
+procfs::get_cmdline(const int pid_)
+{
+  int fd;
+  int rv;
+  std::array<char,4096> buf;
+  fmt::format_to_n_result<char*> frv;
+
+  if(g_PROCFS_DIR_FD < 0)
+    fatal::abort("procfs::get_cmdline called before procfs::init()");
+
+  frv = fmt::format_to_n(buf.data(),buf.size()-1,"{}/cmdline",pid_);
+  frv.out[0] = '\0';
+
+  fd = fs::openat(g_PROCFS_DIR_FD,buf.data(),O_RDONLY);
+  if(fd < 0)
+    return {};
+  DEFER { fs::close(fd); };
+
+  rv = fs::read(fd,buf.data(),buf.size()-1);
+  if(rv <= 0)
+    return {};
+
+  // Arguments are NUL separated; joining them with spaces is what
+  // makes a glob like "*/Transcode/Detection/*" work against the
+  // whole invocation.
+  for(int i = 0; i < rv; i++)
+    {
+      if(buf[i] == '\0')
+        buf[i] = ' ';
+    }
+
+  if(buf[rv-1] == ' ')
+    rv--;
+  buf[rv] = '\0';
+
+  return buf.data();
+}

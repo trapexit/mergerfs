@@ -14,27 +14,24 @@
   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+ */
 
-#pragma once
+#include "qos_class.hpp"
 
-#include <string>
 
-namespace procfs
+qos::Bucket *
+qos::Class::bucket_for(const std::string &resource_) const
 {
-  extern int PROC_SELF_FD_FD;
+  std::lock_guard<std::mutex> lk(buckets_mutex);
 
-  void init();
-  void shutdown();
-  std::string get_name(const int tid);
+  auto i = buckets.find(resource_);
+  if(i != buckets.end())
+    return i->second.get();
 
-  // Raw contents of /proc/<pid>/cgroup with the trailing newline
-  // removed. Empty when the process is gone or unreadable.
-  std::string get_cgroup(const int pid);
+  // unique_ptr rather than the value type because a Bucket holds a
+  // mutex: rehashing the map must not move one out from under a
+  // thread waiting on it.
+  auto [it,inserted] = buckets.emplace(resource_,std::make_unique<Bucket>());
 
-  // /proc/<pid>/cmdline with the NUL separators turned into spaces.
-  // Truncated to a bounded length: the interesting part of a media
-  // server's command line is the input and output paths, and a full
-  // ffmpeg invocation can run to kilobytes.
-  std::string get_cmdline(const int pid);
+  return it->second.get();
 }
