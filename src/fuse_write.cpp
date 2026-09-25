@@ -28,11 +28,13 @@
 #include "fs_pwriten.hpp"
 #include "ioprio.hpp"
 #include "state.hpp"
+#include "syslog.hpp"
 
 #include "scope_guard/scope_guard.hpp"
 
 #include "fuse.h"
 
+#include <cstring>
 #include <mutex>
 #include <shared_mutex>
 
@@ -45,6 +47,41 @@ _out_of_space(const ssize_t err_)
           (err_ == -EDQUOT));
 }
 
+// moveonenospc: move the file to another branch and rebind fi_->fd to
+// the copy. Called with fi_->mutex held exclusively. 0 or -errno.
+static
+int
+_move_file(FileInfo *fi_)
+{
+  int err;
+  int fd;
+
+  if(cfg.moveonenospc.enabled == false)
+    return -ENOSPC;
+
+  fd = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
+                                     cfg.branches,
+                                     fi_->branch.path,
+                                     fi_->fusepath,
+                                     fi_->fd);
+  if(fd < 0)
+    return fd;
+
+  err = fs::dup2(fd,fi_->fd);
+  {
+    const int close_err = fs::close(fd);
+    if(close_err < 0)
+      SysLog::warning("moveonenospc: closing the copy's fd after the move"
+                      " failed: {}",strerror(-close_err));
+  }
+  if(err < 0)
+    return err;
+
+  fi_->fd_rebound();
+
+  return 0;
+}
+
 static
 int
 _move_and_pwrite(const char   *buf_,
@@ -53,23 +90,7 @@ _move_and_pwrite(const char   *buf_,
                  FileInfo     *fi_,
                  int           err_)
 {
-  int err;
-  ssize_t rv;
-
-  if(cfg.moveonenospc.enabled == false)
-    return err_;
-
-  rv = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
-                                     cfg.branches,
-                                     fi_->branch.path,
-                                     fi_->fusepath,
-                                     fi_->fd);
-  if(rv < 0)
-    return err_;
-
-  err = fs::dup2(rv,fi_->fd);
-  fs::close(rv);
-  if(err < 0)
+  if(::_move_file(fi_) < 0)
     return err_;
 
   return fs::pwrite(fi_->fd,buf_,count_,offset_);
@@ -87,20 +108,7 @@ _move_and_pwriten(char const    *buf_,
   int err;
   ssize_t rv;
 
-  if(cfg.moveonenospc.enabled == false)
-    return err_;
-
-  rv = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
-                                     cfg.branches,
-                                     fi_->branch.path,
-                                     fi_->fusepath,
-                                     fi_->fd);
-  if(rv < 0)
-    return err_;
-
-  err = fs::dup2(rv,fi_->fd);
-  fs::close(rv);
-  if(err < 0)
+  if(::_move_file(fi_) < 0)
     return err_;
 
   rv = fs::pwriten(fi_->fd,
@@ -147,7 +155,11 @@ _write(const fuse_req_ctx_t   *ctx_,
 
   ssize_t rv;
 
-  if(fi->direct_io)
+  // A writeback (writepage) request must be written completely or
+  // fail: the kernel ignores a short count for it (see FUSE::write).
+  // So even on a direct_io handle it takes the looping path below,
+  // which also reaches moveonenospc when the branch fills mid-write.
+  if(fi->direct_io && !ffi_->writepage)
     {
       {
         std::shared_lock<std::shared_mutex> slk(fi->mutex);
@@ -157,7 +169,7 @@ _write(const fuse_req_ctx_t   *ctx_,
       if(not ::_out_of_space(rv))
         return rv;
 
-      std::unique_lock<std::shared_mutex> ulk(fi->mutex);
+      std::unique_lock<std::shared_mutex> ulk = fi->lock_exclusive();
       // Re-check under exclusive lock: another writer may have
       // already moved the file and retired. If so the pwrite should
       // now succeed without our own move call.
@@ -181,7 +193,7 @@ _write(const fuse_req_ctx_t   *ctx_,
       if(err && not ::_out_of_space(err))
         return err;
 
-      std::unique_lock<std::shared_mutex> ulk(fi->mutex);
+      std::unique_lock<std::shared_mutex> ulk = fi->lock_exclusive();
       // Re-check under exclusive lock as another move may have
       // already run.
       written = fs::pwriten(fi->fd,buf_,count_,offset_,&err);
@@ -202,8 +214,20 @@ FUSE::write(const fuse_req_ctx_t   *ctx_,
             off_t                   offset_)
 {
   ioprio::SetFrom iop(ctx_->pid);
+  int rv;
 
-  return ::_write(ctx_,ffi_,buf_,count_,offset_);
+  rv = ::_write(ctx_,ffi_,buf_,count_,offset_);
+
+  /* Writeback completion (FUSE_WRITE_CACHE) ignores a short reply's byte
+     count: Linux fuse_writepage_end consults only the error, so a short
+     nonnegative result would mark the unwritten tail clean and lose it.
+     _write already loops for these requests; a short count here means
+     a pwrite made no progress without an error, so report a failure.
+     Ordinary writes report their prefix. */
+  if(ffi_->writepage && (rv >= 0) && ((size_t)rv < count_))
+    return -EIO;
+
+  return rv;
 }
 
 int

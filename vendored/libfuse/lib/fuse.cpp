@@ -2328,21 +2328,13 @@ fuse_lib_open(fuse_req_t            *req_,
 
 static
 void
-fuse_lib_read(fuse_req_t            *req_,
-              struct fuse_in_header *hdr_)
+fuse_lib_read_mem(fuse_req_t             *req_,
+                  const fuse_file_info_t *ffi_,
+                  const size_t            size_,
+                  const off_t             offset_)
 {
   int res;
-  fuse_file_info_t ffi = {};
-  struct fuse_read_in *arg;
   fuse_msgbuf_t *msgbuf;
-
-  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
-  ffi.fh = arg->fh;
-  if(req_->conn.proto_minor >= 9)
-    {
-      ffi.flags      = arg->flags;
-      ffi.lock_owner = arg->lock_owner;
-    }
 
   msgbuf = msgbuf_alloc_page_aligned();
   if(msgbuf == NULL)
@@ -2352,10 +2344,10 @@ fuse_lib_read(fuse_req_t            *req_,
     }
 
   res = f.ops.read(&req_->ctx,
-                   &ffi,
+                   ffi_,
                    msgbuf->mem,
-                   arg->size,
-                   arg->offset);
+                   size_,
+                   offset_);
 
   if(res >= 0)
     fuse_reply_data(req_,msgbuf->mem,res);
@@ -2363,6 +2355,84 @@ fuse_lib_read(fuse_req_t            *req_,
     fuse_reply_err(req_,res);
 
   msgbuf_free(msgbuf);
+}
+
+/* Large reads: ask the filesystem for a branch-file region and splice
+   it into /dev/fuse. Every staging failure falls back to the memory
+   path above, which is always correct. A failure of the final
+   submission splice is answered with an error-only reply and never
+   replayed: the kernel may already have consumed the payload. The
+   region's lock is released by the reply path once the data is staged;
+   after sent/failed only libfuse's own req is touched here, since the
+   handle may already be released. */
+static
+bool
+fuse_lib_read_splice(fuse_req_t             *req_,
+                     const fuse_file_info_t *ffi_,
+                     const size_t            size_,
+                     const off_t             offset_)
+{
+  int res;
+  FileRegion region;
+
+  res = f.ops.read_buf(&req_->ctx,ffi_,&region,size_,offset_);
+  if(res < 0)
+    {
+      fuse_reply_err(req_,res);
+      return true;
+    }
+  if(res > 0)
+    return false;
+
+  /* The reply length comes from region.size alone (see read_buf in
+     fuse.h): a region smaller than the request would be sent as a short
+     reply, which the kernel treats as end-of-file. Decline such a region
+     instead; its destructor releases the lock before the copy path. */
+  if(region.size != size_)
+    return false;
+
+  switch(fuse_reply_data_splice_fd(req_,region))
+    {
+    case FuseReplyResult::sent:
+    case FuseReplyResult::failed:
+      fuse_req_free(req_);
+      return true;
+    case FuseReplyResult::unsupported:
+      if(f.ops.read_buf_rejected)
+        f.ops.read_buf_rejected(&req_->ctx,ffi_);
+      return false;
+    case FuseReplyResult::fallback:
+      break;
+    }
+
+  return false;
+}
+
+static
+void
+fuse_lib_read(fuse_req_t            *req_,
+              struct fuse_in_header *hdr_)
+{
+  fuse_file_info_t ffi = {};
+  struct fuse_read_in *arg;
+
+  arg = (fuse_read_in*)fuse_hdr_arg(hdr_);
+  ffi.fh = arg->fh;
+  if(req_->conn.proto_minor >= 9)
+    {
+      ffi.flags      = arg->flags;
+      ffi.lock_owner = arg->lock_owner;
+    }
+
+  /* A region is always the whole request, so whether its reply can be
+     spliced at all (the threshold, the pipe limit) is known here,
+     before the filesystem does any work for it. */
+  if((f.ops.read_buf != nullptr) &&
+     fuse_reply_splice_fits(arg->offset,arg->size) &&
+     fuse_lib_read_splice(req_,&ffi,arg->size,arg->offset))
+    return;
+
+  fuse_lib_read_mem(req_,&ffi,arg->size,arg->offset);
 }
 
 static

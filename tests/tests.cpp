@@ -1,6 +1,13 @@
 #include "acutest/acutest.h"
 
 #include "config.hpp"
+#include "fileinfo.hpp"
+#include "fuse_cfg.hpp"
+#include "fuse_ftruncate.hpp"
+#include "fuse_lowlevel.h"
+#include "fuse_read.hpp"
+#include "fuse_read_buf.hpp"
+#include "fuse_write.hpp"
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
 #include "from_string.hpp"
@@ -27,6 +34,18 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
+#if defined(__linux__)
+#include <linux/filter.h>
+#include <linux/seccomp.h>
+#include <stddef.h>
+#include <sys/eventfd.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#include <sys/vfs.h>
+#endif
 
 template<typename Predicate>
 bool
@@ -49,6 +68,685 @@ test_nop()
 {
   TEST_CHECK(true);
 }
+
+#if defined(__linux__)
+/* Drive fuse_reply_data_splice_fd with a regular file standing in for
+   /dev/fuse and return every byte the "kernel" received. Unlike a pipe,
+   the file takes the whole message whatever pipe-max-size or the
+   per-user pipe quota allow, so a short result is the reply path's. */
+static
+std::string
+_splice_reply_bytes(const int         fd_,
+                    const off_t       offset_,
+                    const size_t      size_,
+                    FuseReplyResult  *result_,
+                    const uint64_t    unique_ = 7)
+{
+  FileRegion region{fd_,offset_,size_,{}};
+
+  *result_ = FuseReplyResult::failed;
+  FILE *dev = tmpfile();
+  if(dev == nullptr)
+    return "tmpfile failed";
+
+  fuse_req_t *req = fuse_req_alloc();
+  req->fd         = fileno(dev);
+  req->ctx.unique = unique_;
+  *result_ = fuse_reply_data_splice_fd(req,region);
+  fuse_req_free(req);
+
+  std::string got;
+  char buf[65536];
+  ssize_t n;
+  while((n = pread(fileno(dev),buf,sizeof(buf),(off_t)got.size())) > 0)
+    got.append(buf,n);
+  fclose(dev);
+  return got;
+}
+
+/* Whether this process may grow a pipe to bytes_, as the reply path
+   must for the tests below: unprivileged, pipe-max-size or the per-user
+   pipe quota can refuse it, and the reply then correctly falls back. */
+static
+bool
+_pipe_can_grow(const size_t bytes_)
+{
+  int fds[2];
+  if(pipe2(fds,O_CLOEXEC) != 0)
+    return false;
+  const int rv = fcntl(fds[0],F_SETPIPE_SZ,(int)bytes_);
+  close(fds[0]);
+  close(fds[1]);
+  return (rv >= (int)bytes_);
+}
+
+/* A tmpfile() holding size_ bytes of data_, or nullptr. */
+static
+FILE*
+_tmpfile_with(const void   *data_,
+              const size_t  size_)
+{
+  FILE *file = tmpfile();
+  if((file != nullptr) &&
+     (pwrite(fileno(file),data_,size_,0) != (ssize_t)size_))
+    {
+      fclose(file);
+      return nullptr;
+    }
+  return file;
+}
+
+/* Whether got_ is exactly one successful FUSE message for unique_
+   carrying the len_ bytes at expected_. */
+static
+bool
+_is_reply(const std::string &got_,
+          const uint64_t     unique_,
+          const char        *expected_,
+          const size_t       len_)
+{
+  fuse_out_header hdr;
+
+  if(got_.size() != sizeof(hdr) + len_)
+    return false;
+  memcpy(&hdr,got_.data(),sizeof(hdr));
+  return ((hdr.len == sizeof(hdr) + len_) &&
+          (hdr.unique == unique_) &&
+          (hdr.error == 0) &&
+          (memcmp(got_.data() + sizeof(hdr),expected_,len_) == 0));
+}
+
+/* An open handle on fd_ as FUSE::read_buf and friends see it. */
+struct TestHandle
+{
+  Branch           branch;
+  FileInfo         fi;
+  fuse_req_ctx_t   ctx = {};
+  fuse_file_info_t ffi = {};
+
+  TestHandle(const int   fd_,
+             const char *fusepath_)
+    : fi(fd_,branch,fs::path(fusepath_),false)
+  {
+    ffi.fh = fi.to_fh();
+  }
+};
+
+/* A spliced reply must be exactly one FUSE message: a header whose len
+   covers the payload, the right unique, zero error, then the file bytes
+   of the requested window, including an unaligned start. */
+void
+test_reply_splice_sends_exact_message()
+{
+  if(!::_pipe_can_grow(262144))
+    {
+      TEST_SKIP("cannot grow a pipe to 256KiB here");
+      return;
+    }
+
+  static char data[300000];
+  for(size_t i = 0; i < sizeof(data); i++)
+    data[i] = (char)(i * 31 + 7);
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+
+  const off_t  off = 4097;
+  const size_t len = 131072;
+  FuseReplyResult r;
+  const std::string got = _splice_reply_bytes(fileno(file),off,len,&r,42);
+
+  TEST_CHECK(r == FuseReplyResult::sent);
+  TEST_CHECK(::_is_reply(got,42,data + off,len));
+  fclose(file);
+}
+
+/* A region that runs past end-of-file must not send a short message:
+   nothing may reach the kernel and the caller gets fallback, so it can
+   reply through read(). */
+void
+test_reply_splice_eof_falls_back_without_sending()
+{
+  if(!::_pipe_can_grow(262144))
+    {
+      TEST_SKIP("cannot grow a pipe to 256KiB here");
+      return;
+    }
+
+  static char data[70000];
+  for(size_t i = 0; i < sizeof(data); i++)
+    data[i] = (char)(i * 13 + 5);
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+
+  FuseReplyResult r;
+  const std::string got = _splice_reply_bytes(fileno(file),0,131072,&r);
+  TEST_CHECK(r == FuseReplyResult::fallback);
+  TEST_CHECK(got.empty());
+
+  /* The abandoned staging must leave this thread's reply pipe empty:
+     the next reply is exactly its own message, nothing left over. */
+  const std::string got2 = _splice_reply_bytes(fileno(file),4096,65536,&r,9);
+  TEST_CHECK(r == FuseReplyResult::sent);
+  TEST_CHECK(::_is_reply(got2,9,data + 4096,65536));
+  fclose(file);
+}
+
+/* A reply below the splice threshold is cheaper through read + writev,
+   so the splice path declines it before staging anything. */
+void
+test_reply_splice_small_region_falls_back()
+{
+  char data[8192];
+  memset(data,0x44,sizeof(data));
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+
+  FuseReplyResult r;
+  std::string got = _splice_reply_bytes(fileno(file),0,8192,&r);
+  TEST_CHECK(r == FuseReplyResult::fallback);
+  TEST_CHECK(got.empty());
+
+  got = _splice_reply_bytes(fileno(file),8192,0,&r);
+  TEST_CHECK(r == FuseReplyResult::fallback);
+  TEST_CHECK(got.empty());
+  fclose(file);
+}
+
+/* A descriptor splice rejects with EINVAL is reported as unsupported,
+   again with nothing sent. An eventfd has no pread, so splicing from
+   it at an offset is EINVAL on every kernel (a directory is EINVAL only
+   since Linux 5.10; older kernels fail it with EISDIR). */
+void
+test_reply_splice_unspliceable_fd_is_unsupported()
+{
+  if(!::_pipe_can_grow(131072))
+    {
+      TEST_SKIP("cannot grow a pipe to 128KiB here");
+      return;
+    }
+
+  const int efd = eventfd(0,EFD_CLOEXEC);
+  TEST_ASSERT(efd >= 0);
+  FuseReplyResult r;
+  const std::string got = _splice_reply_bytes(efd,0,65536,&r);
+  TEST_CHECK(r == FuseReplyResult::unsupported);
+  TEST_CHECK(got.empty());
+  close(efd);
+}
+
+/* The region's lock is released as FileRegion::lock documents: once the
+   data is staged for a sent reply, but kept by a fallback during
+   staging (`tail` runs past end-of-file). */
+void
+test_reply_splice_releases_lock_before_submit()
+{
+  if(!::_pipe_can_grow(262144))
+    {
+      TEST_SKIP("cannot grow a pipe to 256KiB here");
+      return;
+    }
+
+  static char data[200000];
+
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+  FILE *dev = tmpfile();
+  TEST_ASSERT(dev != nullptr);
+  std::shared_mutex mutex;
+  fuse_req_t *req = fuse_req_alloc();
+  req->fd         = fileno(dev);
+  req->ctx.unique = 11;
+
+  FileRegion sent{fileno(file),0,131072,std::shared_lock<std::shared_mutex>(mutex)};
+  TEST_CHECK(fuse_reply_data_splice_fd(req,sent) == FuseReplyResult::sent);
+  TEST_CHECK(!sent.lock.owns_lock());
+  TEST_CHECK(mutex.try_lock());
+  mutex.unlock();
+
+  FileRegion tail{fileno(file),131072,131072,std::shared_lock<std::shared_mutex>(mutex)};
+  TEST_CHECK(fuse_reply_data_splice_fd(req,tail) == FuseReplyResult::fallback);
+  TEST_CHECK(tail.lock.owns_lock());
+
+  fuse_req_free(req);
+  fclose(dev);
+  fclose(file);
+}
+
+/* A debug log write that throws once the reply is fully staged (fmt on
+   a full or broken log stream) must not leave that message in this
+   thread's reply pipe: the worker survives the exception, and its next
+   reply would otherwise be sent behind, or instead of, the stale one. */
+void
+test_reply_splice_debug_throw_leaves_pipe_empty()
+{
+  if(!::_pipe_can_grow(262144))
+    {
+      TEST_SKIP("cannot grow a pipe to 256KiB here");
+      return;
+    }
+
+  FILE *full = fopen("/dev/full","w");
+  if(full == nullptr)
+    {
+      TEST_SKIP("no /dev/full here");
+      return;
+    }
+  setvbuf(full,nullptr,_IONBF,0);
+
+  static char data[200000];
+  for(size_t i = 0; i < sizeof(data); i++)
+    data[i] = (char)(i * 7 + 3);
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+  FILE *dev = tmpfile();
+  TEST_ASSERT(dev != nullptr);
+
+  const std::shared_ptr<FILE> log_file = fuse_cfg.log_file();
+  const bool debug = fuse_cfg.debug;
+  fuse_cfg.log_file(std::shared_ptr<FILE>(full,fclose));
+  fuse_cfg.debug = true;
+
+  fuse_req_t *req = fuse_req_alloc();
+  req->fd         = fileno(dev);
+  req->ctx.unique = 5;
+  FileRegion region{fileno(file),0,131072,{}};
+  bool threw = false;
+  try
+    {
+      fuse_reply_data_splice_fd(req,region);
+    }
+  catch(...)
+    {
+      threw = true;
+    }
+  fuse_req_free(req);
+
+  fuse_cfg.debug = debug;
+  fuse_cfg.log_file(log_file);
+
+  struct stat st;
+  TEST_CHECK(threw);
+  TEST_CHECK((fstat(fileno(dev),&st) == 0) && (st.st_size == 0));
+
+  FuseReplyResult r;
+  const std::string got = _splice_reply_bytes(fileno(file),4096,65536,&r,9);
+  TEST_CHECK(r == FuseReplyResult::sent);
+  TEST_CHECK(::_is_reply(got,9,data + 4096,65536));
+
+  fclose(dev);
+  fclose(file);
+}
+
+/* Whether fd_ is on a local filesystem that read_buf must always offer
+   for splicing (ext2/3/4, XFS, tmpfs, btrfs, f2fs). */
+static
+bool
+_splice_local_fs(const int fd_)
+{
+  struct statfs st;
+
+  if(::fstatfs(fd_,&st) != 0)
+    return false;
+
+  switch((unsigned long)st.f_type)
+    {
+    case 0xEF53:     // ext2/3/4
+    case 0x58465342: // xfs
+    case 0x01021994: // tmpfs
+    case 0x9123683E: // btrfs
+    case 0xF2F52010: // f2fs
+      return true;
+    default:
+      return false;
+    }
+}
+
+/* Whether read_buf refuses the filesystem tmpfile() uses outright
+   (overlayfs, NFS, FUSE, ...: see _splice_coherent). tmpfile() always
+   uses /tmp, which is such a filesystem inside most containers, so the
+   read_buf tests skip there instead of failing. Never on a local
+   filesystem read_buf must offer: a refusal there is the regression
+   the tests exist to catch, so they run (and fail) instead of every
+   one of them skipping. Probes its own file through a throwaway
+   handle, before the caller performs any check (acutest cannot skip
+   after one). */
+static
+bool
+_read_buf_refuses_tmp()
+{
+  static char zeros[65536];
+  FILE *file = ::_tmpfile_with(zeros,sizeof(zeros));
+
+  if(file == nullptr)
+    return false;
+
+  TestHandle h(fileno(file),"/read-buf-probe");
+  FileRegion region;
+  FUSE::read_buf(&h.ctx,&h.ffi,&region,sizeof(zeros),0);
+  const bool refused = (h.fi.splice_state.load() == FileInfo::Splice::no);
+  const bool local   = ::_splice_local_fs(fileno(file));
+  region = {};
+  fclose(file);
+
+  return (refused && not local);
+}
+
+/* read_buf hands out the branch fd and the whole request window, and
+   only for a window lying entirely within the file's reported size:
+   the header carrying the region size is staged before any data, and
+   a reported size may lag the data, so a window crossing it (a tail,
+   an EOF probe, any read of a size-0 file) declines instead of being
+   trimmed. A rejected handle declines too; a bad handle fails; a window
+   below the splice threshold is never asked for. The returned region
+   holds the handle's lock shared so the fd cannot be rebound
+   mid-splice. */
+void
+test_read_buf_region_contract()
+{
+  if(::_read_buf_refuses_tmp())
+    {
+      TEST_SKIP("read_buf refuses this /tmp filesystem");
+      return;
+    }
+
+  static char data[200000];
+
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+  TestHandle h(fileno(file),"/read-buf");
+  FileInfo &fi = h.fi;
+  const fuse_req_ctx_t &ctx = h.ctx;
+  const fuse_file_info_t &ffi = h.ffi;
+
+  FileRegion region;
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,65536,1234) == 0);
+  TEST_CHECK(region.fd == fileno(file));
+  TEST_CHECK(region.offset == 1234 && region.size == 65536);
+  TEST_CHECK(region.lock.owns_lock() && region.lock.mutex() == &fi.mutex);
+  TEST_CHECK(!fi.mutex.try_lock());
+
+  region = {};
+  TEST_CHECK(fi.mutex.try_lock());
+  fi.mutex.unlock();
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,68928) == 0);
+  TEST_CHECK(region.offset == 68928 && region.size == 131072);
+
+  region = {};
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,68929) > 0);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,150000) > 0);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,200000) > 0);
+
+  TEST_CHECK(!region.lock.owns_lock());
+  TEST_CHECK(fi.mutex.try_lock());
+  fi.mutex.unlock();
+
+  FILE *empty = tmpfile();
+  TEST_ASSERT(empty != nullptr);
+  TestHandle eh(fileno(empty),"/read-buf-empty");
+  TEST_CHECK(FUSE::read_buf(&eh.ctx,&eh.ffi,&region,131072,0) > 0);
+  fclose(empty);
+
+  region = {};
+  FUSE::read_buf_rejected(&ctx,&ffi);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,0) > 0);
+
+  fuse_file_info_t bad = {};
+  TEST_CHECK(FUSE::read_buf(&ctx,&bad,&region,65536,0) == -EBADF);
+  fclose(file);
+}
+
+/* read_buf never waits for the handle's lock: while moveonenospc holds
+   it, or waits for it, a read declines to the copy path (which reads
+   the old fd, as it always has) rather than pinning a worker thread for
+   the whole move, or holding the mover off. */
+void
+test_read_buf_never_waits_for_mover()
+{
+  if(::_read_buf_refuses_tmp())
+    {
+      TEST_SKIP("read_buf refuses this /tmp filesystem");
+      return;
+    }
+
+  static char data[200000];
+
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+  TestHandle h(fileno(file),"/read-buf-mover");
+  FileInfo &fi = h.fi;
+  const fuse_req_ctx_t &ctx = h.ctx;
+  const fuse_file_info_t &ffi = h.ffi;
+  FileRegion region;
+
+  fi.mutex.lock();
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,65536,0) > 0);
+  fi.mutex.unlock();
+
+  fi.exclusive_waiters.store(1);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,65536,0) > 0);
+  fi.exclusive_waiters.store(0);
+
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,65536,0) == 0);
+  TEST_CHECK(region.lock.owns_lock());
+  region = {};
+  fclose(file);
+}
+
+/* An O_DIRECT branch fd is never offered, whatever its filesystem: the
+   kernel would serve that splice by direct I/O into fresh pages, saving
+   no copy over the copy path, and a misaligned request's EINVAL would
+   look like a filesystem without splice_read. */
+void
+test_read_buf_declines_odirect()
+{
+  if(::_read_buf_refuses_tmp())
+    {
+      TEST_SKIP("read_buf refuses this /tmp filesystem");
+      return;
+    }
+
+  FILE *file = tmpfile();
+  char path[64];
+  int dfd = -1;
+  if(file != nullptr)
+    {
+      snprintf(path,sizeof(path),"/proc/self/fd/%d",fileno(file));
+      dfd = open(path,O_RDONLY|O_DIRECT);
+    }
+  if(dfd < 0)
+    {
+      if(file != nullptr)
+        fclose(file);
+      TEST_SKIP("no O_DIRECT tmpfile here");
+      return;
+    }
+
+  static char data[200000];
+
+  TEST_ASSERT(pwrite(fileno(file),data,sizeof(data),0) == sizeof(data));
+  TestHandle h(dfd,"/read-buf-odirect");
+  FileRegion region;
+
+  TEST_CHECK(FUSE::read_buf(&h.ctx,&h.ffi,&region,65536,0) > 0);
+  TEST_CHECK(h.fi.splice_state.load() == FileInfo::Splice::no);
+
+  close(dfd);
+  fclose(file);
+}
+
+/* The size floor lets read_buf skip its size check. A shrink outside
+   this handle leaves it stale, so read_buf still offers the whole
+   window (the reply then hits the end and falls back, see
+   reply_splice_eof_falls_back_without_sending); a short FUSE::read
+   lowers it to where that read found the end, and an ftruncate
+   through the handle resets it. */
+void
+test_read_buf_size_floor_follows_shrink()
+{
+  if(::_read_buf_refuses_tmp())
+    {
+      TEST_SKIP("read_buf refuses this /tmp filesystem");
+      return;
+    }
+
+  static char data[400000];
+
+  FILE *file = ::_tmpfile_with(data,sizeof(data));
+  TEST_ASSERT(file != nullptr);
+  TestHandle h(fileno(file),"/read-buf-floor");
+  FileInfo &fi = h.fi;
+  const fuse_req_ctx_t &ctx = h.ctx;
+  const fuse_file_info_t &ffi = h.ffi;
+  FileRegion region;
+
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,0) == 0);
+  region = {};
+  TEST_ASSERT(ftruncate(fileno(file),100000) == 0);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,131072) == 0);
+  TEST_CHECK(region.size == 131072);
+  region = {};
+
+  static char buf[131072];
+  TEST_CHECK(FUSE::read(&ctx,&ffi,buf,sizeof(buf),0) == 100000);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,0) > 0);
+
+  TEST_ASSERT(pwrite(fileno(file),data,sizeof(data),0) == sizeof(data));
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,131072) == 0);
+  TEST_CHECK(region.size == 131072);
+  region = {};
+
+  TEST_CHECK(FUSE::ftruncate(&ctx,fi.to_fh(),200000) == 0);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,131072) > 0);
+  TEST_CHECK(FUSE::read_buf(&ctx,&ffi,&region,131072,65536) == 0);
+  TEST_CHECK(region.size == 131072);
+  fclose(file);
+}
+
+/* A process whose seccomp policy refuses splice (answering EPERM, as
+   libseccomp, Docker and systemd policies commonly do, rather than
+   ENOSYS) gets that error from every branch splice. It must turn the
+   reply splice path off, as a kernel without splice does, instead of
+   paying for a staging attempt on every large read. Runs in a child:
+   the filter and the off switch are both process-wide. */
+void
+test_reply_splice_seccomp_refusal_disables()
+{
+  /* Where the reply pipe cannot grow, the child's staging fails with
+     EPERM before the filter is involved; that is recorded as a
+     pipe-max-size bound, which also turns the splice path off, so the
+     test would pass without testing the seccomp refusal at all. */
+  if(!::_pipe_can_grow(262144))
+    {
+      TEST_SKIP("cannot grow a pipe to 256KiB here");
+      return;
+    }
+
+  pid_t child = fork();
+  if(child == 0)
+    {
+      alarm(5);
+      FILE *file = tmpfile();
+      FILE *dev  = tmpfile();
+      if((file == nullptr) || (dev == nullptr))
+        _exit(77);
+      static char data[200000];
+
+      if(pwrite(fileno(file),data,sizeof(data),0) != (ssize_t)sizeof(data))
+        _exit(77);
+      if(!fuse_reply_splice_fits(0,131072))
+        _exit(77);
+
+      struct sock_filter filter[] =
+        {
+          BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr)),
+          BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,__NR_splice,0,1),
+          BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
+          BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW),
+        };
+      struct sock_fprog prog = {(unsigned short)(sizeof(filter) / sizeof(filter[0])),filter};
+      if((prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0) != 0) ||
+         (syscall(SYS_seccomp,SECCOMP_SET_MODE_FILTER,0,&prog) != 0))
+        _exit(77);
+
+      fuse_req_t *req = fuse_req_alloc();
+      req->fd         = fileno(dev);
+      req->ctx.unique = 3;
+      FileRegion region{fileno(file),0,131072,{}};
+      const FuseReplyResult r = fuse_reply_data_splice_fd(req,region);
+      fuse_req_free(req);
+
+      struct stat st;
+      const bool correct = ((r == FuseReplyResult::fallback) &&
+                            (fstat(fileno(dev),&st) == 0) &&
+                            (st.st_size == 0) &&
+                            !fuse_reply_splice_fits(0,131072));
+      _exit(correct ? 0 : 1);
+    }
+
+  /* No check before this point: acutest cannot skip after one. */
+  int status = 0;
+  pid_t waited = -1;
+  if(child > 0)
+    do { waited = waitpid(child,&status,0); } while(waited < 0 && errno == EINTR);
+  if((child > 0) && (waited == child) && WIFEXITED(status) && (WEXITSTATUS(status) == 77))
+    {
+      TEST_SKIP("cannot install a seccomp filter or splice here");
+      return;
+    }
+  TEST_CHECK((child > 0) && (waited == child) &&
+             WIFEXITED(status) && (WEXITSTATUS(status) == 0));
+}
+
+/* A writeback request must never end in a short success: Linux's
+   fuse_writepage_end consults only the error, so a short success would
+   mark the unwritten tail clean and lose it. RLIMIT_FSIZE=4096 makes an
+   8KiB direct_io write complete 4096 bytes with no error. An ordinary
+   request reports that prefix. A writeback request keeps writing, as on
+   a cached handle (which is also how moveonenospc gets to run when a
+   branch fills mid-write), and reports the error the remainder gets
+   (EFBIG). The file holds exactly the 4096-byte prefix either way. */
+void
+test_write_short_success_writeback()
+{
+  for(int writepage = 0; writepage <= 1; ++writepage)
+    {
+      pid_t child = fork();
+      TEST_ASSERT(child >= 0);
+      if(child == 0)
+        {
+          alarm(5);
+          signal(SIGXFSZ,SIG_IGN);
+          struct rlimit limit = {4096,4096};
+          if(setrlimit(RLIMIT_FSIZE,&limit) != 0)
+            _exit(1);
+          FILE *file = tmpfile();
+          if(file == nullptr)
+            _exit(2);
+          char payload[8192];
+          memset(payload,0x5a,sizeof(payload));
+          Branch branch;
+          FileInfo fi(fileno(file),branch,fs::path("/write-short-test"),true);
+          fuse_req_ctx_t ctx = {};
+          fuse_file_info_t ffi = {};
+          ffi.fh = fi.to_fh();
+          ffi.writepage = writepage;
+          const int rv = FUSE::write(&ctx,&ffi,payload,sizeof(payload),0);
+          struct stat st;
+          char stored[4096];
+          bool correct = (rv == (writepage ? -EFBIG : 4096)) &&
+            fstat(fileno(file),&st) == 0 && st.st_size == 4096 &&
+            pread(fileno(file),stored,sizeof(stored),0) == sizeof(stored) &&
+            memcmp(stored,payload,sizeof(stored)) == 0;
+          fclose(file);
+          _exit(correct ? 0 : 3);
+        }
+      int status;
+      pid_t waited;
+      do { waited = waitpid(child,&status,0); } while(waited < 0 && errno == EINTR);
+      TEST_CHECK(waited == child && WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
+}
+#endif
 
 void
 test_config_bool()
@@ -3650,6 +4348,20 @@ test_rapidhash_withSeed_preserves_default_output()
 TEST_LIST =
   {
    {"nop",test_nop},
+#if defined(__linux__)
+   {"reply_splice_sends_exact_message",test_reply_splice_sends_exact_message},
+   {"reply_splice_eof_falls_back_without_sending",test_reply_splice_eof_falls_back_without_sending},
+   {"reply_splice_small_region_falls_back",test_reply_splice_small_region_falls_back},
+   {"reply_splice_unspliceable_fd_is_unsupported",test_reply_splice_unspliceable_fd_is_unsupported},
+   {"reply_splice_releases_lock_before_submit",test_reply_splice_releases_lock_before_submit},
+   {"reply_splice_debug_throw_leaves_pipe_empty",test_reply_splice_debug_throw_leaves_pipe_empty},
+   {"read_buf_region_contract",test_read_buf_region_contract},
+   {"read_buf_never_waits_for_mover",test_read_buf_never_waits_for_mover},
+   {"read_buf_declines_odirect",test_read_buf_declines_odirect},
+   {"read_buf_size_floor_follows_shrink",test_read_buf_size_floor_follows_shrink},
+   {"reply_splice_seccomp_refusal_disables",test_reply_splice_seccomp_refusal_disables},
+   {"write_short_success_writeback",test_write_short_success_writeback},
+#endif
    {"config_bool",test_config_bool},
    {"config_uint64",test_config_uint64},
    {"config_int",test_config_int},

@@ -63,6 +63,7 @@
 #include "fuse_opendir.hpp"
 #include "fuse_poll.hpp"
 #include "fuse_read.hpp"
+#include "fuse_read_buf.hpp"
 #include "fuse_readdir.hpp"
 #include "fuse_readdir_plus.hpp"
 #include "fuse_readlink.hpp"
@@ -126,6 +127,10 @@ _get_fuse_operations(struct fuse_operations &ops_,
   ops_.opendir         = FUSE::opendir;
   ops_.poll            = FUSE::poll;
   ops_.read            = (nullrw_ ? FUSE::read_null : FUSE::read);
+  /* Large reads are spliced from the branch file into /dev/fuse when
+     possible; nullrw has no branch data to splice. */
+  ops_.read_buf          = (nullrw_ ? nullptr : FUSE::read_buf);
+  ops_.read_buf_rejected = (nullrw_ ? nullptr : FUSE::read_buf_rejected);
   ops_.readdir         = FUSE::readdir;
   ops_.readdir_plus    = FUSE::readdir_plus;
   ops_.readlink        = FUSE::readlink;

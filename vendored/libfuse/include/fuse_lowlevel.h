@@ -5,6 +5,17 @@
 #include "fuse_kernel.h"
 #include "fuse_req.hpp"
 
+#ifdef __cplusplus
+#include "fuse_io.hpp"
+
+/* Outcome of an fd-backed reply. fallback: nothing reached the kernel,
+   reply another way. unsupported: same, and this descriptor rejects
+   splice (EINVAL), so do not offer it again. sent: done. failed: a
+   submission error was already reported to the kernel; never reply
+   again. */
+enum class FuseReplyResult { fallback, unsupported, sent, failed };
+#endif
+
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -287,6 +298,31 @@ int fuse_reply_buf(fuse_req_t *req, const char *buf, size_t size);
 int fuse_reply_data(fuse_req_t *req,
                     char       *buf,
                     size_t      bufsize);
+
+#ifdef __cplusplus
+/* READ replies at or above this size are offered to the splice path.
+   Measured on Linux 5.14 (tmpfs branch, release build) the splice
+   path uses less daemon CPU than read+writev from roughly 48KiB per
+   request; 64KiB keeps a margin. */
+constexpr size_t FUSE_SPLICE_REPLY_MIN = 65536;
+
+/* Whether a READ reply for size bytes at offset would currently be
+   attempted by fuse_reply_data_splice_fd: false below
+   FUSE_SPLICE_REPLY_MIN, once splice is unavailable, or when the reply
+   needs a pipe larger than pipe-max-size allows. The high-level READ
+   handler asks read_buf for a region only when this holds, so replies
+   that could only fall back cost no work in the filesystem. */
+bool fuse_reply_splice_fits(off_t offset, size_t size);
+
+/* Reply to a READ with a region of a file, spliced into /dev/fuse
+   without the data crossing userspace (Linux only; elsewhere, and
+   whenever the splice path is unavailable, returns fallback). Borrows
+   req: the caller frees it after a sent/failed outcome and must reply
+   by other means after fallback. Releases region.lock once the data
+   is staged, before the reply can reach the kernel. */
+FuseReplyResult fuse_reply_data_splice_fd(fuse_req_t *req,
+                                          FileRegion &region);
+#endif
 
 /**
  * Reply with data vector

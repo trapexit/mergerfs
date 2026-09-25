@@ -22,6 +22,14 @@
 #include "fuse_opt.h"
 #include "fuse_pollhandle.h"
 #include "stat_utils.h"
+#include "syslog.hpp"
+
+#include <atomic>
+
+#if defined(__linux__)
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -419,6 +427,493 @@ fuse_reply_buf(fuse_req_t *req,
 
   return send_reply_ok(req, buf, size);
 }
+
+#if defined(__linux__)
+/* Automatic splice of large READ replies (branch fd -> pipe -> /dev/fuse).
+   The copy path costs read + pread + writev and copies the payload
+   twice. The splice path costs read + write(header) + splice(fd ->
+   pipe) + splice(pipe -> /dev/fuse) and never copies the payload into
+   userspace; the kernel copies it once, into the request's pages. The
+   caller gates on fuse_reply_splice_fits (fuse_lowlevel.h).
+
+   Every staging failure is recoverable: nothing has reached the kernel,
+   so the pipe is drained and the caller replies through the copy path.
+   Only a kernel without splice (ENOSYS), or a seccomp policy refusing
+   it, disables the path for the whole process. A pipe-max-size too
+   small for a reply only caps the reply size that is spliced
+   (g_reply_pipe_limit), and a branch that rejects splice is reported
+   per open file (FuseReplyResult::unsupported). */
+static std::atomic<bool> g_reply_splice_off{false};
+
+/* Smallest reply pipe, in bytes, found to exceed the pipe-max-size
+   sysctl, which caps unprivileged F_SETPIPE_SZ; a 1MiB reply plus its
+   header page needs one page more than the default 1MiB. Replies that
+   need at least this much stay on the copy path unless this thread's
+   pipe already holds them; smaller replies keep splicing. A refusal
+   from the per-user pipe quota is not recorded: it lifts as pipes are
+   closed. 0 = no refusal seen. */
+static std::atomic<size_t> g_reply_pipe_limit{0};
+
+/* The pipe-max-size sysctl, read once at session setup. Read lazily, on
+   the first refused resize, it could fail for the same shortage of
+   descriptors that made that resize or pipe fail and then read as 0 for
+   good. 0 when it cannot be read, in which case every EPERM is treated
+   as that limit. */
+static std::atomic<size_t> g_pipe_max_size{0};
+
+static
+void
+_read_pipe_max_size(void)
+{
+  unsigned long n = 0;
+  FILE *f = ::fopen("/proc/sys/fs/pipe-max-size","re");
+
+  if(f == NULL)
+    return;
+  if(::fscanf(f,"%lu",&n) == 1)
+    g_pipe_max_size.store((size_t)n,std::memory_order_relaxed);
+  ::fclose(f);
+}
+
+static
+void
+_reply_splice_disable(const char *what_,
+                      const int   err_)
+{
+  if(g_reply_splice_off.exchange(true))
+    return;
+  SysLog::notice("read reply splice disabled: {} failed: {};"
+                 " using copy path",
+                 what_,strerror(err_));
+}
+
+/* One latch per distinct failure reason: these are independent,
+   recurring conditions (a pipe quota hiccup, a header-staging error, a
+   branch-splice error, a submission error, ...), so silencing all of
+   them after whichever happens to fire first would hide later,
+   unrelated failures from the log. A submission the kernel refused
+   before it looked at the request (the copy path then answers it) is
+   a different incident from one that fails the request, so they do
+   not share a latch. */
+enum class SpliceWarnReason
+{
+  pipe_quota,
+  pipe_create,
+  header_stage,
+  branch_splice,
+  submit_fallback,
+  submit_failed,
+  _count
+};
+
+static std::atomic<bool> g_reply_splice_warned[(size_t)SpliceWarnReason::_count] = {};
+
+static
+void
+_reply_splice_warn(const char           *what_,
+                   const int             err_,
+                   const SpliceWarnReason reason_,
+                   const char           *outcome_ =
+                   "falling back to copy path for this reply")
+{
+  if(g_reply_splice_warned[(size_t)reason_].exchange(true))
+    return;
+  SysLog::warning("read reply splice: {} failed: {}; {}",
+                  what_,strerror(err_),outcome_);
+}
+
+/* pipe_quota (the per-user pipe count/memory limit) is the one reason
+   that is genuinely transient -- it lifts as pipes are closed, unlike
+   the others, which are properties of the kernel or a branch fd that
+   do not change at runtime. Clear its latch once a resize succeeds, so
+   a later recurrence (a distinct incident) is logged again instead of
+   being silenced forever by whichever incident fired first. */
+static
+void
+_reply_splice_warn_clear(const SpliceWarnReason reason_)
+{
+  g_reply_splice_warned[(size_t)reason_].store(false,std::memory_order_relaxed);
+}
+
+/* Whether splice itself is unusable in this process: missing from the
+   kernel (ENOSYS) or refused by a seccomp policy, which commonly
+   answers EPERM but may use any errno. A zero-length splice returns 0
+   before looking at its descriptors, so only then does it fail. An
+   error from splicing a branch file normally comes from that file's
+   own read path instead (ENOSYS from a FUSE branch whose server does
+   not implement READ, EIO, ...), which this tells apart. */
+static
+bool
+_splice_syscall_unusable()
+{
+  return (::splice(-1,nullptr,-1,nullptr,0,0) == -1);
+}
+
+static
+void
+fuse_send_errno(const int      fd_,
+                const int      errno_,
+                const uint64_t unique_id_);
+
+namespace
+{
+  /* One pipe per worker thread, created on first use and reused for
+     every large reply that thread sends. Empty between replies: every
+     path that leaves bytes behind drains or closes it. */
+  struct ReplyPipe
+  {
+    int    fd[2] = {-1,-1};
+    size_t cap   = 0;
+
+    ~ReplyPipe() { reset(); }
+
+    void
+    reset()
+    {
+      if(fd[0] != -1) ::close(fd[0]);
+      if(fd[1] != -1) ::close(fd[1]);
+      fd[0] = fd[1] = -1;
+      cap = 0;
+    }
+
+    /* 0 when a pipe of at least bytes_ capacity is held, else -errno. */
+    int
+    ready(const size_t bytes_)
+    {
+      if(fd[0] == -1)
+        {
+          /* The initial capacity is not queried: cap 0 makes the
+             first use resize to exactly what it needs, which with 4KiB
+             pages it would have to do anyway (a reply of 64KiB plus
+             its header needs more than the default 16 slots). */
+          if(::pipe2(fd,O_CLOEXEC|O_NONBLOCK) == -1)
+            return -errno;
+        }
+      if(bytes_ <= cap)
+        return 0;
+      if(bytes_ > (size_t)INT_MAX)
+        return -EINVAL;
+      const int c = ::fcntl(fd[0],F_SETPIPE_SZ,(int)bytes_);
+      if(c == -1)
+        return -errno;
+      cap = (size_t)c;
+      return ((cap >= bytes_) ? 0 : -ENOSPC);
+    }
+
+    /* /dev/null, opened on first use and kept. A failed open (EMFILE at
+       that moment, say) is retried by the next drain rather than
+       cached, which would leave every later drain copying. */
+    static
+    int
+    devnull()
+    {
+      static std::atomic<int> g_fd{-1};
+      int fd = g_fd.load(std::memory_order_acquire);
+
+      if(fd != -1)
+        return fd;
+
+      fd = ::open("/dev/null",O_WRONLY|O_CLOEXEC);
+      if(fd == -1)
+        return -1;
+
+      int expected = -1;
+      if(g_fd.compare_exchange_strong(expected,fd,std::memory_order_acq_rel))
+        return fd;
+
+      ::close(fd);
+
+      return expected;
+    }
+
+    /* Discard anything staged. Splicing it into /dev/null drops the
+       page references without copying the data into userspace; reading
+       it out is the fallback when that is not available (no /dev/null,
+       a buffer error), so the pipe/capacity survive to be reused. Both
+       ends are non-blocking, so each stops at empty (EAGAIN); a pipe
+       that cannot be emptied by either is closed instead, and ready()
+       makes a new one on next use. */
+    void
+    drain()
+    {
+      /* true once the pipe reads empty (EAGAIN), false on any other
+         outcome. */
+      const auto pump = [](auto op_)
+      {
+        for(;;)
+          {
+            const ssize_t rv = op_();
+            if((rv > 0) || ((rv == -1) && (errno == EINTR)))
+              continue;
+            return ((rv == -1) && (errno == EAGAIN));
+          }
+      };
+
+      const int devnull = ReplyPipe::devnull();
+      if((devnull != -1) &&
+         pump([&]{ return ::splice(fd[0],nullptr,devnull,nullptr,
+                                   (size_t)1 << 30,SPLICE_F_NONBLOCK); }))
+        return;
+
+      char buf[16384];
+      if(pump([&]{ return ::read(fd[0],buf,sizeof(buf)); }))
+        return;
+
+      reset();
+    }
+  };
+}
+
+static thread_local ReplyPipe t_reply_pipe;
+
+/* Pipe capacity a reply needs: one slot for the header plus the file
+   range, which may start mid-page. The kernel fills pipes one page per
+   slot, so capacity is counted in pages, not bytes. */
+static
+size_t
+_reply_pipe_need(const off_t  offset_,
+                 const size_t size_)
+{
+  const size_t slots =
+    (((uintptr_t)offset_ % pagesize) + size_ + pagesize - 1) / pagesize;
+
+  return (1 + slots) * pagesize;
+}
+
+/* Whether a pipe of need_ bytes may be used: always below any recorded
+   pipe-max-size refusal, and above it only when this thread's pipe
+   already has that capacity (so no resize is attempted). */
+static
+bool
+_reply_pipe_allowed(const size_t need_)
+{
+  const size_t limit = g_reply_pipe_limit.load(std::memory_order_relaxed);
+  return ((limit == 0) || (need_ < limit) || (need_ <= t_reply_pipe.cap));
+}
+
+/* The pipe capacity a reply of size_ bytes at offset_ needs, or 0 when
+   it is not spliced: splice is off, the reply is below the threshold
+   (cheaper through read + writev), or it needs a pipe over a recorded
+   pipe-max-size refusal. The one predicate behind both
+   fuse_reply_splice_fits and fuse_reply_data_splice_fd. */
+static
+size_t
+_reply_splice_need(const off_t  offset_,
+                   const size_t size_)
+{
+  if(g_reply_splice_off.load(std::memory_order_relaxed) ||
+     (size_ < FUSE_SPLICE_REPLY_MIN))
+    return 0;
+
+  const size_t need = _reply_pipe_need(offset_,size_);
+
+  return (_reply_pipe_allowed(need) ? need : 0);
+}
+
+bool
+fuse_reply_splice_fits(const off_t  offset_,
+                       const size_t size_)
+{
+  return (_reply_splice_need(offset_,size_) != 0);
+}
+
+FuseReplyResult
+fuse_reply_data_splice_fd(fuse_req_t *req_,
+                          FileRegion &region_)
+{
+  const size_t need = _reply_splice_need(region_.offset,region_.size);
+  if(need == 0)
+    return FuseReplyResult::fallback;
+
+  ReplyPipe &p = t_reply_pipe;
+  struct fuse_out_header out = {};
+  out.unique = req_->ctx.unique;
+  out.len    = sizeof(out) + region_.size;
+
+  const size_t prev_cap = p.cap;
+  int err = p.ready(need);
+  if(err != 0)
+    {
+      /* EPERM means either larger than pipe-max-size without
+         CAP_SYS_RESOURCE, a fixed bound worth remembering so replies
+         this large skip straight to the copy path, or over the
+         per-user pipe quota, which is transient: only this reply falls
+         back. An unreadable sysctl is treated as the fixed bound. */
+      const size_t max = g_pipe_max_size.load(std::memory_order_relaxed);
+      if((err == -EPERM) && ((max == 0) || (need > max)))
+        {
+          size_t cur = g_reply_pipe_limit.load(std::memory_order_relaxed);
+          while(((cur == 0) || (need < cur)) &&
+                !g_reply_pipe_limit.compare_exchange_weak(cur,need))
+            ;
+          /* cur is still 0 only in the thread that set the first limit. */
+          if(cur == 0)
+            SysLog::notice("read reply splice: a {} byte pipe exceeds"
+                           " pipe-max-size; reads this large use the"
+                           " copy path, smaller reads are still spliced",
+                           need);
+        }
+      else if(err == -EPERM)
+        _reply_splice_warn("growing the reply pipe (per-user pipe quota)",-err,
+                           SpliceWarnReason::pipe_quota);
+      else if(err == -ENOSYS)
+        _reply_splice_disable("creating the reply pipe",-err);
+      else
+        _reply_splice_warn("creating the reply pipe",-err,
+                           SpliceWarnReason::pipe_create);
+      return FuseReplyResult::fallback;
+    }
+
+  /* A resize just succeeded, so any earlier per-user pipe quota
+     shortage (the one transient SpliceWarnReason) has lifted; let a
+     later recurrence be logged again instead of staying silenced by an
+     earlier one. A pipe that was already big enough says nothing about
+     the quota: it must not re-arm the warning while other threads still
+     fail to grow theirs, nor write the shared latch on every reply. */
+  if(p.cap != prev_cap)
+    _reply_splice_warn_clear(SpliceWarnReason::pipe_quota);
+
+  /* write(), not vmsplice(): vmsplice without SPLICE_F_GIFT queues a
+     reference to this stack page rather than a copy, and the pipe
+     outlives the frame whenever it is consumed later (or not at all).
+     A 16-byte write into an empty pipe copies and is atomic. */
+  ssize_t n;
+  do
+    n = ::write(p.fd[1],&out,sizeof(out));
+  while((n == -1) && (errno == EINTR));
+  if(n != (ssize_t)sizeof(out))
+    {
+      err = ((n == -1) ? errno : EIO);
+      p.drain();
+      _reply_splice_warn("staging the reply header",err,
+                         SpliceWarnReason::header_stage);
+      return FuseReplyResult::fallback;
+    }
+
+  size_t done = 0;
+  while(done < region_.size)
+    {
+      loff_t pos = region_.offset + (off_t)done;
+      n = ::splice(region_.fd,&pos,p.fd[1],nullptr,
+                   region_.size - done,SPLICE_F_NONBLOCK);
+      if((n == -1) && (errno == EINTR))
+        continue;
+      if(n > 0)
+        {
+          done += (size_t)n;
+          continue;
+        }
+
+      /* n == 0: the file ended before the region did (it shrank after
+         the caller sized the region). n == -1: this descriptor rejects
+         splice (EINVAL: its filesystem has no splice_read) or failed.
+         EAGAIN is also end-of-file when the file ended inside the
+         region's last page of an exactly full pipe (no room is left
+         for the splice that would return 0). Nothing reached the
+         kernel. A rejecting descriptor is a property of that branch
+         file, not of the transport, so the path stays on and the
+         caller is told to stop offering it; only a first splice can
+         show that, since one that already moved data proves the
+         descriptor splices. An error disables the path only when
+         splice itself is unusable (missing, or refused by seccomp),
+         not when it is the branch file's read error; otherwise every
+         large read would pay for a staging attempt that cannot
+         succeed. */
+      err = ((n == -1) ? errno : 0);
+      p.drain();
+      if((err != 0) && (err != EAGAIN))
+        {
+          if(_splice_syscall_unusable())
+            _reply_splice_disable("splicing from the branch file",err);
+          else if(err != EINVAL)
+            _reply_splice_warn("splicing from the branch file",err,
+                               SpliceWarnReason::branch_splice);
+        }
+      return (((err == EINVAL) && (done == 0)) ?
+              FuseReplyResult::unsupported :
+              FuseReplyResult::fallback);
+    }
+
+  /* fd is not read again on any outcome below (see FileRegion::lock). */
+  if(region_.lock.owns_lock())
+    region_.lock.unlock();
+
+  /* The whole message is staged now, so a log write that throws (fmt on
+     a full or broken log file) must not leave it in this thread's pipe:
+     the worker survives the exception and would splice it in front of
+     its next reply. */
+  if(fuse_cfg.debug)
+    {
+      try
+        {
+          fuse_debug_data_out(req_->ctx.unique,region_.size);
+        }
+      catch(...)
+        {
+          p.drain();
+          throw;
+        }
+    }
+
+  /* Pages spliced in from the branch page cache are never offered for
+     SPLICE_F_MOVE: stealing them would evict the branch's cache pages.
+     The kernel copies them into the request's pages instead. */
+  const size_t total = out.len;
+  do
+    n = ::splice(p.fd[0],nullptr,req_->fd,nullptr,total,0);
+  while((n == -1) && (errno == EINTR));
+  if(n == (ssize_t)total)
+    return FuseReplyResult::sent;
+
+  err = ((n == -1) ? errno : EIO);
+
+  /* The kernel takes the whole message or none of it. If the pipe still
+     holds all of it, the submission failed before the kernel looked at
+     the request (e.g. ENOMEM allocating its buffer list), which is
+     still pending, so the copy path can answer it. */
+  int queued = 0;
+  if((::ioctl(p.fd[0],FIONREAD,&queued) == 0) && ((size_t)queued == total))
+    {
+      p.drain();
+      _reply_splice_warn("submitting the reply",err,
+                         SpliceWarnReason::submit_fallback);
+      return FuseReplyResult::fallback;
+    }
+
+  /* Otherwise the kernel may have completed the request before failing
+     (it validates after copying; a copy error fails it with EIO), so
+     the payload is never replayed. ENOENT means the request was already
+     retired or the connection aborted: nothing is left to answer, as
+     when the copy path's writev fails the same way, so it is neither
+     logged nor answered. Any other error-only reply completes a request
+     that is still pending. */
+  p.drain();
+  if(err != ENOENT)
+    {
+      _reply_splice_warn("submitting the reply",err,
+                         SpliceWarnReason::submit_failed,
+                         "failing the request");
+
+      fuse_send_errno(req_->fd,err,req_->ctx.unique);
+    }
+
+  return FuseReplyResult::failed;
+}
+#else
+bool
+fuse_reply_splice_fits(const off_t,
+                       const size_t)
+{
+  return false;
+}
+
+FuseReplyResult
+fuse_reply_data_splice_fd(fuse_req_t *,
+                          FileRegion &)
+{
+  return FuseReplyResult::fallback;
+}
+#endif
 
 int
 fuse_reply_data(fuse_req_t   *req,
@@ -1725,6 +2220,10 @@ fuse_lowlevel_new_common(struct fuse_args               *args,
 
   memcpy(&f.op,op,op_size);
   f.owner = getuid();
+
+#if defined(__linux__)
+  _read_pipe_max_size();
+#endif
 
   se = fuse_session_new(&f,
                         (void*)fuse_ll_buf_receive_read,

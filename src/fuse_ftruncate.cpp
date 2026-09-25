@@ -50,11 +50,20 @@ FUSE::ftruncate(const fuse_req_ctx_t *ctx_,
                 cu64                  fh_,
                 off_t                 size_)
 {
+  int rv;
   FileInfo *fi;
 
   fi = state.get_fi(ctx_,fh_);
   if(not fi)
     return -EBADF;
 
-  return ::_ftruncate(fi->fd,size_);
+  rv = ::_ftruncate(fi->fd,size_);
+
+  /* A shrink through this handle would otherwise leave reads past the
+     new end on the EOF fallback; after a grow the old floor still
+     holds. */
+  if(rv == 0)
+    fi->size_floor_lower(size_);
+
+  return rv;
 }

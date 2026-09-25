@@ -22,6 +22,9 @@
 #include <sys/uio.h>
 #include <stdint.h>
 
+/* Transport type from fuse_io.hpp (C++); opaque to C consumers. */
+struct FileRegion;
+
 EXTERN_C_BEGIN
 
 /* ----------------------------------------------------------- *
@@ -206,6 +209,26 @@ struct fuse_operations
               char                   *buf,
               size_t                  size,
               off_t                   off);
+  /* Optional. For large reads on Linux: describe the reply as a region
+     of a branch fd instead of filling a buffer, so libfuse can splice
+     it into /dev/fuse. Called only for requests whose reply could be
+     spliced (fuse_reply_splice_fits). Return 0 with region filled to
+     splice it, a positive value to decline (libfuse then calls read()),
+     or -errno to fail the request. When returning 0, region->size MUST
+     equal size: the reply's length is taken from region->size alone,
+     so a smaller, non-EOF region would be sent as a short reply
+     indistinguishable from a real short read. To offer less than the
+     whole request, decline instead and let read() serve it. libfuse
+     also falls back to read() whenever the splice cannot be staged,
+     and calls read_buf_rejected when the region's fd refuses splice so
+     the filesystem can stop offering that open file. */
+  int (*read_buf)(const fuse_req_ctx_t *,
+                  const fuse_file_info_t *ffi,
+                  struct FileRegion      *region,
+                  size_t                  size,
+                  off_t                   off);
+  void (*read_buf_rejected)(const fuse_req_ctx_t *,
+                            const fuse_file_info_t *ffi);
   int (*fallocate)(const fuse_req_ctx_t *,
                    const uint64_t,
                    int,

@@ -55,14 +55,23 @@ FUSE::fallocate(const fuse_req_ctx_t *ctx_,
                 off_t                 offset_,
                 off_t                 len_)
 {
+  int rv;
   FileInfo *fi;
 
   fi = state.get_fi(ctx_,fh_);
   if(not fi)
     return -EBADF;
 
-  return ::_fallocate(fi->fd,
-                      mode_,
-                      offset_,
-                      len_);
+  rv = ::_fallocate(fi->fd,
+                   mode_,
+                   offset_,
+                   len_);
+
+  /* Reset read_buf's size floor. Defensive only: of the fallocate
+     modes only COLLAPSE_RANGE shrinks a file (PUNCH_HOLE requires
+     KEEP_SIZE), and the kernel's FUSE client forwards only KEEP_SIZE,
+     PUNCH_HOLE and ZERO_RANGE, so no request reaching here does. */
+  fi->size_floor_reset();
+
+  return rv;
 }

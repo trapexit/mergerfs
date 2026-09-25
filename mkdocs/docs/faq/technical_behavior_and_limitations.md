@@ -215,13 +215,63 @@ If `mergerfs` doesn't work as a type it could be due to how the
 permissions.
 
 
-## Why was splice support removed?
+## Does mergerfs use splice?
 
-After a lot of testing over the years, splicing always appeared to
-at best, provide equivalent performance, and in some cases, worse
-performance. Splice is not supported on other platforms forcing a
-traditional read/write fallback to be provided. The splice code was
-removed to simplify the codebase.
+On Linux, for large reads only, automatically. When a `read` request
+is 64KiB or larger, mergerfs splices the data from the branch file
+through a pipe into `/dev/fuse` instead of reading it into its own
+memory and writing it back out. The data never crosses userspace, which
+saves one copy and some CPU per request. Smaller reads, all writes and
+every other request use the normal copy path, because splicing them
+costs more in extra syscalls than it saves: earlier versions that
+spliced every request were measurably slower for small I/O and metadata
+operations.
+
+There is nothing to configure. If splicing a reply is not possible the
+read is served through the copy path instead: a branch filesystem that
+does not support splice is detected on the first attempt and skipped for
+that open file, and a read extending past the size the branch reports
+for the file (the last part of a file, files smaller than the read,
+files reporting a size of 0 such as procfs files, and files reporting a
+nominal 4096 bytes such as sysfs attributes) uses the copy path, so a
+branch whose reported size lags its data still
+returns everything. Files on FUSE, SMB/CIFS, NFS, Ceph, AFS, overlayfs
+or 9p branches, and any file opened `O_DIRECT`, always use the copy
+path: those filesystems' splice_read can serve a page cache that their
+normal reads bypass or first revalidate, so a spliced reply could
+return stale data, and for an `O_DIRECT` file the kernel would serve
+the splice by direct I/O into newly allocated pages, which saves
+nothing over the copy path.
+A read that arrives while mergerfs is moving the file to another
+branch (`moveonenospc`) also uses the copy path.
+Unless mergerfs runs with
+`CAP_SYS_RESOURCE` (as root on a host normally does, but root in a
+container usually does not unless started with `--cap-add=SYS_RESOURCE`
+or `--privileged`; `CAP_SYS_ADMIN` is not enough), the `pipe-max-size`
+sysctl limits the pipe a reply can use. A reply needs one page more
+than the read (for the reply header), two when the read does not start
+on a page boundary, and the kernel rounds that up to a power of two, so
+`pipe-max-size` must be larger than `fuse-msg-size` for the largest
+reads to be spliced: with the defaults (both 1MiB) 1MiB reads use the
+copy path while smaller reads keep splicing, with a single log
+message. That limit is read when mergerfs starts, so raising
+`pipe-max-size` takes effect after mergerfs is restarted. Only a kernel
+without splice support, or a seccomp policy that refuses it, disables it
+for the whole process. The old
+`splice_read`, `splice_write` and `splice_move` options are still
+accepted and do nothing.
+
+Two behaviors of spliced reads differ from the copy path. The data is
+copied into the reply only after the branch filesystem's read has
+returned, so a write or truncate of the branch file racing a read can
+produce a reply mixing old and new contents, even on filesystems such as
+XFS that otherwise serialize reads against writes. And on kernels before
+6.4, spliced reads do not generate inotify or fanotify access events
+(`IN_ACCESS`, `FAN_ACCESS`) on the branch file.
+
+Files using [passthrough.io](../config/passthrough.md) never reach
+mergerfs for reads, so splice does not apply to them, unless
+`direct-io` is also in effect for them, which overrides passthrough.
 
 
 ## How does mergerfs handle credentials?

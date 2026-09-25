@@ -72,10 +72,19 @@ FUSE::read(const fuse_req_ctx_t   *ctx_,
   if(not fi)
     return -EBADF;
 
-  if(fi->direct_io)
-    return ::_read_direct_io(fi->fd,buf_,size_,offset_);
+  const int rv = (fi->direct_io ?
+                  ::_read_direct_io(fi->fd,buf_,size_,offset_) :
+                  ::_read_cached(fi->fd,buf_,size_,offset_));
 
-  return ::_read_cached(fi->fd,buf_,size_,offset_);
+  /* A short read means end-of-file at offset+rv: keep read_buf's size
+     floor from claiming more (it is the splice reply's EOF fallback).
+     Nothing was read at all when rv is 0, so the file may end anywhere
+     at or before offset_ (it may have shrunk well below the offset
+     asked about): only 0 is then a bound that cannot be too high. */
+  if((rv >= 0) && ((size_t)rv < size_))
+    fi->size_floor_lower((rv > 0) ? ((s64)offset_ + rv) : 0);
+
+  return rv;
 }
 
 int
