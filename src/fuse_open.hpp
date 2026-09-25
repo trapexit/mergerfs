@@ -25,6 +25,6 @@ namespace FUSE
 {
   int
   open(const fuse_req_ctx_t *ctx,
-       const char           *fusepath,
+       const fs::relpath       &fusepath,
        fuse_file_info_t     *ffi);
 }

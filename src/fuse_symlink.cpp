@@ -37,14 +37,14 @@
 
 static
 int
-_symlink_loop_core(const ugid_t    ugid_,
-                   const fs::path &newbranch_,
-                   const char     *target_,
-                   const fs::path &linkpath_,
-                   struct stat    *st_)
+_symlink_loop_core(const ugid_t       ugid_,
+                   const std::string &newbranch_,
+                   const char        *target_,
+                   const fs::relpath &linkpath_,
+                   struct stat       *st_)
 {
   int rv;
-  fs::path fullnewpath;
+  fs::relpath fullnewpath;
 
   fullnewpath = newbranch_ / linkpath_;
 
@@ -64,11 +64,11 @@ _symlink_loop_core(const ugid_t    ugid_,
 static
 int
 _symlink_loop(const ugid_t                ugid_,
-              const fs::path             &existingbranch_,
+              const std::string          &existingbranch_,
               const std::vector<Branch*> &newbranches_,
               const char                 *target_,
-              const fs::path             &linkpath_,
-              const fs::path             &newdirpath_,
+              const fs::relpath          &linkpath_,
+              const fs::relpath          &newdirpath_,
               struct stat                *st_)
 {
   int rv;
@@ -99,11 +99,11 @@ _symlink(const ugid_t          ugid_,
          const Policy::Create &createFunc_,
          const Branches::Ptr   branches_,
          const char           *target_,
-         const fs::path       &linkpath_,
+         const fs::relpath       &linkpath_,
          struct stat          *st_)
 {
   int rv;
-  fs::path newdirpath;
+  fs::relpath newdirpath;
   std::vector<Branch*> newbranches;
   std::vector<Branch*> existingbranches;
 
@@ -133,7 +133,7 @@ _symlink(const ugid_t          ugid_,
 int
 FUSE::symlink(const fuse_req_ctx_t *ctx_,
               const char           *target_,
-              const fs::path       &linkpath_,
+              const fs::relpath       &linkpath_,
               struct stat          *st_,
               fuse_timeouts_t      *timeouts_)
 {
@@ -178,18 +178,3 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
   return rv;
 }
 
-int
-FUSE::symlink(const fuse_req_ctx_t *ctx_,
-              const char           *target_,
-              const char           *linkpath_,
-              struct stat          *st_,
-              fuse_timeouts_t      *timeouts_)
-{
-  const fs::path linkpath{linkpath_};
-
-  return FUSE::symlink(ctx_,
-                       target_,
-                       linkpath,
-                       st_,
-                       timeouts_);
-}

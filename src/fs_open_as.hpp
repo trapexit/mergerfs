@@ -36,7 +36,7 @@ namespace fs
   inline
   int
   open_as(const ugid_t    ugid_,
-          const fs::path &path_,
+          const fs::relpath &path_,
           const int       flags_,
           const mode_t    mode_)
   {
@@ -54,7 +54,7 @@ namespace fs
   inline
   int
   open_as(const ugid_t    ugid_,
-          const fs::path &path_,
+          const fs::relpath &path_,
           const int       flags_,
           const mode_t    mode_)
   {

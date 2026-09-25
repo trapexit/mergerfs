@@ -22,7 +22,6 @@
 
 #include "caps.hpp"
 #include "config.hpp"
-#include "fs_path.hpp"
 #include "fs_readahead.hpp"
 #include "fs_umount2.hpp"
 #include "fs_wait_for_mount.hpp"
@@ -90,6 +89,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <string_view>
 #include <unordered_set>
 
 
@@ -189,7 +189,7 @@ bool
 _wait_for_mount()
 {
   int failures;
-  std::vector<fs::path> paths;
+  std::vector<std::string> paths;
   std::chrono::milliseconds timeout;
 
   paths = cfg.branches->to_paths();
@@ -229,7 +229,7 @@ _wait_for_mount()
 
 static
 void
-_lazy_umount(const fs::path &target_)
+_lazy_umount(const std::string &target_)
 {
   int rv;
 
@@ -238,15 +238,15 @@ _lazy_umount(const fs::path &target_)
     {
     case 0:
       SysLog::notice("{} has been successfully lazily unmounted",
-                     target_.string());
+                     target_);
       break;
     case -EINVAL:
       SysLog::notice("{} was not a mount point needing to be unmounted",
-                     target_.string());
+                     target_);
       break;
     default:
       SysLog::error("Error unmounting {}: {} - {}",
-                    target_.string(),
+                    target_,
                     -rv,
                     strerror(-rv));
       break;
@@ -377,10 +377,12 @@ int
 _pick_app_and_run(int    argc_,
                   char **argv_)
 {
-  fs::path appname;
+  std::string_view appname(argv_[0]);
 
-  appname = argv_[0];
-  appname = appname.filename();
+  // basename: drop everything up to and including the last '/'.
+  auto slash = appname.rfind('/');
+  if(slash != std::string_view::npos)
+    appname.remove_prefix(slash + 1);
 
   if(appname == "fsck.mergerfs")
     return mergerfs::fsck::main(argc_,argv_);

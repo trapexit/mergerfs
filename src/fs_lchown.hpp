@@ -71,7 +71,7 @@ namespace fs
   static
   inline
   int
-  lchown_check_on_error(const std::string &path_,
+  lchown_check_on_error(const char        *path_,
                         const struct stat &st_)
   {
     int rv;
@@ -93,5 +93,14 @@ namespace fs
       }
 
     return 0;
+  }
+
+  static
+  inline
+  int
+  lchown_check_on_error(const std::string &path_,
+                        const struct stat &st_)
+  {
+    return fs::lchown_check_on_error(path_.c_str(),st_);
   }
 }

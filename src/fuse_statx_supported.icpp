@@ -39,7 +39,7 @@
 
 static
 void
-_set_stat_if_leads_to_dir(const fs::path    &path_,
+_set_stat_if_leads_to_dir(const fs::relpath    &path_,
                           struct fuse_statx *st_)
 {
   int rv;
@@ -57,7 +57,7 @@ _set_stat_if_leads_to_dir(const fs::path    &path_,
 
 static
 void
-_set_stat_if_leads_to_reg(const fs::path    &path_,
+_set_stat_if_leads_to_reg(const fs::relpath    &path_,
                           struct fuse_statx *st_)
 {
   int rv;
@@ -125,7 +125,7 @@ static
 int
 _statx(const Policy::Search &searchFunc_,
        const Branches::Ptr   branches_,
-       const fs::path       &fusepath_,
+       const fs::relpath       &fusepath_,
        const uint32_t        flags_,
        const uint32_t        mask_,
        struct fuse_statx    *st_,
@@ -134,7 +134,7 @@ _statx(const Policy::Search &searchFunc_,
        FollowSymlinks        followsymlinks_)
 {
   int rv;
-  fs::path fullpath;
+  fs::relpath fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
@@ -182,7 +182,7 @@ _statx(const Policy::Search &searchFunc_,
 
 static
 int
-_statx(const fs::path    &fusepath_,
+_statx(const fs::relpath    &fusepath_,
        const uint32_t     flags_,
        const uint32_t     mask_,
        struct fuse_statx *st_,
@@ -236,18 +236,16 @@ _statx(const FileInfo    *fi_,
 
 int
 FUSE::statx(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_,
+            const fs::relpath       &fusepath_,
             const uint32_t        flags_,
             const uint32_t        mask_,
             struct fuse_statx    *st_,
             fuse_timeouts_t      *timeout_)
 {
-  const fs::path fusepath{fusepath_};
-
-  if(Config::is_ctrl_file(fusepath))
+  if(Config::is_ctrl_file(fusepath_))
     return ::_statx_controlfile(st_,timeout_);
 
-  return ::_statx(fusepath,
+  return ::_statx(fusepath_,
                   flags_|AT_STATX_DONT_SYNC,
                   mask_,
                   st_,

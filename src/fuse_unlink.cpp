@@ -34,14 +34,14 @@
 static
 int
 _unlink_loop(const std::vector<Branch*> &branches_,
-             const fs::path             &fusepath_)
+             const fs::relpath             &fusepath_)
 {
   Err err;
-  fs::path fullpath;
+  fs::relpath fullpath = fusepath_;
 
   for(const auto &branch : branches_)
     {
-      fullpath = branch->path / fusepath_;
+      fullpath.set_prefix(branch->path);
 
       err = fs::unlink(fullpath);
     }
@@ -53,7 +53,7 @@ static
 int
 _unlink(const Policy::Action &unlinkPolicy_,
         const Branches::Ptr   branches_,
-        const fs::path       &fusepath_)
+        const fs::relpath       &fusepath_)
 {
   int rv;
   std::vector<Branch*> branches;
@@ -67,11 +67,9 @@ _unlink(const Policy::Action &unlinkPolicy_,
 
 int
 FUSE::unlink(const fuse_req_ctx_t *ctx_,
-             const char           *fusepath_)
+             const fs::relpath       &fusepath_)
 {
-  const fs::path fusepath{fusepath_};
-
   return ::_unlink(cfg.func.unlink.policy,
                    cfg.branches,
-                   fusepath);
+                   fusepath_);
 }

@@ -24,11 +24,8 @@
 #include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "policy_pfrd.hpp"
 #include "rnd.hpp"
-#include "strvec.hpp"
 
-#include <string>
 #include <vector>
 
 
@@ -101,7 +98,7 @@ _get_branch(const BranchInfoVec &branchinfo_,
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int err;
@@ -121,7 +118,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::PFRD::Action::operator()(const Branches::Ptr  &branches_,
-                                 const fs::path       &fusepath_,
+                                 const fs::relpath       &fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eppfrd(branches_,fusepath_,paths_);
@@ -129,7 +126,7 @@ Policy::PFRD::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::PFRD::Create::operator()(const Branches::Ptr  &branches_,
-                                 const fs::path       &fusepath_,
+                                 const fs::relpath       &fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -137,7 +134,7 @@ Policy::PFRD::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::PFRD::Search::operator()(const Branches::Ptr  &branches_,
-                                 const fs::path       &fusepath_,
+                                 const fs::relpath       &fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eppfrd(branches_,fusepath_,paths_);

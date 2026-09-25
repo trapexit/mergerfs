@@ -52,9 +52,3 @@ str::to(const std::string &s_)
 {
   return s_;
 }
-
-std::string
-str::to(const fs::path &path_)
-{
-  return path_.string();
-}

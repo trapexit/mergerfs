@@ -40,9 +40,9 @@
 static
 inline
 bool
-_can_call_lutimes(const int          dirfd_,
-                  const std::string &path_,
-                  const int          flags_)
+_can_call_lutimes(const int   dirfd_,
+                  const char *path_,
+                  const int   flags_)
 {
   return ((flags_ == AT_SYMLINK_NOFOLLOW) &&
           ((dirfd_ == AT_FDCWD) ||
@@ -120,7 +120,7 @@ static
 inline
 int
 _set_utime_omit_to_current_value(const int              dirfd_,
-                                 const std::string     &path_,
+                                 const char            *path_,
                                  const struct timespec  ts_[2],
                                  struct timeval         tv_[2],
                                  const int              flags_)
@@ -206,7 +206,7 @@ static
 inline
 int
 _convert_timespec_to_timeval(const int               dirfd_,
-                             const std::string      &path_,
+                             const char             *path_,
                              const struct timespec   ts_[2],
                              struct timeval          tv_[2],
                              struct timeval        **tvp_,
@@ -265,7 +265,7 @@ namespace fs
   inline
   int
   utimensat(const int              dirfd_,
-            const std::string     &path_,
+            const char            *path_,
             const struct timespec  ts_[2],
             const int              flags_)
   {
@@ -290,5 +290,16 @@ namespace fs
       return fs::lutimes(path_,tvp);
 
     return -ENOTSUP;
+  }
+
+  static
+  inline
+  int
+  utimensat(const int              dirfd_,
+            const std::string     &path_,
+            const struct timespec  ts_[2],
+            const int              flags_)
+  {
+    return fs::utimensat(dirfd_,path_.c_str(),ts_,flags_);
   }
 }

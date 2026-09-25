@@ -32,31 +32,22 @@
 
 static
 void
-_chmod_loop_core(const std::string &basepath_,
-                 const fs::path    &fusepath_,
-                 const mode_t       mode_,
-                 PolicyRV          *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::lchmod(fullpath,mode_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
 _chmod_loop(const std::vector<Branch*> &branches_,
-            const fs::path             &fusepath_,
+            const fs::relpath             &fusepath_,
             const mode_t                mode_,
             PolicyRV                   *prv_)
 {
+  fs::relpath fullpath = fusepath_;
+
   for(auto &branch : branches_)
     {
-      ::_chmod_loop_core(branch->path,fusepath_,mode_,prv_);
+      int rv;
+
+      fullpath.set_prefix(branch->path);
+
+      rv = fs::lchmod(fullpath,mode_);
+
+      prv_->insert(rv,branch->path);
     }
 }
 
@@ -65,7 +56,7 @@ int
 _chmod(const Policy::Action &actionFunc_,
        const Policy::Search &searchFunc_,
        const Branches::Ptr   branches_,
-       const fs::path       &fusepath_,
+       const fs::relpath       &fusepath_,
        const mode_t          mode_)
 {
   int rv;
@@ -96,7 +87,7 @@ _chmod(const Policy::Action &actionFunc_,
 
 static
 int
-_chmod(const fs::path &fusepath_,
+_chmod(const fs::relpath &fusepath_,
        const mode_t    mode_)
 {
 
@@ -109,10 +100,9 @@ _chmod(const fs::path &fusepath_,
 
 int
 FUSE::chmod(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_,
+            const fs::relpath       &fusepath_,
             mode_t                mode_)
 {
-  const fs::path fusepath{fusepath_};
 
-  return ::_chmod(fusepath,mode_);
+  return ::_chmod(fusepath_,mode_);
 }

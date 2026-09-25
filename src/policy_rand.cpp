@@ -25,7 +25,7 @@
 
 int
 Policy::Rand::Action::operator()(const Branches::Ptr  &branches_,
-                                 const fs::path       &fusepath_,
+                                 const fs::relpath       &fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
   int rv;
@@ -39,7 +39,7 @@ Policy::Rand::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::Rand::Create::operator()(const Branches::Ptr  &branches_,
-                                 const fs::path       &fusepath_,
+                                 const fs::relpath       &fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
   int rv;
@@ -53,7 +53,7 @@ Policy::Rand::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::Rand::Search::operator()(const Branches::Ptr  &branches_,
-                                 const fs::path       &fusepath_,
+                                 const fs::relpath       &fusepath_,
                                  std::vector<Branch*> &paths_) const
 {
   int rv;

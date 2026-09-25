@@ -27,7 +27,6 @@
 
 #include "fuse.h"
 
-#include <filesystem>
 #include <algorithm>
 #include <limits>
 #include <map>
@@ -81,7 +80,7 @@ _should_ignore(const StatFSIgnore  ignore_,
 static
 int
 _statfs(const Branches::Ptr  branches_,
-        const fs::path      &fusepath_,
+        const fs::relpath      &fusepath_,
         const StatFS         mode_,
         const StatFSIgnore   ignore_,
         struct statvfs      *fsstat_)
@@ -93,15 +92,17 @@ _statfs(const Branches::Ptr  branches_,
   unsigned long min_frsize;
   unsigned long min_namemax;
   std::map<dev_t,struct statvfs> fsstats;
-  fs::path fullpath;
+  fs::relpath fullpath;
 
   min_bsize   = std::numeric_limits<unsigned long>::max();
   min_frsize  = std::numeric_limits<unsigned long>::max();
   min_namemax = std::numeric_limits<unsigned long>::max();
+  if(mode_ == StatFS::ENUM::FULL)
+    fullpath = fusepath_;
   for(const auto &branch : *branches_)
     {
       if(mode_ == StatFS::ENUM::FULL)
-        fullpath = branch.path / fusepath_;
+        fullpath.set_prefix(branch.path);
       else
         fullpath = branch.path;
 
@@ -148,13 +149,12 @@ _statfs(const Branches::Ptr  branches_,
 
 int
 FUSE::statfs(const fuse_req_ctx_t *ctx_,
-             const char           *fusepath_,
+             const fs::relpath       &fusepath_,
              struct statvfs       *st_)
 {
-  const fs::path fusepath{fusepath_};
 
   return ::_statfs(cfg.branches,
-                   fusepath,
+                   fusepath_,
                    cfg.statfs,
                    cfg.statfs_ignore,
                    st_);

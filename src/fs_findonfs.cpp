@@ -30,14 +30,14 @@
 static
 int
 _findonfs(const Branches::Ptr &branches_,
-          const fs::path      &fusepath_,
+          const fs::relpath   &fusepath_,
           const int            fd_,
           std::string         *basepath_)
 {
   int rv;
   dev_t dev;
   struct stat st;
-  fs::path fullpath;
+  fs::relpath fullpath = fusepath_;
 
   rv = fs::fstat(fd_,&st);
   if(rv < 0)
@@ -46,7 +46,7 @@ _findonfs(const Branches::Ptr &branches_,
   dev = st.st_dev;
   for(const auto &branch : *branches_)
     {
-      fullpath = branch.path / fusepath_;
+      fullpath.set_prefix(branch.path);
 
       rv = fs::lstat(fullpath,&st);
       if(rv < 0)
@@ -70,5 +70,15 @@ fs::findonfs(const Branches::Ptr &branches_,
              const int            fd_,
              std::string         *basepath_)
 {
-  return ::_findonfs(branches_,fusepath_,fd_,basepath_);
+  // The public API accepts std::string for caller convenience.
+  // Internally we need a canonical-rel fusepath (no leading '/') so
+  // the per-branch loop's set_prefix() produces a single separator.
+  // Strip the leading '/' by hand if present.
+  std::string_view sv(fusepath_);
+  if(!sv.empty() && sv.front() == '/')
+    sv.remove_prefix(1);
+
+  fs::relpath fusepath(sv);
+
+  return ::_findonfs(branches_,fusepath,fd_,basepath_);
 }

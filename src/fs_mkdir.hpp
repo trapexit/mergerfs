@@ -57,7 +57,7 @@ namespace fs
   static
   inline
   int
-  mkdir(const fs::path &path_,
+  mkdir(const fs::relpath &path_,
         const mode_t    mode_)
   {
     return fs::mkdir(path_.c_str(),

@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include "fs_path.hpp"
-
 #include <map>
 #include <string>
 #include <vector>
@@ -30,10 +28,10 @@ namespace mergerfs
   namespace api
   {
     bool
-    is_mergerfs(const fs::path &path);
+    is_mergerfs(const std::string &path);
 
     int
-    get_kvs(const fs::path                    &mountpoint,
+    get_kvs(const std::string                 &mountpoint,
             std::map<std::string,std::string> *kvs);
 
     int

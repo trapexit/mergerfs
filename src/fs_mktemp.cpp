@@ -28,7 +28,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <filesystem>
 #include <string>
 #include <tuple>
 
@@ -39,9 +38,9 @@ static char const CHARS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmno
 static size_t const CHARS_SIZE = (sizeof(CHARS) - 1);
 
 static
-fs::path
-_generate_tmp_path(const fs::path    &dirpath_,
-                   const std::string &src_filename_)
+std::string
+_generate_tmp_path(const std::string      &dirpath_,
+                   const std::string_view  src_filename_)
 {
   long name_max;
   size_t substr_len;
@@ -54,24 +53,25 @@ _generate_tmp_path(const fs::path    &dirpath_,
   substr_len = std::min(src_filename_.size(),
                         (size_t)(name_max - PAD_LEN - 2ULL));
 
-  tmp_filename = '.';
-  tmp_filename += src_filename_.substr(0,substr_len);
+  tmp_filename = dirpath_;
+  tmp_filename += "/.";
+  tmp_filename.append(src_filename_.substr(0,substr_len));
   tmp_filename += '_';
   for(size_t i = 0; i < PAD_LEN; i++)
     tmp_filename += CHARS[RND::rand64(CHARS_SIZE)];
 
-  return dirpath_ / tmp_filename;
+  return tmp_filename;
 }
 
-std::tuple<int,fs::path>
-fs::mktemp_in_dir(const fs::path &dirpath_,
-                  const fs::path &filename_,
-                  const int       flags_)
+std::tuple<int,std::string>
+fs::mktemp_in_dir(const std::string      &dirpath_,
+                  const std::string_view  filename_,
+                  const int               flags_)
 {
   int fd;
   int count;
   int flags;
-  fs::path tmp_filepath;
+  std::string tmp_filepath;
 
   count = MAX_ATTEMPTS;
   flags = (flags_ | O_EXCL | O_CREAT);
@@ -83,19 +83,29 @@ fs::mktemp_in_dir(const fs::path &dirpath_,
       if(fd == -EEXIST)
         continue;
       if(fd < 0)
-        return std::make_tuple(fd,fs::path());
+        return std::make_tuple(fd,std::string());
 
-      return std::make_tuple(fd,tmp_filepath);
+      return std::make_tuple(fd,std::move(tmp_filepath));
     }
 
-  return std::make_tuple(-EEXIST,fs::path());
+  return std::make_tuple(-EEXIST,std::string());
 }
 
-std::tuple<int,fs::path>
-fs::mktemp(const fs::path &filepath_,
-           const int       flags_)
+std::tuple<int,std::string>
+fs::mktemp(const std::string &filepath_,
+           const int          flags_)
 {
-  return fs::mktemp_in_dir(filepath_.parent_path(),
-                           filepath_.filename(),
-                           flags_);
+  // Split filepath_ into dirpath and filename without an allocation:
+  // the dirpath is referenced as a substring; mktemp_in_dir copies
+  // it into the result. filename_view aliases the suffix.
+  auto slash = filepath_.rfind('/');
+  std::string dirpath = (slash == std::string::npos)
+                          ? std::string(".")
+                          : filepath_.substr(0,slash);
+  std::string_view filename_view =
+    (slash == std::string::npos)
+      ? std::string_view(filepath_)
+      : std::string_view(filepath_).substr(slash + 1);
+
+  return fs::mktemp_in_dir(dirpath,filename_view,flags_);
 }

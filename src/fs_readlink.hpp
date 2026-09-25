@@ -30,14 +30,24 @@ namespace fs
   static
   inline
   ssize_t
+  readlink(const char   *path_,
+           char         *buf_,
+           const size_t  bufsiz_)
+  {
+    ssize_t rv;
+
+    rv = ::readlink(path_,buf_,bufsiz_);
+
+    return ::to_neg_errno(rv);
+  }
+
+  static
+  inline
+  ssize_t
   readlink(const std::string &path_,
            char              *buf_,
            const size_t       bufsiz_)
   {
-    ssize_t rv;
-
-    rv = ::readlink(path_.c_str(),buf_,bufsiz_);
-
-    return ::to_neg_errno(rv);
+    return fs::readlink(path_.c_str(),buf_,bufsiz_);
   }
 }

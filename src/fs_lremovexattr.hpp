@@ -29,17 +29,26 @@ namespace fs
   static
   inline
   int
-  lremovexattr(const std::string &path_,
-               const char        *attrname_)
+  lremovexattr(const char *path_,
+               const char *attrname_)
   {
 #ifdef USE_XATTR
     int rv;
 
-    rv = ::lremovexattr(path_.c_str(),attrname_);
+    rv = ::lremovexattr(path_,attrname_);
 
     return ::to_neg_errno(rv);
 #else
     return -ENOTSUP;
 #endif
+  }
+
+  static
+  inline
+  int
+  lremovexattr(const std::string &path_,
+               const char        *attrname_)
+  {
+    return fs::lremovexattr(path_.c_str(),attrname_);
   }
 }

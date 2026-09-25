@@ -25,10 +25,8 @@
 #include "policies.hpp"
 #include "policy.hpp"
 #include "policy_error.hpp"
-#include "strvec.hpp"
 
 #include <limits>
-#include <string>
 
 
 static
@@ -73,7 +71,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::LFS::Action::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eplfs(branches_,fusepath_,paths_);
@@ -81,7 +79,7 @@ Policy::LFS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LFS::Create::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,paths_);
@@ -89,7 +87,7 @@ Policy::LFS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LFS::Search::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eplfs(branches_,fusepath_,paths_);

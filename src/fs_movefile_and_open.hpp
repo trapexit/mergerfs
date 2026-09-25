@@ -30,14 +30,14 @@ namespace fs
   int
   movefile_and_open(const Policy::Create &policy,
                     const Branches::Ptr  &branches_,
-                    const fs::path       &branchpath,
-                    const fs::path       &fusepath,
+                    const std::string    &branchpath,
+                    const fs::relpath    &fusepath,
                     const int             origfd);
 
   int
   movefile_and_open_as_root(const Policy::Create &policy,
                             const Branches::Ptr  &branches_,
-                            const fs::path       &branchpath,
-                            const fs::path       &fusepath,
+                            const std::string    &branchpath,
+                            const fs::relpath    &fusepath,
                             int                   origfd);
 }

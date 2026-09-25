@@ -31,31 +31,22 @@
 
 static
 void
-_removexattr_loop_core(const fs::path &basepath_,
-                       const fs::path &fusepath_,
-                       const char     *attrname_,
-                       PolicyRV       *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::lremovexattr(fullpath,attrname_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
 _removexattr_loop(const std::vector<Branch*> &branches_,
-                  const fs::path             &fusepath_,
+                  const fs::relpath             &fusepath_,
                   const char                 *attrname_,
                   PolicyRV                   *prv_)
 {
+  fs::relpath fullpath = fusepath_;
+
   for(auto &branch : branches_)
     {
-      ::_removexattr_loop_core(branch->path,fusepath_,attrname_,prv_);
+      int rv;
+
+      fullpath.set_prefix(branch->path);
+
+      rv = fs::lremovexattr(fullpath,attrname_);
+
+      prv_->insert(rv,branch->path);
     }
 }
 
@@ -64,7 +55,7 @@ int
 _removexattr(const Policy::Action &actionFunc_,
              const Policy::Search &searchFunc_,
              const Branches::Ptr   ibranches_,
-             const fs::path       &fusepath_,
+             const fs::relpath       &fusepath_,
              const char           *attrname_)
 {
   int rv;
@@ -95,12 +86,11 @@ _removexattr(const Policy::Action &actionFunc_,
 
 int
 FUSE::removexattr(const fuse_req_ctx_t *ctx_,
-                  const char           *fusepath_,
+                  const fs::relpath       &fusepath_,
                   const char           *attrname_)
 {
-  const fs::path fusepath{fusepath_};
 
-  if(Config::is_ctrl_file(fusepath))
+  if(Config::is_ctrl_file(fusepath_))
     return -ENOATTR;
 
   if(cfg.xattr.to_int())
@@ -109,6 +99,6 @@ FUSE::removexattr(const fuse_req_ctx_t *ctx_,
   return ::_removexattr(cfg.func.removexattr.policy,
                         cfg.func.getxattr.policy,
                         cfg.branches,
-                        fusepath,
+                        fusepath_,
                         attrname_);
 }

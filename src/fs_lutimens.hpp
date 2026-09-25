@@ -27,7 +27,7 @@ namespace fs
   static
   inline
   int
-  lutimens(const std::string     &path_,
+  lutimens(const char            *path_,
            const struct timespec  ts_[2])
   {
     return fs::utimensat(AT_FDCWD,path_,ts_,AT_SYMLINK_NOFOLLOW);
@@ -36,7 +36,16 @@ namespace fs
   static
   inline
   int
-  lutimens(const std::string &path_,
+  lutimens(const std::string     &path_,
+           const struct timespec  ts_[2])
+  {
+    return fs::lutimens(path_.c_str(),ts_);
+  }
+
+  static
+  inline
+  int
+  lutimens(const char        *path_,
            const struct stat &st_)
   {
     struct timespec ts[2];
@@ -45,5 +54,14 @@ namespace fs
     ts[1] = *fs::stat_mtime(&st_);
 
     return fs::lutimens(path_,ts);
+  }
+
+  static
+  inline
+  int
+  lutimens(const std::string &path_,
+           const struct stat &st_)
+  {
+    return fs::lutimens(path_.c_str(),st_);
   }
 }

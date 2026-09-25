@@ -27,8 +27,8 @@ namespace fs
   static
   inline
   bool
-  exists(const fs::path &path_,
-         struct stat    *st_)
+  exists(const char  *path_,
+         struct stat *st_)
   {
     int rv;
 
@@ -40,7 +40,7 @@ namespace fs
   static
   inline
   bool
-  exists(const fs::path &path_)
+  exists(const char *path_)
   {
     struct stat st;
 
@@ -50,13 +50,49 @@ namespace fs
   static
   inline
   bool
-  exists(const fs::path &basepath_,
-         const char     *relpath_,
-         struct stat    *st_)
+  exists(const std::string &path_,
+         struct stat       *st_)
   {
-    fs::path fullpath;
+    return fs::exists(path_.c_str(),st_);
+  }
 
-    fullpath = basepath_ / relpath_;
+  static
+  inline
+  bool
+  exists(const std::string &path_)
+  {
+    return fs::exists(path_.c_str());
+  }
+
+  static
+  inline
+  bool
+  exists(const fs::relpath &path_,
+         struct stat       *st_)
+  {
+    return fs::exists(path_.c_str(),st_);
+  }
+
+  static
+  inline
+  bool
+  exists(const fs::relpath &path_)
+  {
+    return fs::exists(path_.c_str());
+  }
+
+  // Two-arg helpers for the per-branch loop pattern: build
+  // basepath/'/'/relpath into an fs::relpath and stat it.
+  static
+  inline
+  bool
+  exists(const std::string &basepath_,
+         const fs::relpath &relpath_,
+         struct stat       *st_)
+  {
+    fs::relpath fullpath;
+
+    fullpath.assign_concat(basepath_,relpath_);
 
     return fs::exists(fullpath,st_);
   }
@@ -64,36 +100,37 @@ namespace fs
   static
   inline
   bool
-  exists(const fs::path &basepath_,
-         const fs::path &relpath_,
-         struct stat    *st_)
-  {
-    fs::path fullpath;
-
-    fullpath = basepath_ / relpath_;
-
-    return fs::exists(fullpath,st_);
-  }
-
-  static
-  inline
-  bool
-  exists(const fs::path &basepath_,
-         const char     *relpath_)
+  exists(const std::string &basepath_,
+         const fs::relpath &relpath_)
   {
     struct stat st;
 
     return fs::exists(basepath_,relpath_,&st);
   }
 
+  // Hot-path variant for per-branch fan-out loops. The caller builds
+  // the fullpath once (with the rel portion set) outside the loop, and
+  // each iteration only rewrites the prefix area via set_prefix --
+  // skipping the per-iteration rel memmove that the (basepath,
+  // relpath) overload incurs.
   static
   inline
   bool
-  exists(const fs::path &basepath_,
-         const fs::path &relpath_)
+  exists(fs::relpath       &fullpath_,
+         const std::string &basepath_,
+         struct stat       *st_)
   {
-    struct stat st;
+    fullpath_.set_prefix(basepath_);
+    return fs::exists(fullpath_.c_str(),st_);
+  }
 
-    return fs::exists(basepath_,relpath_,&st);
+  static
+  inline
+  bool
+  exists(fs::relpath       &fullpath_,
+         const std::string &basepath_)
+  {
+    fullpath_.set_prefix(basepath_);
+    return fs::exists(fullpath_.c_str());
   }
 }

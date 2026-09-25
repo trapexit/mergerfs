@@ -19,6 +19,7 @@
 #pragma once
 
 #include "fuse_req_ctx.h"
+#include "fs_path.hpp"
 
 #include <unistd.h>
 
@@ -27,7 +28,7 @@ namespace FUSE
 {
   ssize_t
   readlink(const fuse_req_ctx_t *ctx,
-           const char           *fusepath,
+           const fs::relpath       &fusepath,
            char                 *buf,
            size_t                size);
 }

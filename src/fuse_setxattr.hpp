@@ -21,13 +21,14 @@
 #include <cstddef>
 
 #include "fuse_req_ctx.h"
+#include "fs_path.hpp"
 
 
 namespace FUSE
 {
   int
   setxattr(const fuse_req_ctx_t *ctx,
-           const char           *fusepath,
+           const fs::relpath       &fusepath,
            const char           *attrname,
            const char           *attrval,
            size_t                attrvalize,

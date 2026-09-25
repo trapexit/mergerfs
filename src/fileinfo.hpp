@@ -62,7 +62,7 @@ public:
 public:
   FileInfo(const int       fd_,
            const Branch   *branch_,
-           const fs::path &fusepath_,
+           const fs::relpath &fusepath_,
            const bool      direct_io_)
     : FH(fusepath_),
       fd(fd_),
@@ -73,7 +73,7 @@ public:
 
   FileInfo(const int       fd_,
            const Branch   &branch_,
-           const fs::path &fusepath_,
+           const fs::relpath &fusepath_,
            const bool      direct_io_)
     : FH(fusepath_),
       fd(fd_),

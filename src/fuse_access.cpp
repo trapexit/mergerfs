@@ -31,12 +31,12 @@ static
 int
 _access(const Policy::Search &searchFunc_,
         const Branches::Ptr   branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         const int             mask_)
 {
   int rv;
   StrVec basepaths;
-  fs::path fullpath;
+  fs::relpath fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
@@ -45,7 +45,7 @@ _access(const Policy::Search &searchFunc_,
   if(branches.empty())
     return -ENOENT;
 
-  fullpath = branches[0]->path / fusepath_;
+  fullpath.assign_concat(branches[0]->path,fusepath_);
 
   rv = fs::eaccess(fullpath,mask_);
 
@@ -54,13 +54,12 @@ _access(const Policy::Search &searchFunc_,
 
 int
 FUSE::access(const fuse_req_ctx_t *ctx_,
-             const char           *fusepath_,
+             const fs::relpath       &fusepath_,
              int                   mask_)
 {
-  const fs::path fusepath{fusepath_};
 
   return ::_access(cfg.func.access.policy,
                    cfg.branches,
-                   fusepath,
+                   fusepath_,
                    mask_);
 }

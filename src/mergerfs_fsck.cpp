@@ -35,9 +35,11 @@
 
 #include "base_types.h"
 
-#include <filesystem>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-namespace FS = std::filesystem;
+#include <memory>
 
 struct PathStat
 {
@@ -380,32 +382,87 @@ _select_fix_func(const std::string &fix_)
 
 static
 void
-_fsck(const FS::path &path_,
-      const FixFunc   fix_func_,
-      const bool      check_size_,
-      const bool      copy_file_)
+_fsck_walk(const std::string &path_,
+           const FixFunc      fix_func_,
+           const bool         check_size_,
+           const bool         copy_file_)
 {
-  int rv;
+  DIR *dir = ::opendir(path_.c_str());
+  if(dir == NULL)
+    {
+      // EACCES is the common case (matches std::filesystem::
+      // recursive_directory_iterator's skip_permission_denied);
+      // anything else is unexpected and worth surfacing.
+      if(errno != EACCES)
+        fmt::print(stderr,
+                   "WARNING: cannot opendir {} - {}\n",
+                   path_,
+                   strerror(errno));
+      return;
+    }
+
+  // RAII for the DIR* so a throw from any of the helpers below
+  // (PathStatVec / std::string allocations) doesn't leak the fd.
+  struct dir_closer { void operator()(DIR *d) const noexcept { if(d) ::closedir(d); } };
+  std::unique_ptr<DIR,dir_closer> dir_guard(dir);
+
+  struct dirent *ent;
+  while((ent = ::readdir(dir)) != NULL)
+    {
+      const char *name = ent->d_name;
+      if((name[0] == '.') &&
+         ((name[1] == '\0') || ((name[1] == '.') && (name[2] == '\0'))))
+        continue;
+
+      std::string sub = path_;
+      if(!sub.empty() && sub.back() != '/')
+        sub += '/';
+      sub.append(name);
+
+      PathStatVec paths;
+      int rv = ::_get_allpaths(sub,paths);
+      if(rv >= 0)
+        ::_compare_files(sub,paths,fix_func_,check_size_,copy_file_);
+
+      // Prefer d_type when the filesystem populates it (the common
+      // case on local fs); fall back to lstat for DT_UNKNOWN. Symlinks
+      // are intentionally not followed -- this matches the original
+      // std::filesystem::recursive_directory_iterator default
+      // (directory_options::none) and avoids symlink loops or descent
+      // outside the branch.
+      bool is_dir;
+      if(ent->d_type == DT_DIR)
+        {
+          is_dir = true;
+        }
+      else if(ent->d_type == DT_UNKNOWN)
+        {
+          struct stat st;
+          is_dir = ((::lstat(sub.c_str(),&st) == 0) && S_ISDIR(st.st_mode));
+        }
+      else
+        {
+          is_dir = false;
+        }
+
+      if(is_dir)
+        ::_fsck_walk(sub,fix_func_,check_size_,copy_file_);
+    }
+}
+
+static
+void
+_fsck(const std::string &path_,
+      const FixFunc      fix_func_,
+      const bool         check_size_,
+      const bool         copy_file_)
+{
   PathStatVec paths;
 
   ::_get_allpaths(path_,paths);
   ::_compare_files(path_,paths,fix_func_,check_size_,copy_file_);
 
-  auto opts = FS::directory_options::skip_permission_denied;
-  auto rdi = FS::recursive_directory_iterator(path_,opts);
-  for(const auto &de : rdi)
-    {
-      paths.clear();
-      rv = ::_get_allpaths(de.path(),paths);
-      if(rv < 0)
-        continue;
-
-      ::_compare_files(de.path(),
-                       paths,
-                       fix_func_,
-                       check_size_,
-                       copy_file_);
-    }
+  ::_fsck_walk(path_,fix_func_,check_size_,copy_file_);
 }
 
 int
@@ -413,7 +470,7 @@ mergerfs::fsck::main(int    argc_,
                      char **argv_)
 {
   CLI::App app;
-  FS::path path;
+  std::string path;
   std::string fix;
   bool check_size;
   bool copy_file;

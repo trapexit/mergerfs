@@ -36,7 +36,26 @@ struct Element
   struct statvfs st;
 };
 
-typedef std::unordered_map<std::string,Element> statvfs_cache;
+// Transparent hash / equality so we can look up by std::string_view
+// (or const char*) without constructing a std::string. Requires
+// unordered_map's Hash and KeyEqual to be transparent (C++20). The
+// insert path still constructs a string for the key when missing,
+// but the hot read path is alloc-free.
+struct string_hash
+{
+  using is_transparent = void;
+  std::size_t operator()(const std::string &s)      const noexcept { return std::hash<std::string_view>{}(s); }
+  std::size_t operator()(std::string_view  s)       const noexcept { return std::hash<std::string_view>{}(s); }
+  std::size_t operator()(const char        *s)      const noexcept { return std::hash<std::string_view>{}(s); }
+};
+
+struct string_eq
+{
+  using is_transparent = void;
+  bool operator()(std::string_view a, std::string_view b) const noexcept { return a == b; }
+};
+
+typedef std::unordered_map<std::string,Element,string_hash,string_eq> statvfs_cache;
 
 // Cache is read heavy. Use a shared mutex so concurrent reads can
 // work in parallel and only inserts or refreshes take a unique lock.
@@ -69,8 +88,8 @@ fs::statvfs_cache_timeout(cu64 timeout_)
 }
 
 int
-fs::statvfs_cache(const std::string &path_,
-                  struct statvfs    *st_)
+fs::statvfs_cache(const char     *path_,
+                  struct statvfs *st_)
 {
   u64 now;
 
@@ -79,10 +98,11 @@ fs::statvfs_cache(const std::string &path_,
 
   now = ::_get_time();
 
+  std::string_view key(path_);
   {
     std::shared_lock<std::shared_mutex> lk(g_cache_mutex);
 
-    auto it = g_cache.find(path_);
+    auto it = g_cache.find(key);
     if((it != g_cache.end()) && ((now - it->second.time) <= g_timeout))
       {
         *st_ = it->second.st;
@@ -93,7 +113,10 @@ fs::statvfs_cache(const std::string &path_,
   int rv = 0;
   std::unique_lock<std::shared_mutex> lk(g_cache_mutex);
 
-  Element &e = g_cache[path_];
+  // operator[] requires a string key (no transparent insert overload),
+  // so this path does construct a std::string. Only happens on insert /
+  // refresh -- the read-only fast path above is alloc-free.
+  Element &e = g_cache[std::string(key)];
   if((now - e.time) > g_timeout)
     {
       e.time = now;
@@ -106,8 +129,8 @@ fs::statvfs_cache(const std::string &path_,
 }
 
 int
-fs::statvfs_cache_readonly(const std::string &path_,
-                           bool              *readonly_)
+fs::statvfs_cache_readonly(const char *path_,
+                           bool       *readonly_)
 {
   int rv;
   struct statvfs st;
@@ -120,8 +143,8 @@ fs::statvfs_cache_readonly(const std::string &path_,
 }
 
 int
-fs::statvfs_cache_spaceavail(const std::string &path_,
-                             u64               *spaceavail_)
+fs::statvfs_cache_spaceavail(const char *path_,
+                             u64        *spaceavail_)
 {
   int rv;
   struct statvfs st;
@@ -134,8 +157,8 @@ fs::statvfs_cache_spaceavail(const std::string &path_,
 }
 
 int
-fs::statvfs_cache_spaceused(const std::string &path_,
-                            u64               *spaceused_)
+fs::statvfs_cache_spaceused(const char *path_,
+                            u64        *spaceused_)
 {
   int rv;
   struct statvfs st;

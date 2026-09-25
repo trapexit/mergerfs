@@ -20,7 +20,16 @@
 
 #include <string>
 
+
 namespace fs
 {
-  int mount(const std::string &tgt);
+  int mount(const char *tgt);
+
+  static
+  inline
+  int
+  mount(const std::string &tgt_)
+  {
+    return fs::mount(tgt_.c_str());
+  }
 }

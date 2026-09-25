@@ -20,6 +20,7 @@
 
 #include "base_types.h"
 #include "fuse_req_ctx.h"
+#include "fs_path.hpp"
 
 #include <cstddef>
 
@@ -28,7 +29,7 @@ namespace FUSE
 {
   int
   bmap(const fuse_req_ctx_t *ctx,
-       const char           *fusepath,
+       const fs::relpath       &fusepath,
        size_t                blocksize,
        u64                  *idx);
 }

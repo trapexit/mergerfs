@@ -15,6 +15,7 @@
 #include "crc32b.h"
 #include "debug.hpp"
 #include "fatal.hpp"
+#include "fs_path.hpp"
 #include "kvec.h"
 #include "mutex.hpp"
 #include "node.hpp"
@@ -78,11 +79,18 @@ struct lock_queue_element
   pthread_cond_t cond;
   uint64_t   nodeid1;
   const char *name1;
-  char **path1;
+  // path1 / path2 are non-owning pointers to the caller's stack-
+  // allocated fs::relpath objects (try_get_path / try_get_path2 take
+  // a relpath* and fill it in place). Lifetime is bounded by the
+  // calling FUSE op, which blocks on `cond` until the lock holder
+  // signals -- the caller's stack frame is therefore guaranteed to
+  // outlive the queue entry. Do not copy a lock_queue_element to a
+  // longer-lived storage without reconsidering this invariant.
+  fs::relpath *path1;
   node_t **wnode1;
   uint64_t   nodeid2;
   const char *name2;
-  char **path2;
+  fs::relpath *path2;
   node_t **wnode2;
   int err;
   bool done : 1;
@@ -656,46 +664,6 @@ find_node(uint64_t    parent,
 }
 
 static
-char*
-add_name(char       **buf,
-         unsigned    *bufsize,
-         char        *s,
-         const char  *name)
-{
-  size_t len = strlen(name);
-
-  if(s - len <= *buf)
-    {
-      unsigned pathlen = *bufsize - (s - *buf);
-      unsigned newbufsize = *bufsize;
-      char *newbuf;
-
-      while(newbufsize < pathlen + len + 1)
-        {
-          if(newbufsize >= PATH_BUFSIZE_HALF_MAX)
-            newbufsize = PATH_BUFSIZE_MAX;
-          else
-            newbufsize *= 2;
-        }
-
-      newbuf = (char*)realloc(*buf,newbufsize);
-      if(newbuf == NULL)
-        return NULL;
-
-      *buf = newbuf;
-      s = newbuf + newbufsize - pathlen;
-      memmove(s,newbuf + *bufsize - pathlen,pathlen);
-      *bufsize = newbufsize;
-    }
-  s -= len;
-  strncpy(s,name,len);
-  s--;
-  *s = '/';
-
-  return s;
-}
-
-static
 void
 unlock_path(uint64_t  nodeid,
             node_t   *wnode,
@@ -728,45 +696,33 @@ unlock_path(uint64_t  nodeid,
 }
 
 /*
-  Throughout this file all calls to the op.func() callbacks will be
-  '&fusepath[1]' because the current path generation always prefixes a
-  '/' for each path but we need a relative path for usage with
-  `openat()` functions and would rather do that here than in the
-  called function.
+  Path storage is the caller's stack-allocated fs::relpath; this function
+  fills it via prepend() (walk leaf-to-root, prepending "/component").
+  No heap allocation per op.
+
+  Final step before returning: consolidate_to_rel(true) moves the data
+  to the rel anchor (REL_OFFSET) and strips the leading '/'. Callers
+  (f.ops.* callbacks) receive a REL-layout fs::relpath with no leading
+  slash, ready for set_prefix-style assembly in mergerfs's per-branch
+  loops without further conversion.
 */
 
 static
 int
 try_get_path(uint64_t      nodeid,
              const char   *name,
-             char        **path,
+             fs::relpath     *path,
              node_t      **wnodep,
              bool          need_lock)
 {
-  unsigned bufsize = 256;
-  char *buf;
-  char *s;
   node_t *node;
   node_t *wnode = NULL;
   int err;
 
-  *path = NULL;
-
-  err = -ENOMEM;
-  buf = (char*)malloc(bufsize);
-  if(buf == NULL)
-    goto out_err;
-
-  s = buf + bufsize - 1;
-  *s = '\0';
+  path->clear();
 
   if(name != NULL)
-    {
-      s = add_name(&buf,&bufsize,s,name);
-      err = -ENOMEM;
-      if(s == NULL)
-        goto out_free;
-    }
+    path->prepend(name);
 
   if(wnodep)
     {
@@ -779,7 +735,7 @@ try_get_path(uint64_t      nodeid,
               if(wnode->treelock > 0)
                 wnode->treelock += TREELOCK_WAIT_OFFSET;
               err = -EAGAIN;
-              goto out_free;
+              goto out_err;
             }
           wnode->treelock = TREELOCK_WRITE;
         }
@@ -798,10 +754,7 @@ try_get_path(uint64_t      nodeid,
       if(node->name == NULL || node->parent == NULL)
         goto out_unlock;
 
-      err = -ENOMEM;
-      s = add_name(&buf,&bufsize,s,node->name);
-      if(s == NULL)
-        goto out_unlock;
+      path->prepend(node->name);
 
       if(need_lock)
         {
@@ -813,12 +766,12 @@ try_get_path(uint64_t      nodeid,
         }
     }
 
-  if(s[0])
-    memmove(buf,s,bufsize - (s - buf));
-  else
-    strcpy(buf,"/");
+  // Move data from the prefix area to the rel anchor and strip the
+  // leading '/' produced by prepend(). After this the path is in
+  // mergerfs's canonical REL form (no leading slash, anchored at
+  // REL_OFFSET).
+  path->consolidate_to_rel(/*strip_leading_slash=*/true);
 
-  *path = buf;
   if(wnodep)
     *wnodep = wnode;
 
@@ -827,9 +780,15 @@ try_get_path(uint64_t      nodeid,
  out_unlock:
   if(need_lock)
     unlock_path(nodeid,wnode,node);
- out_free:
-  free(buf);
-
+  // Reset the path to empty on every error exit. This is load-bearing
+  // for callers that mask -ESTALE to 0 (statx_path, see fuse_lib_
+  // statx_path): a nameless node yields a partial prepend chain that
+  // must not be observed as a valid path. After reset, the
+  // dispatcher's "is the path empty?" test cleanly distinguishes
+  // (nodeid == FUSE_ROOT_ID) "root walk produced empty" from
+  // (nodeid != FUSE_ROOT_ID) "nameless / ESTALE-masked" without
+  // looking at `err`.
+  path->clear();
  out_err:
   return err;
 }
@@ -840,8 +799,8 @@ try_get_path2(uint64_t     nodeid1,
               const char  *name1,
               uint64_t     nodeid2,
               const char  *name2,
-              char       **path1,
-              char       **path2,
+              fs::relpath    *path1,
+              fs::relpath    *path2,
               node_t     **wnode1,
               node_t     **wnode2)
 {
@@ -856,7 +815,7 @@ try_get_path2(uint64_t     nodeid1,
           node_t *wn1 = wnode1 ? *wnode1 : NULL;
 
           unlock_path(nodeid1,wn1,NULL);
-          free(*path1);
+          // path1 storage is stack-owned by the caller; no free.
         }
     }
 
@@ -964,7 +923,7 @@ static
 int
 get_path_common(uint64_t     nodeid,
                 const char  *name,
-                char       **path,
+                fs::relpath    *path,
                 node_t     **wnode)
 {
   int err;
@@ -990,7 +949,7 @@ get_path_common(uint64_t     nodeid,
 static
 int
 get_path(uint64_t   nodeid,
-         char     **path)
+         fs::relpath  *path)
 {
   return get_path_common(nodeid,NULL,path,NULL);
 }
@@ -999,7 +958,7 @@ static
 int
 get_path_name(uint64_t     nodeid,
               const char  *name,
-              char       **path)
+              fs::relpath    *path)
 {
   return get_path_common(nodeid,name,path,NULL);
 }
@@ -1008,7 +967,7 @@ static
 int
 get_path_wrlock(uint64_t     nodeid,
                 const char  *name,
-                char       **path,
+                fs::relpath    *path,
                 node_t     **wnode)
 {
   return get_path_common(nodeid,name,path,wnode);
@@ -1020,8 +979,8 @@ get_path2(uint64_t     nodeid1,
           const char  *name1,
           uint64_t     nodeid2,
           const char  *name2,
-          char       **path1,
-          char       **path2,
+          fs::relpath    *path1,
+          fs::relpath    *path2,
           node_t     **wnode1,
           node_t     **wnode2)
 {
@@ -1053,15 +1012,13 @@ get_path2(uint64_t     nodeid1,
 static
 void
 free_path_wrlock(uint64_t  nodeid,
-                 node_t   *wnode,
-                 char     *path)
+                 node_t   *wnode)
 {
   mutex_lock(f.lock);
   unlock_path(nodeid,wnode,NULL);
   if(f.lockq)
     wake_up_queued();
   mutex_unlock(f.lock);
-  free(path);
 }
 
 static
@@ -1089,17 +1046,21 @@ update_stat(node_t            *node_,
 
 static
 void
-free_path(uint64_t  nodeid,
-          char     *path)
+free_path(uint64_t        nodeid,
+          const fs::relpath *path)
 {
-  if(path)
-    free_path_wrlock(nodeid,NULL,path);
+  // The caller's stack-owned fs::relpath is empty when no get_path*()
+  // succeeded for this op (or when an intermediate "free + reuse"
+  // step like free_path_and_inc_open already released the read locks
+  // and clear()d the path). In either case there is nothing to do.
+  if(path->empty())
+    return;
+  free_path_wrlock(nodeid,NULL);
 }
 
 static
 node_t*
 free_path_and_inc_open(u64   free_nodeid_,
-                       char *path_,
                        u64   inc_open_ino_,
                        bool  remember_too_)
 {
@@ -1119,7 +1080,6 @@ free_path_and_inc_open(u64   free_nodeid_,
     wake_up_queued();
 
   mutex_unlock(f.lock);
-  free(path_);
 
   return node;
 }
@@ -1127,7 +1087,6 @@ free_path_and_inc_open(u64   free_nodeid_,
 static
 bool
 free_path_and_update_stat(u64                nodeid_,
-                          char              *path_,
                           const struct stat *stnew_)
 {
   bool ok;
@@ -1144,7 +1103,6 @@ free_path_and_update_stat(u64                nodeid_,
     wake_up_queued();
 
   mutex_unlock(f.lock);
-  free(path_);
 
   return ok;
 }
@@ -1154,17 +1112,13 @@ void
 free_path2(uint64_t  nodeid1,
            uint64_t  nodeid2,
            node_t   *wnode1,
-           node_t   *wnode2,
-           char     *path1,
-           char     *path2)
+           node_t   *wnode2)
 {
   mutex_lock(f.lock);
   unlock_path(nodeid1,wnode1,NULL);
   unlock_path(nodeid2,wnode2,NULL);
   wake_up_queued();
   mutex_unlock(f.lock);
-  free(path1);
-  free(path2);
 }
 
 static
@@ -1359,7 +1313,7 @@ int
 lookup_path(fuse_req_t              *req_,
             uint64_t                 nodeid,
             const char              *name,
-            const char              *fusepath,
+            const fs::relpath          &fusepath,
             struct fuse_entry_param *e,
             fuse_file_info_t        *fi,
             bool                     remember = true)
@@ -1371,7 +1325,7 @@ lookup_path(fuse_req_t              *req_,
   memset(e,0,sizeof(struct fuse_entry_param));
 
   rv = ((fi == NULL) ?
-        f.ops.getattr(&req_->ctx,&fusepath[1],&e->attr,&e->timeout) :
+        f.ops.getattr(&req_->ctx,fusepath,&e->attr,&e->timeout) :
         f.ops.fgetattr(&req_->ctx,fi->fh,&e->attr,&e->timeout));
 
   if(rv)
@@ -1422,7 +1376,7 @@ fuse_lib_lookup(fuse_req_t            *req_,
 {
   int err;
   uint64_t nodeid;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   node_t *dot = NULL;
   struct fuse_entry_param e = {};
@@ -1475,7 +1429,7 @@ fuse_lib_lookup(fuse_req_t            *req_,
           e.ino = 0;
           err = 0;
         }
-      free_path(nodeid,fusepath);
+      free_path(nodeid,&fusepath);
     }
 
   if(dot)
@@ -1537,7 +1491,7 @@ fuse_lib_getattr(fuse_req_t            *req_,
                  struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   uint64_t fh;
   struct stat buf;
   node_t *node;
@@ -1553,7 +1507,7 @@ fuse_lib_getattr(fuse_req_t            *req_,
   memset(&buf,0,sizeof(buf));
 
   err = 0;
-  fusepath = NULL;
+  fusepath.clear();
   if(fh == 0)
     {
       err = get_path(hdr_->nodeid,&fusepath);
@@ -1564,13 +1518,29 @@ fuse_lib_getattr(fuse_req_t            *req_,
   if(!err)
     {
       bool node_ok = true;
-      if(fusepath != NULL)
+      // Three-way dispatch:
+      //   - explicit fh (fh != 0)             -> fgetattr(fh)
+      //   - empty fusepath, not FUSE_ROOT_ID  -> nameless node
+      //                                          (ESTALE was masked
+      //                                          above): fall back
+      //                                          to fgetattr(0) so
+      //                                          mergerfs can find
+      //                                          the file via
+      //                                          OpenFiles.
+      //   - otherwise                         -> path-based getattr,
+      //                                          including
+      //                                          FUSE_ROOT_ID where
+      //                                          the rel is empty.
+      const bool path_based =
+        (fh == 0) &&
+        (!fusepath.empty() || hdr_->nodeid == FUSE_ROOT_ID);
+      if(path_based)
         {
-          err = f.ops.getattr(&req_->ctx,&fusepath[1],&buf,&timeouts);
+          err = f.ops.getattr(&req_->ctx,fusepath,&buf,&timeouts);
           if(!err)
-            node_ok = free_path_and_update_stat(hdr_->nodeid,fusepath,&buf);
+            node_ok = free_path_and_update_stat(hdr_->nodeid,&buf);
           else
-            free_path(hdr_->nodeid,fusepath);
+            free_path(hdr_->nodeid,&fusepath);
         }
       else
         {
@@ -1583,6 +1553,10 @@ fuse_lib_getattr(fuse_req_t            *req_,
               if(node_ok)
                 update_stat(node,&buf);
             }
+          // get_path may have run and produced an empty path on the
+          // ESTALE-masked nameless branch; release any state it left.
+          if(fh == 0)
+            free_path(hdr_->nodeid,&fusepath);
         }
 
       if(!err && !node_ok)
@@ -1610,7 +1584,7 @@ fuse_lib_statx_path(fuse_req_t            *req_,
                     fuse_statx_in         *inarg_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   struct fuse_statx st{};
   fuse_timeouts_t timeouts{};
 
@@ -1623,9 +1597,22 @@ fuse_lib_statx_path(fuse_req_t            *req_,
       return;
     }
 
-  if(fusepath != NULL)
+  // Three cases for an empty fusepath after get_path:
+  //   1. nodeid == FUSE_ROOT_ID, walk produced 0 components -- a real
+  //      path query for the mountpoint root.
+  //   2. nodeid != FUSE_ROOT_ID, ESTALE was masked above -- a nameless
+  //      node (file held open after unlink). The named-path lookup
+  //      cannot resolve it; fall back to fh-based statx, which lets
+  //      mergerfs find the file via OpenFiles by its FUSE handle.
+  //   3. nodeid != FUSE_ROOT_ID, success -- the path is actually
+  //      empty only if the call returned 0 with empty(); the only
+  //      such path is FUSE_ROOT_ID, so this case does not arise.
+  // try_get_path()'s error paths now reset the path to empty, so
+  // case 2 always observably produces an empty fusepath -- the
+  // (nodeid, empty) pair uniquely identifies the nameless case.
+  if(!fusepath.empty() || hdr_->nodeid == FUSE_ROOT_ID)
     err = f.ops.statx(&req_->ctx,
-                      &fusepath[1],
+                      fusepath,
                       inarg_->sx_flags,
                       inarg_->sx_mask,
                       &st,
@@ -1638,7 +1625,7 @@ fuse_lib_statx_path(fuse_req_t            *req_,
                          &st,
                          &timeouts);
 
-  free_path(hdr_->nodeid,fusepath);
+  free_path(hdr_->nodeid,&fusepath);
 
   if(err)
     fuse_reply_err(req_,err);
@@ -1691,7 +1678,7 @@ fuse_lib_setattr(fuse_req_t            *req_,
 {
   uint64_t fh;
   struct stat stbuf = {};
-  char *fusepath;
+  fs::relpath fusepath;
   int err;
   fuse_timeouts_t timeouts{};
   struct fuse_setattr_in *arg;
@@ -1703,7 +1690,7 @@ fuse_lib_setattr(fuse_req_t            *req_,
     fh = arg->fh;
 
   err = 0;
-  fusepath = NULL;
+  fusepath.clear();
   if(fh == 0)
     {
       err = get_path(hdr_->nodeid,&fusepath);
@@ -1713,10 +1700,20 @@ fuse_lib_setattr(fuse_req_t            *req_,
 
   if(!err)
     {
+      // Three-way dispatch (see fuse_lib_getattr for full notes):
+      //   - explicit fh                       -> fXXX(fh)
+      //   - empty fusepath, not FUSE_ROOT_ID  -> nameless node
+      //                                          (ESTALE was masked):
+      //                                          fall back to fXXX(0)
+      //   - otherwise                         -> path-based op
+      const bool path_based =
+        (fh == 0) &&
+        (!fusepath.empty() || hdr_->nodeid == FUSE_ROOT_ID);
+
       err = 0;
       if(!err && (arg->valid & FATTR_MODE))
-        err = ((fusepath != NULL) ?
-               f.ops.chmod(&req_->ctx,&fusepath[1],arg->mode) :
+        err = (path_based ?
+               f.ops.chmod(&req_->ctx,fusepath,arg->mode) :
                f.ops.fchmod(&req_->ctx,fh,arg->mode));
 
       if(!err && (arg->valid & (FATTR_UID | FATTR_GID)))
@@ -1724,14 +1721,14 @@ fuse_lib_setattr(fuse_req_t            *req_,
           uid_t uid = ((arg->valid & FATTR_UID) ? arg->uid : (uid_t)-1);
           gid_t gid = ((arg->valid & FATTR_GID) ? arg->gid : (gid_t)-1);
 
-          err = ((fusepath != NULL) ?
-                 f.ops.chown(&req_->ctx,&fusepath[1],uid,gid) :
+          err = (path_based ?
+                 f.ops.chown(&req_->ctx,fusepath,uid,gid) :
                  f.ops.fchown(&req_->ctx,fh,uid,gid));
         }
 
       if(!err && (arg->valid & FATTR_SIZE))
-        err = ((fusepath != NULL) ?
-               f.ops.truncate(&req_->ctx,&fusepath[1],arg->size) :
+        err = (path_based ?
+               f.ops.truncate(&req_->ctx,fusepath,arg->size) :
                f.ops.ftruncate(&req_->ctx,fh,arg->size));
 
       if(!err && (arg->valid & (FATTR_ATIME | FATTR_MTIME)))
@@ -1753,18 +1750,22 @@ fuse_lib_setattr(fuse_req_t            *req_,
           else if(arg->valid & FATTR_MTIME)
             tv[1] = (struct timespec){ static_cast<time_t>(arg->mtime), static_cast<long>(arg->mtimensec) };
 
-          err = ((fusepath != NULL) ?
-                 f.ops.utimens(&req_->ctx,&fusepath[1],tv) :
+          err = (path_based ?
+                 f.ops.utimens(&req_->ctx,fusepath,tv) :
                  f.ops.futimens(&req_->ctx,fh,tv));
         }
 
       if(!err)
-        err = ((fusepath != NULL) ?
-               f.ops.getattr(&req_->ctx,&fusepath[1],&stbuf,&timeouts) :
+        err = (path_based ?
+               f.ops.getattr(&req_->ctx,fusepath,&stbuf,&timeouts) :
                f.ops.fgetattr(&req_->ctx,fh,&stbuf,&timeouts));
 
       bool stat_updated = false;
-      if(!err && (fusepath != NULL))
+      // Only the path-based branch held a path lock that needs
+      // unlock_path; the fh-based branch (incl. nameless fallback)
+      // never acquired one. free_path() handles both cases on the
+      // shared cleanup edge below.
+      if(!err && path_based)
         {
           node_t *node;
           mutex_lock(f.lock);
@@ -1775,12 +1776,11 @@ fuse_lib_setattr(fuse_req_t            *req_,
           if(f.lockq)
             wake_up_queued();
           mutex_unlock(f.lock);
-          free(fusepath);
           stat_updated = true;
         }
       else
         {
-          free_path(hdr_->nodeid,fusepath);
+          free_path(hdr_->nodeid,&fusepath);
         }
 
       if(!err)
@@ -1814,7 +1814,7 @@ fuse_lib_access(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   struct fuse_access_in *arg;
 
   arg = (fuse_access_in*)fuse_hdr_arg(hdr_);
@@ -1823,9 +1823,9 @@ fuse_lib_access(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.access(&req_->ctx,
-                         &fusepath[1],
+                         fusepath,
                          arg->mask);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   fuse_reply_err(req_,err);
@@ -1837,17 +1837,17 @@ fuse_lib_readlink(fuse_req_t            *req_,
                   struct fuse_in_header *hdr_)
 {
   ssize_t rv;
-  char *fusepath;
+  fs::relpath fusepath;
   char linkname[PATH_MAX + 1];
 
   rv = get_path(hdr_->nodeid,&fusepath);
   if(!rv)
     {
       rv = f.ops.readlink(&req_->ctx,
-                          &fusepath[1],
+                          fusepath,
                           linkname,
                           sizeof(linkname));
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   if(rv >= 0)
@@ -1862,7 +1862,7 @@ fuse_lib_mknod(fuse_req_t            *req_,
                struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char* name;
   struct fuse_entry_param e;
   struct fuse_mknod_in *arg;
@@ -1885,7 +1885,7 @@ fuse_lib_mknod(fuse_req_t            *req_,
 
           ffi.flags = O_CREAT | O_EXCL | O_WRONLY;
           err = f.ops.create(&req_->ctx,
-                             &fusepath[1],
+                             fusepath,
                              arg->mode,
                              &ffi);
           if(!err)
@@ -1899,14 +1899,14 @@ fuse_lib_mknod(fuse_req_t            *req_,
       if(err == -ENOSYS)
         {
           err = f.ops.mknod(&req_->ctx,
-                            &fusepath[1],
+                            fusepath,
                             arg->mode,
                             arg->rdev);
           if(!err)
             err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,NULL);
         }
 
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   reply_entry(req_,&e,err);
@@ -1918,7 +1918,7 @@ fuse_lib_mkdir(fuse_req_t            *req_,
                struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   struct fuse_entry_param e;
   struct fuse_mkdir_in *arg;
@@ -1932,11 +1932,11 @@ fuse_lib_mkdir(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.mkdir(&req_->ctx,
-                        &fusepath[1],
+                        fusepath,
                         arg->mode);
       if(!err)
         err = lookup_path(req_,hdr_->nodeid,name,fusepath,&e,NULL);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   reply_entry(req_,&e,err);
@@ -1948,7 +1948,7 @@ fuse_lib_unlink(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   node_t *wnode;
 
@@ -1962,11 +1962,11 @@ fuse_lib_unlink(fuse_req_t            *req_,
         req_->ctx.nodeid = wnode->nodeid;
 
       err = f.ops.unlink(&req_->ctx,
-                         &fusepath[1]);
+                         fusepath);
       if(!err)
         remove_node(hdr_->nodeid,name);
 
-      free_path_wrlock(hdr_->nodeid,wnode,fusepath);
+      free_path_wrlock(hdr_->nodeid,wnode);
     }
 
   fuse_reply_err(req_,err);
@@ -1978,7 +1978,7 @@ fuse_lib_rmdir(fuse_req_t            *req_,
                struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   node_t *wnode;
 
@@ -1988,10 +1988,10 @@ fuse_lib_rmdir(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.rmdir(&req_->ctx,
-                        &fusepath[1]);
+                        fusepath);
       if(!err)
         remove_node(hdr_->nodeid,name);
-      free_path_wrlock(hdr_->nodeid,wnode,fusepath);
+      free_path_wrlock(hdr_->nodeid,wnode);
     }
 
   fuse_reply_err(req_,err);
@@ -2003,7 +2003,7 @@ fuse_lib_symlink(fuse_req_t            *req_,
                  struct fuse_in_header *hdr_)
 {
   int rv;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   const char *linkname;
   struct fuse_entry_param e = {};
@@ -2016,12 +2016,12 @@ fuse_lib_symlink(fuse_req_t            *req_,
     {
       rv = f.ops.symlink(&req_->ctx,
                          linkname,
-                         &fusepath[1],
+                         fusepath,
                          &e.attr,
                          &e.timeout);
       if(rv == 0)
         rv = set_path_info(hdr_->nodeid,name,&e);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   reply_entry(req_,&e,rv);
@@ -2033,8 +2033,8 @@ fuse_lib_rename(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
   int err;
-  char *oldpath;
-  char *newpath;
+  fs::relpath oldpath;
+  fs::relpath newpath;
   const char *oldname;
   const char *newname;
   node_t *wnode1;
@@ -2057,12 +2057,12 @@ fuse_lib_rename(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.rename(&req_->ctx,
-                         &oldpath[1],
-                         &newpath[1]);
+                         oldpath,
+                         newpath);
       if(!err)
         err = rename_node(hdr_->nodeid,oldname,arg->newdir,newname);
 
-      free_path2(hdr_->nodeid,arg->newdir,wnode1,wnode2,oldpath,newpath);
+      free_path2(hdr_->nodeid,arg->newdir,wnode1,wnode2);
     }
 
   fuse_reply_err(req_,err);
@@ -2092,8 +2092,8 @@ fuse_lib_link(fuse_req_t            *req_,
               struct fuse_in_header *hdr_)
 {
   int rv;
-  char *oldpath;
-  char *newpath;
+  fs::relpath oldpath;
+  fs::relpath newpath;
   const char *newname;
   struct fuse_link_in *arg;
   struct fuse_entry_param e = {};
@@ -2112,13 +2112,13 @@ fuse_lib_link(fuse_req_t            *req_,
   if(!rv)
     {
       rv = f.ops.link(&req_->ctx,
-                      &oldpath[1],
-                      &newpath[1],
+                      oldpath,
+                      newpath,
                       &e.attr,
                       &e.timeout);
       if(rv == 0)
         rv = set_path_info(hdr_->nodeid,newname,&e);
-      free_path2(arg->oldnodeid,hdr_->nodeid,NULL,NULL,oldpath,newpath);
+      free_path2(arg->oldnodeid,hdr_->nodeid,NULL,NULL);
     }
 
   reply_entry(req_,&e,rv);
@@ -2153,7 +2153,7 @@ fuse_lib_create(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   uint64_t new_nodeid;
   fuse_file_info_t ffi = {};
@@ -2190,7 +2190,7 @@ fuse_lib_create(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.create(&req_->ctx,
-                         &fusepath[1],
+                         fusepath,
                          arg->mode,
                          &ffi);
       if(!err)
@@ -2211,8 +2211,8 @@ fuse_lib_create(fuse_req_t            *req_,
 
   if(!err)
     {
-      free_path_and_inc_open(hdr_->nodeid,fusepath,e.ino,true);
-      fusepath = NULL;
+      free_path_and_inc_open(hdr_->nodeid,e.ino,true);
+      fusepath.clear();
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -2228,7 +2228,7 @@ fuse_lib_create(fuse_req_t            *req_,
       fuse_reply_err(req_,err);
     }
 
-  free_path(hdr_->nodeid,fusepath);
+  free_path(hdr_->nodeid,&fusepath);
 }
 
 static
@@ -2288,7 +2288,7 @@ fuse_lib_open(fuse_req_t            *req_,
               struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   fuse_file_info_t ffi = {};
   struct fuse_open_in *arg;
 
@@ -2300,7 +2300,7 @@ fuse_lib_open(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.open(&req_->ctx,
-                       &fusepath[1],
+                       fusepath,
                        &ffi);
       if(!err)
         {
@@ -2311,8 +2311,8 @@ fuse_lib_open(fuse_req_t            *req_,
 
   if(!err)
     {
-      free_path_and_inc_open(hdr_->nodeid,fusepath,hdr_->nodeid,false);
-      fusepath = NULL;
+      free_path_and_inc_open(hdr_->nodeid,hdr_->nodeid,false);
+      fusepath.clear();
 
       /* The open syscall was interrupted,so it must be cancelled */
       if(fuse_reply_open(req_,&ffi) == -ENOENT)
@@ -2323,7 +2323,7 @@ fuse_lib_open(fuse_req_t            *req_,
       fuse_reply_err(req_,err);
     }
 
-  free_path(hdr_->nodeid,fusepath);
+  free_path(hdr_->nodeid,&fusepath);
 }
 
 static
@@ -2443,7 +2443,7 @@ fuse_lib_opendir(fuse_req_t            *req_,
                  struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   struct fuse_dh *dh;
   fuse_file_info_t llffi = {};
   fuse_file_info_t ffi = {};
@@ -2476,7 +2476,7 @@ fuse_lib_opendir(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.opendir(&req_->ctx,
-                          &fusepath[1],
+                          fusepath,
                           &ffi);
       dh->fh = ffi.fh;
       llffi.keep_cache    = ffi.keep_cache;
@@ -2504,7 +2504,7 @@ fuse_lib_opendir(fuse_req_t            *req_,
       free(dh);
     }
 
-  free_path(hdr_->nodeid,fusepath);
+  free_path(hdr_->nodeid,&fusepath);
 }
 
 static
@@ -2705,19 +2705,18 @@ fuse_lib_statfs(fuse_req_t            *req_,
                 struct fuse_in_header *hdr_)
 {
   int err = 0;
-  char *fusepath;
+  fs::relpath fusepath;
   struct statvfs buf = {};
 
-  fusepath = NULL;
   if(hdr_->nodeid)
     err = get_path(hdr_->nodeid,&fusepath);
 
   if(!err)
     {
       err = f.ops.statfs(&req_->ctx,
-                         fusepath ? &fusepath[1] : "",
+                         fusepath,
                          &buf);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   if(!err)
@@ -2732,7 +2731,7 @@ fuse_lib_setxattr(fuse_req_t            *req_,
                   struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   const char *value;
   struct fuse_setxattr_in *arg;
@@ -2750,12 +2749,12 @@ fuse_lib_setxattr(fuse_req_t            *req_,
   if(!err)
     {
       err = f.ops.setxattr(&req_->ctx,
-                           &fusepath[1],
+                           fusepath,
                            name,
                            value,
                            arg->size,
                            arg->flags);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   fuse_reply_err(req_,err);
@@ -2770,18 +2769,18 @@ common_getxattr(fuse_req_t *req_,
                 size_t      size)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
 
   err = get_path(ino,&fusepath);
   if(!err)
     {
       err = f.ops.getxattr(&req_->ctx,
-                           &fusepath[1],
+                           fusepath,
                            name,
                            value,
                            size);
 
-      free_path(ino,fusepath);
+      free_path(ino,&fusepath);
     }
 
   return err;
@@ -2833,16 +2832,16 @@ common_listxattr(fuse_req_t *req_,
                  size_t      size)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
 
   err = get_path(ino,&fusepath);
   if(!err)
     {
       err = f.ops.listxattr(&req_->ctx,
-                            &fusepath[1],
+                            fusepath,
                             list,
                             size);
-      free_path(ino,fusepath);
+      free_path(ino,&fusepath);
     }
 
   return err;
@@ -2890,7 +2889,7 @@ fuse_lib_removexattr(fuse_req_t                  *req_,
                      const struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
 
   name = (const char*)fuse_hdr_arg(hdr_);
@@ -2899,9 +2898,9 @@ fuse_lib_removexattr(fuse_req_t                  *req_,
   if(!err)
     {
       err = f.ops.removexattr(&req_->ctx,
-                              &fusepath[1],
+                              fusepath,
                               name);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   fuse_reply_err(req_,err);
@@ -2981,7 +2980,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
                  const struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   const char *name;
   uint64_t new_nodeid;
   fuse_file_info_t ffi = {};
@@ -3018,7 +3017,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
   if(!err)
     {
       err = f.ops.tmpfile(&req_->ctx,
-                          &fusepath[1],
+                          fusepath,
                           arg->mode,
                           &ffi);
       if(!err)
@@ -3041,8 +3040,8 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
 
   if(!err)
     {
-      free_path_and_inc_open(hdr_->nodeid,fusepath,e.ino,true);
-      fusepath = NULL;
+      free_path_and_inc_open(hdr_->nodeid,e.ino,true);
+      fusepath.clear();
 
       if(fuse_reply_create(req_,&e,&ffi) == -ENOENT)
         {
@@ -3058,7 +3057,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
       fuse_reply_err(req_,err);
     }
 
-  free_path(hdr_->nodeid,fusepath);
+  free_path(hdr_->nodeid,&fusepath);
 }
 
 static
@@ -3134,7 +3133,7 @@ fuse_lib_bmap(fuse_req_t                  *req_,
               const struct fuse_in_header *hdr_)
 {
   int err;
-  char *fusepath;
+  fs::relpath fusepath;
   uint64_t block;
   const struct fuse_bmap_in *arg;
 
@@ -3145,10 +3144,10 @@ fuse_lib_bmap(fuse_req_t                  *req_,
   if(!err)
     {
       err = f.ops.bmap(&req_->ctx,
-                       &fusepath[1],
+                       fusepath,
                        arg->blocksize,
                        &block);
-      free_path(hdr_->nodeid,fusepath);
+      free_path(hdr_->nodeid,&fusepath);
     }
 
   if(!err)

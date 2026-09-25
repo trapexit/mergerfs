@@ -33,42 +33,39 @@
 
 static
 ssize_t
-_readlink_core_symlinkify(const fs::path &fullpath_,
+_readlink_core_symlinkify(const fs::relpath &fullpath_,
                           char           *buf_,
                           const size_t    bufsize_,
                           const time_t    symlinkify_timeout_)
 {
   ssize_t rv;
   struct stat st;
-  std::string fullpath_str;
 
-  fullpath_str = fullpath_.string();
-
-  rv = fs::lstat(fullpath_str,&st);
+  rv = fs::lstat(fullpath_,&st);
   if(rv < 0)
     return rv;
 
   if(!symlinkify::can_be_symlink(st,symlinkify_timeout_))
     return fs::readlink(fullpath_,buf_,bufsize_);
 
-  rv = std::min(fullpath_str.size(),bufsize_);
-  memcpy(buf_,fullpath_str.c_str(),rv);
+  rv = std::min(fullpath_.size(),bufsize_);
+  memcpy(buf_,fullpath_.data(),rv);
 
   return rv;
 }
 
 static
 ssize_t
-_readlink_core(const fs::path &basepath_,
-               const fs::path &fusepath_,
+_readlink_core(const fs::relpath &basepath_,
+               const fs::relpath &fusepath_,
                char           *buf_,
                const size_t    bufsize_,
                const bool      symlinkify_,
                const time_t    symlinkify_timeout_)
 {
-  fs::path fullpath;
+  fs::relpath fullpath;
 
-  fullpath = basepath_ / fusepath_;
+  fullpath.assign_concat(basepath_,fusepath_);
 
   if(symlinkify_)
     return ::_readlink_core_symlinkify(fullpath,buf_,bufsize_,symlinkify_timeout_);
@@ -80,7 +77,7 @@ static
 ssize_t
 _readlink(const Policy::Search &searchFunc_,
           const Branches::Ptr   ibranches_,
-          const fs::path       &fusepath_,
+          const fs::relpath       &fusepath_,
           char                 *buf_,
           const size_t          bufsize_,
           const bool            symlinkify_,
@@ -105,18 +102,17 @@ _readlink(const Policy::Search &searchFunc_,
 
 ssize_t
 FUSE::readlink(const fuse_req_ctx_t *ctx_,
-               const char           *fusepath_,
+               const fs::relpath       &fusepath_,
                char                 *buf_,
                size_t                bufsize_)
 {
   if(bufsize_ == 0)
     return 0;
 
-  const fs::path fusepath{fusepath_};
 
   return ::_readlink(cfg.func.readlink.policy,
                      cfg.branches,
-                     fusepath,
+                     fusepath_,
                      buf_,
                      bufsize_,
                      cfg.symlinkify,

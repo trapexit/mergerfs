@@ -10,6 +10,7 @@
 #define _FUSE_H_
 
 #include "extern_c.h"
+#include "fs_path.hpp"
 #include "fuse_common.h"
 #include "fuse_kernel.h"
 #include "fuse_req_ctx.h"
@@ -66,45 +67,45 @@ typedef struct fuse_dirents_t fuse_dirents_t;
 struct fuse_operations
 {
   int (*getattr)(const fuse_req_ctx_t *,
-                 const char *,
+                 const fs::relpath &,
                  struct stat *,
                  fuse_timeouts_t *);
   ssize_t (*readlink)(const fuse_req_ctx_t *,
-                      const char *,
+                      const fs::relpath &,
                       char *,
                       size_t);
   int (*mknod)(const fuse_req_ctx_t *,
-               const char *,
+               const fs::relpath &,
                mode_t,
                dev_t);
   int (*mkdir)(const fuse_req_ctx_t *,
-               const char *,
+               const fs::relpath &,
                mode_t);
   int (*unlink)(const fuse_req_ctx_t *,
-                const char *);
+                const fs::relpath &);
   int (*rmdir)(const fuse_req_ctx_t *,
-               const char *);
+               const fs::relpath &);
   int (*symlink)(const fuse_req_ctx_t *,
                  const char *,
-                 const char *,
+                 const fs::relpath &,
                  struct stat *,
                  fuse_timeouts_t *);
   int (*rename)(const fuse_req_ctx_t *,
-                const char *,
-                const char *);
+                const fs::relpath &,
+                const fs::relpath &);
   int (*link)(const fuse_req_ctx_t *,
-              const char *,
-              const char *,
+              const fs::relpath &,
+              const fs::relpath &,
               struct stat *,
               fuse_timeouts_t *);
   int (*chmod)(const fuse_req_ctx_t *,
-               const char *,
+               const fs::relpath &,
                mode_t);
   int (*fchmod)(const fuse_req_ctx_t *,
                 const uint64_t,
                 const mode_t);
   int (*chown)(const fuse_req_ctx_t *,
-               const char *,
+               const fs::relpath &,
                uid_t,
                gid_t);
   int (*fchown)(const fuse_req_ctx_t *,
@@ -112,13 +113,13 @@ struct fuse_operations
                 const uid_t,
                 const gid_t);
   int (*truncate)(const fuse_req_ctx_t *,
-                  const char *,
+                  const fs::relpath &,
                   off_t);
   int (*open)(const fuse_req_ctx_t *,
-              const char *,
+              const fs::relpath &,
               fuse_file_info_t *);
   int (*statfs)(const fuse_req_ctx_t *,
-                const char *,
+                const fs::relpath &,
                 struct statvfs *);
   int (*flush)(const fuse_req_ctx_t *,
                const fuse_file_info_t *);
@@ -128,25 +129,25 @@ struct fuse_operations
                const uint64_t,
                int);
   int (*setxattr)(const fuse_req_ctx_t *,
-                  const char *,
+                  const fs::relpath &,
                   const char *,
                   const char *,
                   size_t,
                   int);
   int (*getxattr)(const fuse_req_ctx_t *,
-                  const char *,
+                  const fs::relpath &,
                   const char *,
                   char *,
                   size_t);
   int (*listxattr)(const fuse_req_ctx_t *,
-                   const char *,
+                   const fs::relpath &,
                    char *,
                    size_t);
   int (*removexattr)(const fuse_req_ctx_t *,
-                     const char *,
+                     const fs::relpath &,
                      const char *);
   int (*opendir)(const fuse_req_ctx_t *,
-                 const char *,
+                 const fs::relpath &,
                  fuse_file_info_t *);
   int (*readdir)(const fuse_req_ctx_t *,
                  const fuse_file_info_t *,
@@ -162,10 +163,10 @@ struct fuse_operations
   void *(*init)(fuse_conn_info_t *conn);
   void (*destroy)(void);
   int (*access)(const fuse_req_ctx_t *,
-                const char *,
+                const fs::relpath &,
                 int);
   int (*create)(const fuse_req_ctx_t *,
-                const char *,
+                const fs::relpath &,
                 mode_t,
                 fuse_file_info_t *);
   int (*ftruncate)(const fuse_req_ctx_t *,
@@ -176,13 +177,13 @@ struct fuse_operations
                   struct stat *,
                   fuse_timeouts_t *);
   int (*utimens)(const fuse_req_ctx_t *,
-                 const char *,
+                 const fs::relpath &,
                  const struct timespec tv[2]);
   int (*futimens)(const fuse_req_ctx_t *,
                   const uint64_t fh,
                   const struct timespec tv[2]);
   int (*bmap)(const fuse_req_ctx_t *,
-              const char *,
+              const fs::relpath &,
               size_t blocksize,
               uint64_t *idx);
   int (*ioctl)(const fuse_req_ctx_t   *ctx,
@@ -227,11 +228,11 @@ struct fuse_operations
   int (*removemapping)(const fuse_req_ctx_t *);
   int (*syncfs)(const fuse_req_ctx_t *);
   int (*tmpfile)(const fuse_req_ctx_t *,
-                 const char *,
+                 const fs::relpath &,
                  mode_t,
                  fuse_file_info_t *);
   int (*statx)(const fuse_req_ctx_t *,
-               const char        *fusepath,
+               const fs::relpath    &fusepath,
                const uint32_t     flags,
                const uint32_t     mask,
                struct fuse_statx *st,

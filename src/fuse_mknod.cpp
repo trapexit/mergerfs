@@ -37,7 +37,7 @@ static
 inline
 int
 _mknod_core(const ugid_t    ugid_,
-            const fs::path &fullpath_,
+            const fs::relpath &fullpath_,
             mode_t          mode_,
             const mode_t    umask_,
             const dev_t     dev_)
@@ -50,17 +50,17 @@ _mknod_core(const ugid_t    ugid_,
 
 static
 int
-_mknod_loop_core(const ugid_t    ugid_,
-                 const fs::path &createbranch_,
-                 const fs::path &fusepath_,
-                 const mode_t    mode_,
-                 const mode_t    umask_,
-                 const dev_t     dev_)
+_mknod_loop_core(const ugid_t       ugid_,
+                 const std::string &createbranch_,
+                 const fs::relpath &fusepath_,
+                 const mode_t       mode_,
+                 const mode_t       umask_,
+                 const dev_t        dev_)
 {
   int rv;
-  fs::path fullpath;
+  fs::relpath fullpath;
 
-  fullpath = createbranch_ / fusepath_;
+  fullpath.assign_concat(createbranch_,fusepath_);
 
   rv = ::_mknod_core(ugid_,fullpath,mode_,umask_,dev_);
 
@@ -70,10 +70,10 @@ _mknod_loop_core(const ugid_t    ugid_,
 static
 int
 _mknod_loop(const ugid_t                ugid_,
-            const fs::path             &existingbranch_,
+            const std::string          &existingbranch_,
             const std::vector<Branch*> &createbranches_,
-            const fs::path             &fusepath_,
-            const fs::path             &fusedirpath_,
+            const fs::relpath          &fusepath_,
+            const fs::relpath          &fusedirpath_,
             const mode_t                mode_,
             const mode_t                umask_,
             const dev_t                 dev_)
@@ -109,13 +109,13 @@ _mknod(const ugid_t          ugid_,
        const Policy::Search &searchFunc_,
        const Policy::Create &createFunc_,
        const Branches::Ptr   branches_,
-       const fs::path       &fusepath_,
+       const fs::relpath       &fusepath_,
        const mode_t          mode_,
        const mode_t          umask_,
        const dev_t           dev_)
 {
   int rv;
-  fs::path fusedirpath;
+  fs::relpath fusedirpath;
   std::vector<Branch*> createbranches;
   std::vector<Branch*> existingbranches;
 
@@ -145,18 +145,17 @@ _mknod(const ugid_t          ugid_,
 
 int
 FUSE::mknod(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_,
+            const fs::relpath       &fusepath_,
             mode_t                mode_,
             dev_t                 rdev_)
 {
   int rv;
-  const fs::path fusepath{fusepath_};
 
   rv = ::_mknod(ctx_,
                 cfg.func.getattr.policy,
                 cfg.func.mknod.policy,
                 cfg.branches,
-                fusepath,
+                fusepath_,
                 mode_,
                 ctx_->umask,
                 rdev_);
@@ -167,7 +166,7 @@ FUSE::mknod(const fuse_req_ctx_t *ctx_,
                     cfg.func.getattr.policy,
                     cfg.func.mknod.policy,
                     cfg.branches,
-                    fusepath,
+                    fusepath_,
                     mode_,
                     ctx_->umask,
                     rdev_);

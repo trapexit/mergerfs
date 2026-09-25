@@ -20,8 +20,8 @@
 #include "ef.hpp"
 #include "errno.hpp"
 #include "fmt/core.h"
+#include "fs_cleanpath.hpp"
 #include "fs_glob.hpp"
-#include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "hw_cpu.hpp"
 #include "num.hpp"
@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 enum
@@ -228,22 +229,31 @@ static
 void
 _check_for_mount_loop()
 {
-  fs::path mount;
-  std::vector<fs::path> branches;
-  std::error_code ec;
+  std::string mount;
+  std::vector<std::string> branches;
+  struct stat mount_st;
 
   mount    = cfg.mountpoint;
   branches = cfg.branches->to_paths();
+  if(::stat(mount.c_str(),&mount_st) != 0)
+    return;
+
   for(const auto &branch : branches)
     {
-      if(std::filesystem::equivalent(branch,mount,ec))
-        {
-          std::string errstr;
+      struct stat branch_st;
 
-          errstr = fmt::format("branches can not include the mountpoint: {}",
-                               branch.string());
-          cfg.errs.push_back({0,errstr});
-        }
+      if(::stat(branch.c_str(),&branch_st) != 0)
+        continue;
+      if(branch_st.st_dev != mount_st.st_dev)
+        continue;
+      if(branch_st.st_ino != mount_st.st_ino)
+        continue;
+
+      std::string errstr;
+
+      errstr = fmt::format("branches can not include the mountpoint: {}",
+                           branch);
+      cfg.errs.push_back({0,errstr});
     }
 }
 
@@ -320,6 +330,7 @@ namespace options
         if(cfg.mountpoint.empty())
           {
             cfg.mountpoint = prev_nonopt;
+            fs::cleanpath(&cfg.mountpoint);
           }
         else
           {

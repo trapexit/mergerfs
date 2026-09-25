@@ -47,12 +47,12 @@ _dirent_exact_namelen(const struct dirent *d_)
 static
 int
 _readdir(const Branches::Ptr &branches_,
-         const fs::path      &rel_dirpath_,
+         const fs::relpath      &rel_dirpath_,
          fuse_dirents_t      *dirents_)
 {
   Err err;
   HashSet names;
-  fs::path abs_dirpath;
+  fs::relpath abs_dirpath;
 
   fuse_dirents_reset(dirents_);
 

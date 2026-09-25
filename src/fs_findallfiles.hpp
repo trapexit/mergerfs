@@ -28,6 +28,6 @@ namespace fs
 {
   void
   findallfiles(const std::vector<std::string> &basepaths,
-               const fs::path                 &fusepath,
+               const fs::relpath                 &fusepath,
                std::vector<std::string>       *paths);
 }

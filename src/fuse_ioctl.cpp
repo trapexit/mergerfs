@@ -131,14 +131,14 @@ static
 int
 _ioctl_dir_base(const Policy::Search &searchFunc_,
                 const Branches::Ptr   branches_,
-                const fs::path       &fusepath_,
+                const fs::relpath       &fusepath_,
                 const u32             cmd_,
                 void                 *data_,
                 u32                  *out_bufsz_)
 {
   int fd;
   int rv;
-  fs::path fullpath;
+  fs::relpath fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
@@ -147,7 +147,7 @@ _ioctl_dir_base(const Policy::Search &searchFunc_,
   if(branches.empty())
     return -ENOENT;
 
-  fullpath = branches[0]->path / fusepath_;
+  fullpath.assign_concat(branches[0]->path,fusepath_);
 
   fd = fs::open(fullpath,O_RDONLY|O_NOATIME|O_NONBLOCK);
   if(fd < 0)

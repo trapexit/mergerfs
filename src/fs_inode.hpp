@@ -47,8 +47,8 @@ namespace fs
     class ReaddirCalc
     {
     public:
-      ReaddirCalc(const fs::path &branch_path,
-                  const fs::path &dirpath);
+      ReaddirCalc(const std::string &branch_path,
+                  const fs::relpath &dirpath);
 
     public:
       u64 calc(const char   *name,
@@ -59,7 +59,7 @@ namespace fs
     private:
       Algo        _algo;
       u64         _branch_seed;
-      std::string _fusepath;
+      fs::relpath _fusepath;
       std::size_t _filename_offset;
     };
 
@@ -67,25 +67,15 @@ namespace fs
     std::string get_algo(void);
 
     u64 calc(const std::string &basepath,
-             const std::string &fusepath,
-             const mode_t           mode,
-             const ino_t            ino);
-    u64 calc(const fs::path    &basepath,
-             const fs::path    &fusepath,
+             const fs::relpath &fusepath,
              const mode_t       mode,
              const ino_t        ino);
 
     void calc(const std::string &basepath,
-              const std::string &fusepath,
-              struct stat            *st);
-    void calc(const fs::path    &basepath,
-              const fs::path    &fusepath,
+              const fs::relpath &fusepath,
               struct stat       *st);
     void calc(const std::string &basepath,
-              const std::string &fusepath,
-              struct fuse_statx *st);
-    void calc(const fs::path    &basepath,
-              const fs::path    &fusepath,
+              const fs::relpath &fusepath,
               struct fuse_statx *st);
   }
 }

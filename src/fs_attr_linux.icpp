@@ -44,8 +44,8 @@ _get_fs_ioc_flags(const int  fd,
 
 static
 int
-_get_fs_ioc_flags(const string &file,
-                  int          &flags)
+_get_fs_ioc_flags(const char *file,
+                  int        &flags)
 {
   int fd;
   int rv;
@@ -81,8 +81,8 @@ _set_fs_ioc_flags(const int fd,
 
 static
 int
-_set_fs_ioc_flags(const string &file,
-                 const int     flags)
+_set_fs_ioc_flags(const char *file,
+                 const int   flags)
 {
   int fd;
   int rv;
@@ -121,15 +121,15 @@ fs::attr::copy(const int  fdin,
 }
 
 int
-fs::attr::copy(const string &from,
-               const string &to)
+fs::attr::copy(const std::string &from_,
+               const std::string &to_)
 {
   int rv;
   int flags;
 
-  rv = ::_get_fs_ioc_flags(from,flags);
+  rv = ::_get_fs_ioc_flags(from_.c_str(),flags);
   if(rv < 0)
     return rv;
 
-  return ::_set_fs_ioc_flags(to,flags);
+  return ::_set_fs_ioc_flags(to_.c_str(),flags);
 }

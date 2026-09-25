@@ -32,33 +32,23 @@
 
 static
 void
-_chown_loop_core(const fs::path &basepath_,
-                 const fs::path &fusepath_,
-                 const uid_t     uid_,
-                 const gid_t     gid_,
-                 PolicyRV       *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::lchown(fullpath,uid_,gid_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
 _chown_loop(const std::vector<Branch*> &branches_,
-            const fs::path             &fusepath_,
+            const fs::relpath             &fusepath_,
             const uid_t                 uid_,
             const gid_t                 gid_,
             PolicyRV                   *prv_)
 {
+  fs::relpath fullpath = fusepath_;
+
   for(const auto &branch : branches_)
     {
-      ::_chown_loop_core(branch->path,fusepath_,uid_,gid_,prv_);
+      int rv;
+
+      fullpath.set_prefix(branch->path);
+
+      rv = fs::lchown(fullpath,uid_,gid_);
+
+      prv_->insert(rv,branch->path);
     }
 }
 
@@ -67,7 +57,7 @@ int
 _chown(const Policy::Action &actionFunc_,
        const Policy::Search &searchFunc_,
        const Branches::Ptr   branches_,
-       const fs::path       &fusepath_,
+       const fs::relpath       &fusepath_,
        const uid_t           uid_,
        const gid_t           gid_)
 {
@@ -100,16 +90,15 @@ _chown(const Policy::Action &actionFunc_,
 
 int
 FUSE::chown(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_,
+            const fs::relpath       &fusepath_,
             uid_t                 uid_,
             gid_t                 gid_)
 {
-  const fs::path fusepath{fusepath_};
 
   return ::_chown(cfg.func.chown.policy,
                   cfg.func.getattr.policy,
                   cfg.branches,
-                  fusepath,
+                  fusepath_,
                   uid_,
                   gid_);
 }

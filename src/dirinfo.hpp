@@ -34,7 +34,7 @@ public:
   u64 to_fh() const;
 
 public:
-  DirInfo(const fs::path &fusepath_)
+  DirInfo(const fs::relpath &fusepath_)
     : FH(fusepath_)
   {
   }

@@ -30,12 +30,11 @@
 #include "base_types.h"
 
 #include <limits>
-#include <string>
 
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -44,6 +43,7 @@ _action(const Branches::Ptr  &branches_,
   Branch *obranch;
   u64 best_used;
   u64 best_total;
+  fs::relpath fullpath(fusepath_);
 
   best_used = 0;
   best_total = 1;
@@ -54,7 +54,7 @@ _action(const Branches::Ptr  &branches_,
     {
       if(branch.ro())
         error_and_continue(error,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(error,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -99,7 +99,7 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr &branches_,
-        const fs::path &fusepath_,
+        const fs::relpath &fusepath_,
         std::vector<Branch *> &paths_)
 {
   int rv;
@@ -108,6 +108,7 @@ _search(const Branches::Ptr &branches_,
   u64 best_used;
   u64 best_total;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   best_used = 0;
   best_total = 1;
@@ -115,7 +116,7 @@ _search(const Branches::Ptr &branches_,
 
   for(auto &branch : *branches_)
     {
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         continue;
       rv = fs::statvfs_cache_spaceused(branch.path,&used);
       if(rv < 0)
@@ -222,7 +223,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::LUP::Action::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
@@ -230,7 +231,7 @@ Policy::LUP::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LUP::Create::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,paths_);
@@ -238,7 +239,7 @@ Policy::LUP::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::LUP::Search::operator()(const Branches::Ptr  &branches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

@@ -38,20 +38,20 @@ static
 int
 _link_create_path_loop(const std::vector<Branch*> &oldbranches_,
                        const Branch               *newbranch_,
-                       const fs::path             &oldfusepath_,
-                       const fs::path             &newfusepath_,
-                       const fs::path             &newfusedirpath_)
+                       const fs::relpath             &oldfusepath_,
+                       const fs::relpath             &newfusepath_,
+                       const fs::relpath             &newfusedirpath_)
 {
   int rv;
   int err;
-  fs::path oldfullpath;
-  fs::path newfullpath;
+  fs::relpath oldfullpath = oldfusepath_;
+  fs::relpath newfullpath = newfusepath_;
 
   err = -ENOENT;
   for(const auto &oldbranch : oldbranches_)
     {
-      oldfullpath = oldbranch->path / oldfusepath_;
-      newfullpath = oldbranch->path / newfusepath_;
+      oldfullpath.set_prefix(oldbranch->path);
+      newfullpath.set_prefix(oldbranch->path);
 
       rv = fs::link(oldfullpath,newfullpath);
       if(rv == -ENOENT)
@@ -75,11 +75,11 @@ int
 _link_create_path(const Policy::Search &searchFunc_,
                   const Policy::Action &actionFunc_,
                   const Branches::Ptr   ibranches_,
-                  const fs::path       &oldfusepath_,
-                  const fs::path       &newfusepath_)
+                  const fs::relpath       &oldfusepath_,
+                  const fs::relpath       &newfusepath_)
 {
   int rv;
-  fs::path newfusedirpath;
+  fs::relpath newfusedirpath;
   std::vector<Branch*> oldbranches;
   std::vector<Branch*> newbranches;
 
@@ -104,44 +104,28 @@ _link_create_path(const Policy::Search &searchFunc_,
 
 static
 int
-_link_preserve_path_core(const fs::path &oldbasepath_,
-                         const fs::path &oldfusepath_,
-                         const fs::path &newfusepath_,
-                         struct stat    *st_)
-{
-  int rv;
-  fs::path oldfullpath;
-  fs::path newfullpath;
-
-  oldfullpath = oldbasepath_ / oldfusepath_;
-  newfullpath = oldbasepath_ / newfusepath_;
-
-  rv = fs::link(oldfullpath,newfullpath);
-  if(rv == -ENOENT)
-    rv = -EXDEV;
-  if((rv == 0) && (st_->st_ino == 0))
-    rv = fs::lstat(oldfullpath,st_);
-
-  return rv;
-}
-
-static
-int
 _link_preserve_path_loop(const std::vector<Branch*> &oldbranches_,
-                         const fs::path             &oldfusepath_,
-                         const fs::path             &newfusepath_,
+                         const fs::relpath             &oldfusepath_,
+                         const fs::relpath             &newfusepath_,
                          struct stat                *st_)
 {
   int rv;
   int err;
+  fs::relpath oldfullpath = oldfusepath_;
+  fs::relpath newfullpath = newfusepath_;
 
   err = -ENOENT;
   for(const auto &oldbranch : oldbranches_)
     {
-      rv = ::_link_preserve_path_core(oldbranch->path,
-                                      oldfusepath_,
-                                      newfusepath_,
-                                      st_);
+      oldfullpath.set_prefix(oldbranch->path);
+      newfullpath.set_prefix(oldbranch->path);
+
+      rv = fs::link(oldfullpath,newfullpath);
+      if(rv == -ENOENT)
+        rv = -EXDEV;
+      if((rv == 0) && (st_->st_ino == 0))
+        rv = fs::lstat(oldfullpath,st_);
+
       if(err < 0)
         err = rv;
     }
@@ -153,8 +137,8 @@ static
 int
 _link_preserve_path(const Policy::Action &actionFunc_,
                     const Branches::Ptr   branches_,
-                    const fs::path       &oldfusepath_,
-                    const fs::path       &newfusepath_,
+                    const fs::relpath       &oldfusepath_,
+                    const fs::relpath       &newfusepath_,
                     struct stat          *st_)
 {
   int rv;
@@ -174,8 +158,8 @@ _link_preserve_path(const Policy::Action &actionFunc_,
 
 static
 int
-_link(const fs::path &oldpath_,
-      const fs::path &newpath_,
+_link(const fs::relpath &oldpath_,
+      const fs::relpath &newpath_,
       struct stat    *st_)
 {
   if(cfg.func.create.policy.path_preserving() && !cfg.ignorepponrename)
@@ -195,8 +179,8 @@ _link(const fs::path &oldpath_,
 static
 int
 _link(const fuse_req_ctx_t *ctx_,
-      const fs::path       &oldpath_,
-      const fs::path       &newpath_,
+      const fs::relpath       &oldpath_,
+      const fs::relpath       &newpath_,
       struct stat          *st_,
       fuse_timeouts_t      *timeouts_)
 {
@@ -212,18 +196,19 @@ _link(const fuse_req_ctx_t *ctx_,
 static
 int
 _link_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
-                        const fs::path       &oldpath_,
-                        const fs::path       &newpath_,
+                        const fs::relpath       &oldpath_,
+                        const fs::relpath       &newpath_,
                         struct stat          *st_,
                         fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  fs::path target(oldpath_);
-  fs::path linkpath(newpath_);
+  // lexically_relative builds the target as a relpath; newpath_ is
+  // passed straight through to FUSE::symlink without copying.
+  fs::relpath target = oldpath_.lexically_relative(newpath_.parent_path());
+  if(target.empty())
+    return -EXDEV;
 
-  target = target.lexically_relative(linkpath.parent_path());
-
-  rv = FUSE::symlink(ctx_,target.c_str(),linkpath);
+  rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
   if(rv == 0)
     rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
 
@@ -239,13 +224,13 @@ int
 _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
                               const Policy::Search &openPolicy_,
                               const Branches::Ptr   ibranches_,
-                             const fs::path       &oldpath_,
-                             const fs::path       &newpath_,
+                             const fs::relpath       &oldpath_,
+                             const fs::relpath       &newpath_,
                              struct stat          *st_,
                              fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  fs::path target;
+  fs::relpath target;
   std::vector<Branch*> obranches;
 
   rv = openPolicy_(ibranches_,oldpath_,obranches);
@@ -270,15 +255,15 @@ _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _link_exdev_abs_pool_symlink(const fuse_req_ctx_t *ctx_,
-                             const fs::path       &mount_,
-                             const fs::path       &oldpath_,
-                             const fs::path       &newpath_,
+                             const std::string    &mount_,
+                             const fs::relpath    &oldpath_,
+                             const fs::relpath    &newpath_,
                              struct stat          *st_,
                              fuse_timeouts_t      *timeouts_)
 {
   int rv;
   StrVec basepaths;
-  fs::path target;
+  fs::relpath target;
 
   target = mount_ / oldpath_;
 
@@ -296,8 +281,8 @@ _link_exdev_abs_pool_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _link_exdev(const fuse_req_ctx_t *ctx_,
-            const fs::path       &oldpath_,
-            const fs::path       &newpath_,
+            const fs::relpath       &oldpath_,
+            const fs::relpath       &newpath_,
             struct stat          *st_,
             fuse_timeouts_t      *timeouts_)
 {
@@ -333,18 +318,16 @@ _link_exdev(const fuse_req_ctx_t *ctx_,
 
 int
 FUSE::link(const fuse_req_ctx_t *ctx_,
-           const char           *oldpath_,
-           const char           *newpath_,
+           const fs::relpath       &oldpath_,
+           const fs::relpath       &newpath_,
            struct stat          *st_,
            fuse_timeouts_t      *timeouts_)
 {
   int rv;
-  const fs::path oldpath{oldpath_};
-  const fs::path newpath{newpath_};
 
-  rv = ::_link(ctx_,oldpath,newpath,st_,timeouts_);
+  rv = ::_link(ctx_,oldpath_,newpath_,st_,timeouts_);
   if(rv == -EXDEV)
-    rv = ::_link_exdev(ctx_,oldpath,newpath,st_,timeouts_);
+    rv = ::_link_exdev(ctx_,oldpath_,newpath_,st_,timeouts_);
 
   return rv;
 }

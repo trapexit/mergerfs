@@ -87,33 +87,24 @@ _should_unlink(int            rv_,
 
 static
 int
-_rmdir_core(const fs::path       &basepath_,
-            const fs::path       &fusepath_,
-            const FollowSymlinks  followsymlinks_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::rmdir(fullpath);
-  if(::_should_unlink(rv,followsymlinks_))
-    rv = fs::unlink(fullpath);
-
-  return rv;
-}
-
-static
-int
 _rmdir_loop(const std::vector<Branch*> &branches_,
-            const fs::path             &fusepath_,
+            const fs::relpath             &fusepath_,
             const FollowSymlinks        followsymlinks_)
 {
   RmdirErr err;
+  fs::relpath fullpath = fusepath_;
 
   for(const auto &branch : branches_)
     {
-      err = ::_rmdir_core(branch->path,fusepath_,followsymlinks_);
+      int rv;
+
+      fullpath.set_prefix(branch->path);
+
+      rv = fs::rmdir(fullpath);
+      if(::_should_unlink(rv,followsymlinks_))
+        rv = fs::unlink(fullpath);
+
+      err = rv;
     }
 
   return err;
@@ -124,7 +115,7 @@ int
 _rmdir(const Policy::Action &actionFunc_,
        const Branches::Ptr   branches_,
        const FollowSymlinks  followsymlinks_,
-       const fs::path       &fusepath_)
+       const fs::relpath       &fusepath_)
 {
   int rv;
   std::vector<Branch*> branches;
@@ -138,12 +129,10 @@ _rmdir(const Policy::Action &actionFunc_,
 
 int
 FUSE::rmdir(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_)
+            const fs::relpath       &fusepath_)
 {
-  const fs::path  fusepath{fusepath_};
-
   return ::_rmdir(cfg.func.rmdir.policy,
                   cfg.branches,
                   cfg.follow_symlinks,
-                  fusepath);
+                  fusepath_);
 }

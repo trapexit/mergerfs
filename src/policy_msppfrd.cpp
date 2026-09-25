@@ -43,13 +43,14 @@ typedef std::vector<BranchInfo> BranchInfoVec;
 static
 int
 _create_1(const Branches::Ptr &branches_,
-          const fs::path      &fusepath_,
+          const fs::relpath      &fusepath_,
           BranchInfoVec       *branchinfo_,
           u64                 *sum_)
 {
   int rv;
   int error;
   fs::info_t info;
+  fs::relpath fullpath(fusepath_);
 
   *sum_ = 0;
   error = ENOENT;
@@ -57,7 +58,7 @@ _create_1(const Branches::Ptr &branches_,
     {
       if(branch.ro_or_nc())
         error_and_continue(error,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(error,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -78,12 +79,12 @@ _create_1(const Branches::Ptr &branches_,
 static
 int
 _get_branchinfo(const Branches::Ptr &branches_,
-                const fs::path      &fusepath_,
+                const fs::relpath      &fusepath_,
                 BranchInfoVec       *branchinfo_,
                 u64                 *sum_)
 {
   int rv;
-  fs::path fusepath;
+  fs::relpath fusepath;
 
   fusepath = fusepath_;
   for(;;)
@@ -91,7 +92,7 @@ _get_branchinfo(const Branches::Ptr &branches_,
       rv = ::_create_1(branches_,fusepath,branchinfo_,sum_);
       if(branchinfo_->size())
         break;
-      if(fusepath == "/")
+      if(fusepath.empty())
         break;
       fusepath = fusepath.parent_path();
     }
@@ -128,7 +129,7 @@ _get_branch(const BranchInfoVec &branchinfo_,
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -148,7 +149,7 @@ _create(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPPFRD::Action::operator()(const Branches::Ptr  &branches_,
-                                    const fs::path       &fusepath_,
+                                    const fs::relpath       &fusepath_,
                                     std::vector<Branch*> &paths_) const
 {
   return Policies::Action::eppfrd(branches_,fusepath_,paths_);
@@ -156,7 +157,7 @@ Policy::MSPPFRD::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPPFRD::Create::operator()(const Branches::Ptr  &branches_,
-                                    const fs::path       &fusepath_,
+                                    const fs::relpath       &fusepath_,
                                     std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -164,7 +165,7 @@ Policy::MSPPFRD::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::MSPPFRD::Search::operator()(const Branches::Ptr  &branches_,
-                                    const fs::path       &fusepath_,
+                                    const fs::relpath       &fusepath_,
                                     std::vector<Branch*> &paths_) const
 {
   return Policies::Search::eppfrd(branches_,fusepath_,paths_);
