@@ -1,5 +1,28 @@
 # Tooling
 
+## mergerfs-webui
+
+[mergerfs-webui](https://github.com/trapexit/mergerfs-webui) is a
+browser-based tool for viewing and managing mergerfs mounts on Linux.
+It is a separate project with a single executable containing both the
+web server and the web page.
+
+It can:
+
+* Install mergerfs and create mounts through `/etc/fstab` or systemd
+  `.mount` units.
+* Discover running mounts, mount and unmount them, and inspect and
+  change their runtime settings, branches, and policies.
+* Edit startup configuration in `/etc/fstab`, systemd `.mount` units,
+  and referenced mergerfs ini files, with previews of structured
+  changes before saving.
+* Issue runtime commands and set up the web UI as a systemd service.
+
+[Runtime changes](runtime_interface.md) are not automatically
+persistent; startup configuration must also be updated if changes
+should survive a remount.
+
+
 ## mergerfs.collect-info
 
 A tool included in recent releases of `mergerfs` which collects
@@ -161,8 +184,6 @@ Environment=LD_PRELOAD=/usr/lib/mergerfs/preload.so
       behaviors that can be build on top of mergerfs. They may not
       have all the features you are looking for.**
     * mergerfs.ctl: A tool to make it easier to query and configure mergerfs at runtime
-    * mergerfs.fsck: Provides permissions and ownership auditing and
-      the ability to fix them (should use `fsck.mergerfs` instead)
     * mergerfs.dedup: Will help identify and optionally remove duplicate files
     * mergerfs.dup: Ensure there are at least N copies of a file across the pool
     * mergerfs.balance: Rebalance files across filesystems by moving them from the most filled to the least filled

@@ -23,6 +23,9 @@
 
 ## Software and services commonly used with mergerfs
 
+* [mergerfs-webui](tooling.md#mergerfs-webui): a browser-based tool for
+  managing mergerfs mounts, runtime settings, and startup configuration
+  on Linux.
 * [snapraid](https://www.snapraid.it): a backup program designed for
   disk arrays, storing parity information for data recovery in the
   event of up to six disk failures.

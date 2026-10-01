@@ -18,6 +18,12 @@ mergerfs [does not impact](usage_and_functionality.md) the underlying
 filesystems and can be added or removed without any impact it is
 extremely easy to test and experiment with different settings.
 
+[mergerfs-webui](../tooling.md#mergerfs-webui) provides a browser-based
+way to inspect and change settings, branches, and policies on Linux,
+and edit startup configuration. It does not replace understanding
+what the options do or choosing policies suited to your use case.
+Runtime changes alone do not persist across remounts.
+
 Additional reading:
 
 * [Config/Options](../config/options.md)

@@ -14,6 +14,11 @@ getting and setting config and issuing certain commands. The other are
 files found on the filesystem for querying certain `mergerfs` specific
 information about them.
 
+For a browser-based interface to inspect and change runtime settings,
+manage branches and policies, and issue commands, see
+[mergerfs-webui](tooling.md#mergerfs-webui). Runtime changes still need
+to be saved in startup configuration if they should persist.
+
 
 ## .mergerfs pseudo file
 

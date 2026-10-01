@@ -62,6 +62,17 @@ For some suggestions on branch setup see [the page on
 branches](config/branches.md#branch-setup).
 
 
+### Web UI
+
+[mergerfs-webui](tooling.md#mergerfs-webui) provides a browser-based
+alternative for creating and managing mounts on Linux. It can edit
+startup configuration and inspect and change settings on running
+mounts. See the
+[mergerfs-webui documentation](https://github.com/trapexit/mergerfs-webui#readme)
+for installation and secure access guidance. Runtime changes alone do
+not persist across remounts.
+
+
 ### Command Line
 
 ```
