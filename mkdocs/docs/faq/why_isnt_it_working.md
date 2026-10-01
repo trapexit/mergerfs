@@ -119,7 +119,7 @@ may be able to read some files and directories on one filesystem but
 not another resulting in an incomplete set. And if one of the branches
 it can access is empty then it will return an empty list.
 
-Try using [mergerfs.fsck](https://github.com/trapexit/mergerfs-tools)
+Try using [fsck.mergerfs](../tooling.md#fsckmergerfs)
 tool to check for and fix inconsistencies in permissions. If you
 aren't seeing anything at all be sure that the basic permissions are
 correct. The user and group values are correct and that directories

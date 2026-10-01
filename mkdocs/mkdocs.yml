@@ -115,6 +115,7 @@ nav:
   - faq/compatibility_and_integration.md
   - faq/technical_behavior_and_limitations.md
   - faq/have_you_considered.md
+  - faq/downsides.md
   - faq/limit_drive_spinup.md
 - Related Projects: related_projects.md
 - Media and Publicity: media_and_publicity.md

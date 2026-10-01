@@ -14,7 +14,8 @@
 * If you do not see some directories and files you expect, policies
   seem to skip branches, you get strange permission errors, etc. be
   sure the underlying filesystems' permissions are all the same. Use
-  `mergerfs.fsck` to audit the filesystem for out of sync permissions.
+  [fsck.mergerfs](tooling.md#fsckmergerfs) to audit the filesystem for
+  out of sync permissions.
 * If you still have permission issues be sure you are using POSIX
   compliant filesystems. mergerfs doesn't generally make exceptions
   for FAT, NTFS, or other non-POSIX filesystem.
