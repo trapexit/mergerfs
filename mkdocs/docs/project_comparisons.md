@@ -293,10 +293,16 @@ provides a similar, but not real-time, solution.
 fork of Unraid's parity calculation solution and can also be used with
 mergerfs.
 
+Moving between the two is not symmetric because mergerfs membership is
+a configuration change while Unraid array membership is part of the
+array state. See [Migration](migration.md) for details.
+
 * **Better than mergerfs for:** turnkey pooling plus integrated real-time
   parity in one product.
-* **Worse than mergerfs for:** users who prefer a Linux distro-agnostic,
-  fully open-source component approach.
+* **Worse than mergerfs for:** non-destructive incremental addition and
+  removal of populated filesystems, arbitrary branch types and filesystem
+  layouts, and users who prefer a Linux distro-agnostic, fully open-source
+  component approach.
 
 
 ## NonRAID
