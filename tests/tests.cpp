@@ -8,6 +8,7 @@
 #include "num.hpp"
 #include "rapidhash/rapidhash.h"
 #include "rnd.hpp"
+#include "qos_rules.hpp"
 #include "str.hpp"
 #include "thread_pool.hpp"
 
@@ -3647,6 +3648,450 @@ test_rapidhash_withSeed_preserves_default_output()
     }
 }
 
+
+/*
+  QoS ruleset parsing.
+
+  The parser is the part of the QoS engine a user actually touches, and
+  a ruleset that parses "successfully" into the wrong thing would
+  silently misprioritise every request. These check both that valid
+  input produces the expected classification and that invalid input is
+  rejected rather than partially applied.
+*/
+
+static
+qos::RuleSet::Ptr
+qos_parse(const char *text_)
+{
+  std::string err;
+
+  return qos::RuleSet::parse(text_,&err);
+}
+
+// Owns the strings a Subject points at. Building a Subject from
+// temporaries leaves it holding dangling pointers the moment the full
+// expression ends.
+struct QoSSubj
+{
+  std::string  cgroup;
+  std::string  comm;
+  std::string  path;
+  std::string  cmdline;
+  qos::Subject s;
+
+  QoSSubj(std::string          cgroup_,
+          std::string          comm_,
+          std::string          path_,
+          const u32            uid_ = 0,
+          const qos::Direction dir_ = qos::Direction::READ,
+          std::string          cmdline_ = {})
+    : cgroup(std::move(cgroup_)),
+      comm(std::move(comm_)),
+      path(std::move(path_)),
+      cmdline(std::move(cmdline_))
+  {
+    s.cgroup  = &cgroup;
+    s.comm    = &comm;
+    s.path    = &path;
+    s.cmdline = &cmdline;
+    s.uid     = uid_;
+    s.gid     = 0;
+    s.dir     = dir_;
+  }
+};
+
+static
+void
+test_qos_parse_size(void)
+{
+  u64 v;
+
+  TEST_CHECK(qos::parse_size("1024",&v) == 0 && v == 1024);
+  TEST_CHECK(qos::parse_size("1K",&v) == 0 && v == 1024);
+  TEST_CHECK(qos::parse_size("1KiB",&v) == 0 && v == 1024);
+  TEST_CHECK(qos::parse_size("1MB",&v) == 0 && v == 1024 * 1024);
+  TEST_CHECK(qos::parse_size("1.5M",&v) == 0 && v == (1024 * 1024 * 3) / 2);
+  TEST_CHECK(qos::parse_size("2G",&v) == 0 && v == 2ULL * 1024 * 1024 * 1024);
+
+  TEST_CHECK(qos::parse_size("",&v) != 0);
+  TEST_CHECK(qos::parse_size("M",&v) != 0);
+  TEST_CHECK(qos::parse_size("10Q",&v) != 0);
+  TEST_CHECK(qos::parse_size("abc",&v) != 0);
+}
+
+static
+void
+test_qos_parse_ioprio(void)
+{
+  int v;
+
+  TEST_CHECK(qos::ioprio::from_string("idle",&v) == 0);
+  TEST_CHECK(qos::ioprio::to_string(v) == "idle");
+
+  TEST_CHECK(qos::ioprio::from_string("rt:0",&v) == 0);
+  TEST_CHECK(qos::ioprio::to_string(v) == "rt:0");
+
+  TEST_CHECK(qos::ioprio::from_string("be:7",&v) == 0);
+  TEST_CHECK(qos::ioprio::to_string(v) == "be:7");
+
+  TEST_CHECK(qos::ioprio::from_string("be:8",&v) != 0);
+  TEST_CHECK(qos::ioprio::from_string("be:",&v) != 0);
+  TEST_CHECK(qos::ioprio::from_string("zz:1",&v) != 0);
+  TEST_CHECK(qos::ioprio::from_string("",&v) != 0);
+}
+
+static
+void
+test_qos_rules_basic(void)
+{
+  auto rs = qos_parse("class fast ioprio=rt:0\n"
+                      "class slow ioprio=idle nice=19 rate=8M\n"
+                      "match comm = rsync -> slow\n"
+                      "default fast\n");
+
+  TEST_ASSERT(rs != nullptr);
+  TEST_CHECK(!rs->inert());
+  TEST_CHECK(rs->needs_comm());
+  TEST_CHECK(!rs->needs_cgroup());
+  TEST_CHECK(!rs->needs_path());
+
+  QoSSubj rsync("","rsync","/a");
+  TEST_CHECK(rs->classify(rsync.s)->name == "slow");
+
+  QoSSubj cat("","cat","/a");
+  TEST_CHECK(rs->classify(cat.s)->name == "fast");
+}
+
+static
+void
+test_qos_rules_multi_condition(void)
+{
+  // Every condition must hold. This is what makes "this program, but
+  // only on this folder" expressible as a single rule.
+  auto rs = qos_parse("class bulk ioprio=idle\n"
+                      "class norm ioprio=be:4\n"
+                      "match cgroup ~ *lxc/3111* comm ~ *Butler* -> bulk\n"
+                      "default norm\n");
+
+  TEST_ASSERT(rs != nullptr);
+  TEST_CHECK(rs->needs_cgroup());
+  TEST_CHECK(rs->needs_comm());
+
+  QoSSubj both("0::/lxc/3111/init","PlexButler","/x");
+  TEST_CHECK(rs->classify(both.s)->name == "bulk");
+
+  // Right container, wrong program.
+  QoSSubj one("0::/lxc/3111/init","PlexTranscoder","/x");
+  TEST_CHECK(rs->classify(one.s)->name == "norm");
+
+  // Right program, wrong container.
+  QoSSubj other("0::/lxc/3129/init","PlexButler","/x");
+  TEST_CHECK(rs->classify(other.s)->name == "norm");
+}
+
+static
+void
+test_qos_rules_path_and_op(void)
+{
+  auto rs = qos_parse("class slow ioprio=idle rate=1M\n"
+                      "class norm ioprio=be:4\n"
+                      "match path ~ /TV/* op = write -> slow\n"
+                      "default norm\n");
+
+  TEST_ASSERT(rs != nullptr);
+  TEST_CHECK(rs->needs_path());
+
+  QoSSubj w("","x","/TV/show/ep.mkv",0,qos::Direction::WRITE);
+  TEST_CHECK(rs->classify(w.s)->name == "slow");
+
+  // Same path, but a read.
+  QoSSubj r("","x","/TV/show/ep.mkv",0,qos::Direction::READ);
+  TEST_CHECK(rs->classify(r.s)->name == "norm");
+
+  // A write, but elsewhere. Globs are matched without FNM_PATHNAME so
+  // '*' spans separators.
+  QoSSubj e("","x","/Movies/a.mkv",0,qos::Direction::WRITE);
+  TEST_CHECK(rs->classify(e.s)->name == "norm");
+
+  QoSSubj deep("","x","/TV/a/b/c.mkv",0,qos::Direction::WRITE);
+  TEST_CHECK(rs->classify(deep.s)->name == "slow");
+}
+
+static
+void
+test_qos_rules_first_match_wins(void)
+{
+  auto rs = qos_parse("class a ioprio=rt:0\n"
+                      "class b ioprio=idle\n"
+                      "match comm ~ pl* -> a\n"
+                      "match comm ~ plex -> b\n"
+                      "default b\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  QoSSubj plex("","plex","/x");
+  TEST_CHECK(rs->classify(plex.s)->name == "a");
+}
+
+static
+void
+test_qos_rules_capacity_and_percent(void)
+{
+  auto rs = qos_parse("capacity /mnt/disk1 100M\n"
+                      "capacity default 50M\n"
+                      "class pct rate=10%\n"
+                      "class abs rate=4M\n"
+                      "match uid = 1000 -> pct\n"
+                      "default abs\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  const qos::Class *pct = rs->find_class("pct");
+  const qos::Class *abs = rs->find_class("abs");
+  TEST_ASSERT(pct && abs);
+
+  TEST_CHECK(rs->capacity("/mnt/disk1") == 100 * 1024 * 1024);
+  // Unknown resources fall back to the declared default.
+  TEST_CHECK(rs->capacity("/mnt/nope") == 50 * 1024 * 1024);
+
+  TEST_CHECK(rs->rate_for(pct,"/mnt/disk1") == (100 * 1024 * 1024) / 10);
+  TEST_CHECK(rs->rate_for(pct,"/mnt/nope") == (50 * 1024 * 1024) / 10);
+
+  // An absolute rate ignores the resource entirely.
+  TEST_CHECK(rs->rate_for(abs,"/mnt/disk1") == 4 * 1024 * 1024);
+}
+
+static
+void
+test_qos_percent_without_capacity_is_unlimited(void)
+{
+  // Nothing declared a capacity, so 10% of an unknown number cannot be
+  // enforced. Running unlimited is the only honest reading; throttling
+  // against a guess would be worse.
+  auto rs = qos_parse("class pct rate=10%\n"
+                      "default pct\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  const qos::Class *pct = rs->find_class("pct");
+  TEST_ASSERT(pct != nullptr);
+  TEST_CHECK(pct->limited());
+  TEST_CHECK(rs->rate_for(pct,"/mnt/whatever") == 0);
+}
+
+static
+void
+test_qos_rules_errors(void)
+{
+  std::string err;
+
+  // A rule may not name a class that does not exist yet.
+  TEST_CHECK(qos::RuleSet::parse("match comm = x -> nope\n",&err) == nullptr);
+  TEST_CHECK(!err.empty());
+
+  TEST_CHECK(qos::RuleSet::parse("class a ioprio=be:9\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a rate=10Q\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a nice=99\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a rate=0%\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a rate=101%\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nclass a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch bogus = x -> a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch comm ! x -> a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch comm = x a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch -> a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\ndefault nope\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("frobnicate\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch uid = abc -> a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch uid ~ 100 -> a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("class a\nmatch op = sideways -> a\n",&err) == nullptr);
+  TEST_CHECK(qos::RuleSet::parse("capacity default\n",&err) == nullptr);
+}
+
+static
+void
+test_qos_rules_comments_and_blanks(void)
+{
+  auto rs = qos_parse("# leading comment\n"
+                      "\n"
+                      "class a ioprio=rt:0   # trailing comment\n"
+                      "   \n"
+                      "match comm = x -> a   # another\n"
+                      "default a\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  QoSSubj sub("","x","/p");
+  TEST_CHECK(rs->classify(sub.s)->name == "a");
+}
+
+static
+void
+test_qos_empty_ruleset_is_inert(void)
+{
+  // An empty or do-nothing ruleset must report itself inert so the hot
+  // path can skip reading /proc entirely.
+  auto rs = qos_parse("");
+  TEST_ASSERT(rs != nullptr);
+  TEST_CHECK(rs->inert());
+
+  auto named = qos_parse("class a\ndefault a\n");
+  TEST_ASSERT(named != nullptr);
+  TEST_CHECK(named->inert());
+
+  auto live = qos_parse("class a ioprio=idle\ndefault a\n");
+  TEST_ASSERT(live != nullptr);
+  TEST_CHECK(!live->inert());
+
+  auto dflt = qos::RuleSet::make_default();
+  TEST_ASSERT(dflt != nullptr);
+  TEST_CHECK(dflt->inert());
+}
+
+static
+void
+test_qos_buckets_are_per_resource(void)
+{
+  // A rate is a per-device allowance. Two branches must not share one
+  // bucket, or a class limited to 10% would be limited to 10% of one
+  // disk spread across all of them.
+  auto rs = qos_parse("class a rate=1M\ndefault a\n");
+  TEST_ASSERT(rs != nullptr);
+
+  const qos::Class *a = rs->find_class("a");
+  TEST_ASSERT(a != nullptr);
+
+  qos::Bucket *b1 = a->bucket_for("/mnt/disk1");
+  qos::Bucket *b2 = a->bucket_for("/mnt/disk2");
+
+  TEST_CHECK(b1 != nullptr);
+  TEST_CHECK(b2 != nullptr);
+  TEST_CHECK(b1 != b2);
+  // Asking again returns the same bucket rather than a fresh one.
+  TEST_CHECK(a->bucket_for("/mnt/disk1") == b1);
+}
+
+
+
+static
+void
+test_qos_rules_cmdline(void)
+{
+  // The case this field exists for: Plex runs credits detection under
+  // the *same* `Plex Transcoder` binary as real playback, reading the
+  // same media file. Neither comm nor path can separate them -- only
+  // the command line, where a detection job writes its output into
+  // .../Transcode/Detection/ instead of feeding a session.
+  auto rs = qos_parse("class playback protect\n"
+                      "class analysis yield=100 floor=5% ioprio=idle\n"
+                      "match comm = 'Plex Transcoder' cmdline ~ */Transcode/Detection/* -> analysis\n"
+                      "match comm = 'Plex Transcoder' -> playback\n"
+                      "default playback\n");
+
+  TEST_ASSERT(rs != nullptr);
+  TEST_CHECK(rs->needs_cmdline());
+
+  QoSSubj detect("","Plex Transcoder","/TV/ep.mkv",0,qos::Direction::READ,
+                 "/usr/lib/plexmediaserver/Plex Transcoder -i /storage/TV/ep.mkv "
+                 "-f flac /transcode/Transcode/Detection/abc123");
+  TEST_CHECK(rs->classify(detect.s)->name == "analysis");
+
+  // Same binary, same file, but feeding a session.
+  QoSSubj play("","Plex Transcoder","/TV/ep.mkv",0,qos::Direction::READ,
+               "/usr/lib/plexmediaserver/Plex Transcoder -i /storage/TV/ep.mkv "
+               "-f hls /transcode/Transcode/Sessions/xyz789");
+  TEST_CHECK(rs->classify(play.s)->name == "playback");
+}
+
+static
+void
+test_qos_cmdline_not_read_when_unused(void)
+{
+  // Reading /proc/<pid>/cmdline is only worth it when some rule looks
+  // at it.
+  auto rs = qos_parse("class a ioprio=idle\n"
+                      "match comm = x -> a\n"
+                      "default a\n");
+
+  TEST_ASSERT(rs != nullptr);
+  TEST_CHECK(!rs->needs_cmdline());
+}
+
+static
+void
+test_qos_critical_is_never_throttled(void)
+{
+  // A class playback synchronously waits on -- Plex's EasyAudioEncoder
+  // is the real-world case -- must never be delayed, even if the
+  // ruleset gives it a rate. Throttling it throttles the stream
+  // blocked behind it.
+  auto rs = qos_parse("class eae critical rate=1M\n"
+                      "class bulk rate=1M\n"
+                      "match comm = EasyAudioEncode -> eae\n"
+                      "default bulk\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  const qos::Class *eae  = rs->find_class("eae");
+  const qos::Class *bulk = rs->find_class("bulk");
+  TEST_ASSERT(eae && bulk);
+
+  TEST_CHECK(eae->critical);
+  TEST_CHECK(eae->immune());
+  TEST_CHECK(!bulk->immune());
+
+  QoSSubj s("","EasyAudioEncode","/x");
+  TEST_CHECK(rs->classify(s.s)->name == "eae");
+}
+
+static
+void
+test_qos_protect_implies_immune(void)
+{
+  auto rs = qos_parse("class p protect\nclass b yield=100\ndefault b\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  TEST_CHECK(rs->find_class("p")->immune());
+  TEST_CHECK(!rs->find_class("b")->immune());
+  TEST_CHECK(rs->has_protected());
+}
+
+
+
+static
+void
+test_qos_quoted_patterns(void)
+{
+  // Without quoting, none of the process names that actually matter
+  // here can be written down at all.
+  auto rs = qos_parse("class a ioprio=idle\n"
+                      "class b ioprio=be:4\n"
+                      "match comm = \"Plex Media Scanner\" -> a\n"
+                      "default b\n");
+
+  TEST_ASSERT(rs != nullptr);
+
+  QoSSubj scanner("","Plex Media Scanner","/x");
+  TEST_CHECK(rs->classify(scanner.s)->name == "a");
+
+  QoSSubj other("","Plex","/x");
+  TEST_CHECK(rs->classify(other.s)->name == "b");
+
+  // Single quotes work the same way, and a glob may be quoted too.
+  auto rs2 = qos_parse("class a ioprio=idle\n"
+                       "class b ioprio=be:4\n"
+                       "match path ~ '/TV/The Bear/*' -> a\n"
+                       "default b\n");
+  TEST_ASSERT(rs2 != nullptr);
+
+  QoSSubj bear("","x","/TV/The Bear/S01E01.mkv");
+  TEST_CHECK(rs2->classify(bear.s)->name == "a");
+
+  QoSSubj notbear("","x","/TV/Other/S01E01.mkv");
+  TEST_CHECK(rs2->classify(notbear.s)->name == "b");
+}
+
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -3828,5 +4273,22 @@ TEST_LIST =
    {"tp_heavy_repeated_construct_destroy",test_tp_heavy_repeated_construct_destroy},
    {"tp_heavy_enqueue_task_mixed_outcomes",test_tp_heavy_enqueue_task_mixed_outcomes},
    {"tp_heavy_add_remove_churn_under_enqueue",test_tp_heavy_add_remove_churn_under_enqueue},
+   {"qos_parse_size",test_qos_parse_size},
+   {"qos_parse_ioprio",test_qos_parse_ioprio},
+   {"qos_rules_basic",test_qos_rules_basic},
+   {"qos_rules_multi_condition",test_qos_rules_multi_condition},
+   {"qos_rules_path_and_op",test_qos_rules_path_and_op},
+   {"qos_rules_first_match_wins",test_qos_rules_first_match_wins},
+   {"qos_rules_capacity_and_percent",test_qos_rules_capacity_and_percent},
+   {"qos_percent_without_capacity_is_unlimited",test_qos_percent_without_capacity_is_unlimited},
+   {"qos_rules_errors",test_qos_rules_errors},
+   {"qos_rules_comments_and_blanks",test_qos_rules_comments_and_blanks},
+   {"qos_empty_ruleset_is_inert",test_qos_empty_ruleset_is_inert},
+   {"qos_buckets_are_per_resource",test_qos_buckets_are_per_resource},
+   {"qos_quoted_patterns",test_qos_quoted_patterns},
+   {"qos_rules_cmdline",test_qos_rules_cmdline},
+   {"qos_cmdline_not_read_when_unused",test_qos_cmdline_not_read_when_unused},
+   {"qos_critical_is_never_throttled",test_qos_critical_is_never_throttled},
+   {"qos_protect_implies_immune",test_qos_protect_implies_immune},
    {NULL,NULL}
   };
