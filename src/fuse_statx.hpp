@@ -26,7 +26,7 @@
 namespace FUSE
 {
   int statx(const fuse_req_ctx_t *ctx,
-            const char           *fusepath,
+            const fs::relpath       &fusepath,
             cu32                   flags,
             cu32                   mask,
             struct fuse_statx    *st,

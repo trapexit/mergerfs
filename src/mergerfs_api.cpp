@@ -54,22 +54,22 @@ _lgetxattr(const std::string &input_path_,
 }
 
 bool
-mergerfs::api::is_mergerfs(const fs::path &mountpoint_)
+mergerfs::api::is_mergerfs(const std::string &mountpoint_)
 {
-  fs::path dot_mergerfs_filepath;
+  std::string dot_mergerfs_filepath;
 
-  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+  dot_mergerfs_filepath = mountpoint_ + "/.mergerfs";
 
   return fs::exists(dot_mergerfs_filepath);
 }
 
 int
-mergerfs::api::get_kvs(const fs::path                    &mountpoint_,
+mergerfs::api::get_kvs(const std::string                 &mountpoint_,
                        std::map<std::string,std::string> *kvs_)
 {
-  fs::path dot_mergerfs_filepath;
+  std::string dot_mergerfs_filepath;
 
-  dot_mergerfs_filepath = mountpoint_ / ".mergerfs";
+  dot_mergerfs_filepath = mountpoint_ + "/.mergerfs";
 
   return fs::xattr::get(dot_mergerfs_filepath,kvs_);
 }

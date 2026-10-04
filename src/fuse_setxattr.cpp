@@ -102,42 +102,25 @@ _setxattr_ctrl_file(const char *attrname_,
 
 static
 void
-_setxattr_loop_core(const fs::path &basepath_,
-                    const fs::path &fusepath_,
-                    const char     *attrname_,
-                    const char     *attrval_,
-                    const size_t    attrvalsize_,
-                    const int       flags_,
-                    PolicyRV       *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
 _setxattr_loop(const std::vector<Branch*> &branches_,
-               const fs::path             &fusepath_,
+               const fs::relpath             &fusepath_,
                const char                 *attrname_,
                const char                 *attrval_,
                const size_t                attrvalsize_,
                const int                   flags_,
                PolicyRV                   *prv_)
 {
+  fs::relpath fullpath = fusepath_;
+
   for(auto &branch : branches_)
     {
-      ::_setxattr_loop_core(branch->path,
-                            fusepath_,
-                            attrname_,
-                            attrval_,attrvalsize_,
-                            flags_,
-                            prv_);
+      int rv;
+
+      fullpath.set_prefix(branch->path);
+
+      rv = fs::lsetxattr(fullpath,attrname_,attrval_,attrvalsize_,flags_);
+
+      prv_->insert(rv,branch->path);
     }
 }
 
@@ -146,7 +129,7 @@ int
 _setxattr(const Policy::Action &setxattrPolicy_,
           const Policy::Search &getxattrPolicy_,
           const Branches::Ptr   branches_,
-          const fs::path       &fusepath_,
+          const fs::relpath       &fusepath_,
           const char           *attrname_,
           const char           *attrval_,
           const size_t          attrvalsize_,
@@ -181,7 +164,7 @@ _setxattr(const Policy::Action &setxattrPolicy_,
 static
 int
 _setxattr(const fuse_req_ctx_t *ctx_,
-          const fs::path       &fusepath_,
+          const fs::relpath       &fusepath_,
           const char           *attrname_,
           const char           *attrval_,
           size_t                attrvalsize_,
@@ -207,22 +190,21 @@ _setxattr(const fuse_req_ctx_t *ctx_,
 
 int
 FUSE::setxattr(const fuse_req_ctx_t *ctx_,
-               const char           *fusepath_,
+               const fs::relpath       &fusepath_,
                const char           *attrname_,
                const char           *attrval_,
                size_t                attrvalsize_,
                int                   flags_)
 {
-  const fs::path fusepath{fusepath_};
 
-  if(Config::is_ctrl_file(fusepath))
+  if(Config::is_ctrl_file(fusepath_))
     return ::_setxattr_ctrl_file(attrname_,
                                  attrval_,
                                  attrvalsize_,
                                  flags_);
 
   return ::_setxattr(ctx_,
-                     fusepath,
+                     fusepath_,
                      attrname_,
                      attrval_,
                      attrvalsize_,

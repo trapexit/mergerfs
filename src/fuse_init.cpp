@@ -144,16 +144,16 @@ _want_if_capable_max_pages(fuse_conn_info_t *conn_,
 
 static
 void
-_readahead(const fs::path &path_,
-           const int       readahead_)
+_readahead(const std::string &path_,
+           const int          readahead_)
 {
   int rv;
 
-  rv = fs::readahead(path_,readahead_);
+  rv = fs::readahead(path_.c_str(),readahead_);
   if(rv == 0)
-    SysLog::info("{} - readahead set to {}",path_.string(),readahead_);
+    SysLog::info("{} - readahead set to {}",path_,readahead_);
   else
-    SysLog::error("{} - unable to set readahead",path_.string());
+    SysLog::error("{} - unable to set readahead",path_);
 }
 
 static

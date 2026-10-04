@@ -101,7 +101,7 @@ _mount_point_stats(const std::string &output_)
     {
       std::vector<std::string> allpaths;
 
-      mergerfs::api::allpaths(mount.dir.string(),allpaths);
+      mergerfs::api::allpaths(mount.dir,allpaths);
       for(const auto &path : allpaths)
         {
           ::_run({"stat",path.c_str()},output_);
@@ -129,13 +129,13 @@ _mergerfs_settings(const std::string &output_)
       int rv;
       std::map<std::string,std::string> kvs;
 
-      rv = mergerfs::api::get_kvs(mount.dir.string(),&kvs);
+      rv = mergerfs::api::get_kvs(mount.dir,&kvs);
       if(rv < 0)
         continue;
 
       std::string output_str;
 
-      output_str = fmt::format("=== {}/.mergerfs\n",mount.dir.string());
+      output_str = fmt::format("=== {}/.mergerfs\n",mount.dir);
       for(const auto &[k,v] : kvs)
         output_str += fmt::format("{}={}\n",k,v);
       output_str += "\n\n";

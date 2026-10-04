@@ -26,8 +26,6 @@
 #include "policy.hpp"
 #include "policy_error.hpp"
 
-#include <string>
-
 
 static
 int
@@ -61,7 +59,7 @@ _create(const Branches::Ptr  &ibranches_,
 
 int
 Policy::FF::Action::operator()(const Branches::Ptr  &branches_,
-                               const fs::path       &fusepath_,
+                               const fs::relpath       &fusepath_,
                                std::vector<Branch*> &paths_) const
 {
   return Policies::Action::epff(branches_,fusepath_,paths_);
@@ -69,7 +67,7 @@ Policy::FF::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
-                               const fs::path       &fusepath_,
+                               const fs::relpath       &fusepath_,
                                std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,paths_);
@@ -77,12 +75,14 @@ Policy::FF::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::FF::Search::operator()(const Branches::Ptr  &branches_,
-                               const fs::path       &fusepath_,
+                               const fs::relpath       &fusepath_,
                                std::vector<Branch*> &output_) const
 {
+  fs::relpath fullpath(fusepath_);
+
   for(auto &branch : *branches_)
     {
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         continue;
 
       output_.emplace_back(&branch);

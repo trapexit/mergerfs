@@ -25,7 +25,7 @@
 
 int
 FUSE::tmpfile(const fuse_req_ctx_t *ctx_,
-              const char           *fusepath_,
+              const fs::relpath       &fusepath_,
               mode_t                mode_,
               fuse_file_info_t     *ffi_)
 {

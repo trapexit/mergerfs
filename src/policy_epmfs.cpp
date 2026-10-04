@@ -24,17 +24,15 @@
 #include "fs_path.hpp"
 #include "fs_statvfs_cache.hpp"
 #include "policy.hpp"
-#include "policy_epmfs.hpp"
 #include "policy_error.hpp"
 
 #include <limits>
-#include <string>
 
 
 static
 int
 _create(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -42,6 +40,7 @@ _create(const Branches::Ptr  &branches_,
   u64 epmfs;
   fs::info_t info;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   error = ENOENT;
@@ -50,7 +49,7 @@ _create(const Branches::Ptr  &branches_,
     {
       if(branch.ro_or_nc())
         error_and_continue(error,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(error,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -77,7 +76,7 @@ _create(const Branches::Ptr  &branches_,
 static
 int
 _action(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
@@ -85,6 +84,7 @@ _action(const Branches::Ptr  &branches_,
   u64 epmfs;
   fs::info_t info;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   error = ENOENT;
@@ -93,7 +93,7 @@ _action(const Branches::Ptr  &branches_,
     {
       if(branch.ro())
         error_and_continue(error,EROFS);
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         error_and_continue(error,ENOENT);
       rv = fs::info(branch.path,&info);
       if(rv < 0)
@@ -118,19 +118,20 @@ _action(const Branches::Ptr  &branches_,
 static
 int
 _search(const Branches::Ptr  &branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         std::vector<Branch*> &paths_)
 {
   int rv;
   u64 epmfs;
   u64 spaceavail;
   Branch *obranch;
+  fs::relpath fullpath(fusepath_);
 
   obranch = nullptr;
   epmfs = 0;
   for(auto &branch : *branches_)
     {
-      if(!fs::exists(branch.path,fusepath_))
+      if(!fs::exists(fullpath,branch.path))
         continue;
       rv = fs::statvfs_cache_spaceavail(branch.path,&spaceavail);
       if(rv < 0)
@@ -152,7 +153,7 @@ _search(const Branches::Ptr  &branches_,
 
 int
 Policy::EPMFS::Action::operator()(const Branches::Ptr  &branches_,
-                                  const fs::path       &fusepath_,
+                                  const fs::relpath       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_action(branches_,fusepath_,paths_);
@@ -160,7 +161,7 @@ Policy::EPMFS::Action::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPMFS::Create::operator()(const Branches::Ptr  &branches_,
-                                  const fs::path       &fusepath_,
+                                  const fs::relpath       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_create(branches_,fusepath_,paths_);
@@ -168,7 +169,7 @@ Policy::EPMFS::Create::operator()(const Branches::Ptr  &branches_,
 
 int
 Policy::EPMFS::Search::operator()(const Branches::Ptr  &branches_,
-                                  const fs::path       &fusepath_,
+                                  const fs::relpath       &fusepath_,
                                   std::vector<Branch*> &paths_) const
 {
   return ::_search(branches_,fusepath_,paths_);

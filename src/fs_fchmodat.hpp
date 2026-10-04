@@ -67,7 +67,7 @@ namespace fs
   inline
   int
   fchmodat(const int       dirfd_,
-           const fs::path &pathname_,
+           const fs::relpath &pathname_,
            const mode_t    mode_,
            const int       flags_)
   {

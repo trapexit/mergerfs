@@ -24,12 +24,12 @@
 class FH
 {
 public:
-  FH(const fs::path &fusepath_)
+  FH(const fs::relpath &fusepath_)
     : fusepath(fusepath_)
   {
 
   }
 
 public:
-  fs::path fusepath;
+  fs::relpath fusepath;
 };

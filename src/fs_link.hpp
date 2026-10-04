@@ -30,14 +30,22 @@ namespace fs
   static
   inline
   int
-  link(const std::string &oldpath_,
-       const std::string &newpath_)
+  link(const char *oldpath_,
+       const char *newpath_)
   {
     int rv;
 
-    rv = ::link(oldpath_.c_str(),
-                newpath_.c_str());
+    rv = ::link(oldpath_,newpath_);
 
     return ::to_neg_errno(rv);
+  }
+
+  static
+  inline
+  int
+  link(const std::string &oldpath_,
+       const std::string &newpath_)
+  {
+    return fs::link(oldpath_.c_str(),newpath_.c_str());
   }
 }

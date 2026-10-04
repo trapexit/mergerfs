@@ -56,7 +56,7 @@ namespace fs
   inline
   int
   mkdirat(const int       dirfd_,
-          const fs::path &pathname_,
+          const fs::relpath &pathname_,
           const mode_t    mode_)
   {
     return fs::mkdirat(dirfd_,

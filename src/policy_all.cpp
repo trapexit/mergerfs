@@ -25,9 +25,7 @@
 #include "policy.hpp"
 #include "policies.hpp"
 #include "policy_error.hpp"
-#include "strvec.hpp"
 
-#include <string>
 
 static
 int
@@ -62,7 +60,7 @@ _create(const Branches::Ptr  &ibranches_,
 
 int
 Policy::All::Action::operator()(const Branches::Ptr  &ibranches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &obranches_) const
 {
   return Policies::Action::epall(ibranches_,fusepath_,obranches_);
@@ -70,7 +68,7 @@ Policy::All::Action::operator()(const Branches::Ptr  &ibranches_,
 
 int
 Policy::All::Create::operator()(const Branches::Ptr  &ibranches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &obranches_) const
 {
   return ::_create(ibranches_,obranches_);
@@ -78,7 +76,7 @@ Policy::All::Create::operator()(const Branches::Ptr  &ibranches_,
 
 int
 Policy::All::Search::operator()(const Branches::Ptr  &ibranches_,
-                                const fs::path       &fusepath_,
+                                const fs::relpath       &fusepath_,
                                 std::vector<Branch*> &obranches_) const
 {
   return Policies::Search::epall(ibranches_,fusepath_,obranches_);

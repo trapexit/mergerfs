@@ -72,16 +72,16 @@ int
 _rename_create_path(const Policy::Search &searchPolicy_,
                     const Policy::Action &actionPolicy_,
                     const Branches::Ptr   branches_,
-                    const fs::path       &oldfusepath_,
-                    const fs::path       &newfusepath_)
+                    const fs::relpath       &oldfusepath_,
+                    const fs::relpath       &newfusepath_)
 {
   int rv;
   Err err;
   StrVec toremove;
   std::vector<Branch*> newbranches;
   std::vector<Branch*> oldbranches;
-  fs::path oldfullpath;
-  fs::path newfullpath;
+  fs::relpath oldfullpath = oldfusepath_;
+  fs::relpath newfullpath = newfusepath_;
 
   rv = actionPolicy_(branches_,oldfusepath_,oldbranches);
   if(rv < 0)
@@ -97,15 +97,15 @@ _rename_create_path(const Policy::Search &searchPolicy_,
 
   for(auto &branch : *branches_)
     {
-      newfullpath = branch.path / newfusepath_;
+      newfullpath.set_prefix(branch.path);
 
       if(!::_contains(oldbranches,branch.path))
         {
-          toremove.push_back(newfullpath);
+          toremove.emplace_back(newfullpath.native());
           continue;
         }
 
-      oldfullpath = branch.path / oldfusepath_;
+      oldfullpath.set_prefix(branch.path);
 
       rv = fs::rename(oldfullpath,newfullpath);
       if(rv < 0)
@@ -119,7 +119,7 @@ _rename_create_path(const Policy::Search &searchPolicy_,
 
       err = rv;
       if(rv < 0)
-        toremove.push_back(oldfullpath);
+        toremove.emplace_back(oldfullpath.native());
     }
 
   if(err == 0)
@@ -132,15 +132,15 @@ static
 int
 _rename_preserve_path(const Policy::Action &actionPolicy_,
                       const Branches::Ptr   branches_,
-                      const fs::path       &oldfusepath_,
-                      const fs::path       &newfusepath_)
+                      const fs::relpath       &oldfusepath_,
+                      const fs::relpath       &newfusepath_)
 {
   int rv;
   bool success;
   StrVec toremove;
   std::vector<Branch*> oldbranches;
-  fs::path oldfullpath;
-  fs::path newfullpath;
+  fs::relpath oldfullpath = oldfusepath_;
+  fs::relpath newfullpath = newfusepath_;
 
   rv = actionPolicy_(branches_,oldfusepath_,oldbranches);
   if(rv < 0)
@@ -149,20 +149,20 @@ _rename_preserve_path(const Policy::Action &actionPolicy_,
   success = false;
   for(auto &branch : *branches_)
     {
-      newfullpath = branch.path / newfusepath_;
+      newfullpath.set_prefix(branch.path);
 
       if(!::_contains(oldbranches,branch.path))
         {
-          toremove.push_back(newfullpath);
+          toremove.emplace_back(newfullpath.native());
           continue;
         }
 
-      oldfullpath = branch.path / oldfusepath_;
+      oldfullpath.set_prefix(branch.path);
 
       rv = fs::rename(oldfullpath,newfullpath);
       if(rv < 0)
         {
-          toremove.push_back(oldfullpath);
+          toremove.emplace_back(oldfullpath.native());
           continue;
         }
 
@@ -181,10 +181,10 @@ _rename_preserve_path(const Policy::Action &actionPolicy_,
 static
 void
 _rename_exdev_rename_back(const std::vector<Branch*> &branches_,
-                          const fs::path             &oldfusepath_)
+                          const fs::relpath             &oldfusepath_)
 {
-  fs::path oldpath;
-  fs::path newpath;
+  fs::relpath oldpath;
+  fs::relpath newpath;
 
   for(auto &branch : branches_)
     {
@@ -203,12 +203,12 @@ static
 int
 _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
                             const Branches::Ptr   ibranches_,
-                            const fs::path       &oldfusepath_,
+                            const fs::relpath       &oldfusepath_,
                             std::vector<Branch*> &obranches_)
 {
   int rv;
-  fs::path clonesrc;
-  fs::path clonedst;
+  fs::relpath clonesrc;
+  fs::relpath clonedst;
 
   rv = actionPolicy_(ibranches_,oldfusepath_,obranches_);
   if(rv < 0)
@@ -220,11 +220,11 @@ _rename_exdev_rename_target(const Policy::Action &actionPolicy_,
       clonedst  = branch->path;
       clonedst /= ".mergerfs_rename_exdev";
 
-      rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
+      rv = fs::clonepath(clonesrc.native(),clonedst.native(),oldfusepath_.parent_path());
       if(rv == -ENOENT)
         {
           fs::mkdir_as({0,0},clonedst,01777);
-          rv = fs::clonepath(clonesrc,clonedst,oldfusepath_.parent_path());
+          rv = fs::clonepath(clonesrc.native(),clonedst.native(),oldfusepath_.parent_path());
         }
 
       if(rv < 0)
@@ -251,24 +251,24 @@ int
 _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
                           const Policy::Action &actionPolicy_,
                           const Branches::Ptr   branches_,
-                          const fs::path       &oldfusepath_,
-                          const fs::path       &newfusepath_)
+                          const fs::relpath       &oldfusepath_,
+                          const fs::relpath       &newfusepath_)
 {
   int rv;
-  fs::path target;
-  fs::path linkpath;
+  fs::relpath target;
   std::vector<Branch*> branches;
 
   rv = ::_rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,branches);
   if(rv < 0)
     return rv;
 
-  linkpath  = newfusepath_;
-  target    = "/.mergerfs_rename_exdev";
+  target    = ".mergerfs_rename_exdev";
   target   /= oldfusepath_;
-  target    = target.lexically_relative(linkpath.parent_path());
+  target    = target.lexically_relative(newfusepath_.parent_path());
+  if(target.empty())
+    return -EXDEV;
 
-  rv = FUSE::symlink(ctx_,target.c_str(),linkpath);
+  rv = FUSE::symlink(ctx_,target.c_str(),newfusepath_);
   if(rv < 0)
     ::_rename_exdev_rename_back(branches,oldfusepath_);
 
@@ -280,25 +280,23 @@ int
 _rename_exdev_abs_symlink(const fuse_req_ctx_t *ctx_,
                           const Policy::Action &actionPolicy_,
                           const Branches::Ptr   branches_,
-                          const fs::path       &mount_,
-                          const fs::path       &oldfusepath_,
-                          const fs::path       &newfusepath_)
+                          const std::string    &mount_,
+                          const fs::relpath    &oldfusepath_,
+                          const fs::relpath    &newfusepath_)
 {
   int rv;
-  fs::path target;
-  fs::path linkpath;
+  fs::relpath target;
   std::vector<Branch*> branches;
 
   rv = ::_rename_exdev_rename_target(actionPolicy_,branches_,oldfusepath_,branches);
   if(rv < 0)
     return rv;
 
-  linkpath  = newfusepath_;
   target    = mount_;
   target   /= ".mergerfs_rename_exdev";
   target   /= oldfusepath_;
 
-  rv = FUSE::symlink(ctx_,target.c_str(),linkpath);
+  rv = FUSE::symlink(ctx_,target.c_str(),newfusepath_);
   if(rv < 0)
     ::_rename_exdev_rename_back(branches,oldfusepath_);
 
@@ -308,8 +306,8 @@ _rename_exdev_abs_symlink(const fuse_req_ctx_t *ctx_,
 static
 int
 _rename_exdev(const fuse_req_ctx_t *ctx_,
-              const fs::path       &oldfusepath_,
-              const fs::path       &newfusepath_)
+              const fs::relpath       &oldfusepath_,
+              const fs::relpath       &newfusepath_)
 {
   switch(cfg.rename_exdev)
     {
@@ -335,8 +333,8 @@ _rename_exdev(const fuse_req_ctx_t *ctx_,
 
 static
 int
-_rename(const fs::path &oldpath_,
-        const fs::path &newpath_)
+_rename(const fs::relpath &oldpath_,
+        const fs::relpath &newpath_)
 {
   if(cfg.func.create.policy.path_preserving() && !cfg.ignorepponrename)
     return ::_rename_preserve_path(cfg.func.rename.policy,
@@ -353,16 +351,14 @@ _rename(const fs::path &oldpath_,
 
 int
 FUSE::rename(const fuse_req_ctx_t *ctx_,
-             const char           *oldfusepath_,
-             const char           *newfusepath_)
+             const fs::relpath       &oldfusepath_,
+             const fs::relpath       &newfusepath_)
 {
   int rv;
-  const fs::path oldfusepath{oldfusepath_};
-  const fs::path newfusepath{newfusepath_};
 
-  rv = ::_rename(oldfusepath,newfusepath);
+  rv = ::_rename(oldfusepath_,newfusepath_);
   if(rv == -EXDEV)
-    return ::_rename_exdev(ctx_,oldfusepath,newfusepath);
+    return ::_rename_exdev(ctx_,oldfusepath_,newfusepath_);
 
   return rv;
 }

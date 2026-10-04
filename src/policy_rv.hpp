@@ -19,14 +19,15 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct PolicyRV
 {
   struct RV
   {
-    RV(const int          rv_,
-       const std::string &basepath_)
+    RV(const int              rv_,
+       const std::string_view basepath_)
       : rv(rv_),
         basepath(basepath_)
     {
@@ -40,8 +41,8 @@ struct PolicyRV
   std::vector<RV> errors;
 
   void
-  insert(const int          rv_,
-         const std::string &basepath_)
+  insert(const int              rv_,
+         const std::string_view basepath_)
   {
     if(rv_ >= 0)
       successes.push_back({rv_,basepath_});
@@ -50,7 +51,7 @@ struct PolicyRV
   }
 
   int
-  get_error(const std::string &basepath_)
+  get_error(const std::string_view basepath_)
   {
     for(const auto &s : successes)
       {

@@ -78,9 +78,9 @@ _getxattr_ctrl_file(Config       &cfg_,
 
 static
 int
-_getxattr_from_string(char              *destbuf_,
-                      const size_t       destbufsize_,
-                      const std::string &src_)
+_getxattr_from_string(char                  *destbuf_,
+                      const size_t           destbufsize_,
+                      const std::string_view src_)
 {
   const size_t srcbufsize = src_.size();
 
@@ -98,7 +98,7 @@ _getxattr_from_string(char              *destbuf_,
 static
 int
 _getxattr_user_mergerfs_allpaths(const Branches::Ptr  branches_,
-                                 const fs::path      &fusepath_,
+                                 const fs::relpath      &fusepath_,
                                  char                *buf_,
                                  const size_t         count_)
 {
@@ -117,9 +117,9 @@ _getxattr_user_mergerfs_allpaths(const Branches::Ptr  branches_,
 
 static
 int
-_getxattr_user_mergerfs(const fs::path      &basepath_,
-                        const fs::path      &fusepath_,
-                        const fs::path      &fullpath_,
+_getxattr_user_mergerfs(const fs::relpath      &basepath_,
+                        const fs::relpath      &fusepath_,
+                        const fs::relpath      &fullpath_,
                         const Branches::Ptr  branches_,
                         const char          *attrname_,
                         char                *buf_,
@@ -145,13 +145,13 @@ static
 int
 _getxattr(const Policy::Search &searchFunc_,
           const Branches::Ptr   branches_,
-          const fs::path       &fusepath_,
+          const fs::relpath       &fusepath_,
           const char           *attrname_,
           char                 *buf_,
           const size_t          count_)
 {
   int rv;
-  fs::path fullpath;
+  fs::relpath fullpath;
   std::vector<Branch*> branches;
 
   rv = searchFunc_(branches_,fusepath_,branches);
@@ -160,7 +160,7 @@ _getxattr(const Policy::Search &searchFunc_,
   if(branches.empty())
     return -ENOENT;
 
-  fullpath = branches[0]->path / fusepath_;
+  fullpath.assign_concat(branches[0]->path,fusepath_);
 
   if(Config::is_mergerfs_xattr(attrname_))
     return ::_getxattr_user_mergerfs(branches[0]->path,
@@ -176,14 +176,13 @@ _getxattr(const Policy::Search &searchFunc_,
 
 int
 FUSE::getxattr(const fuse_req_ctx_t *ctx_,
-               const char           *fusepath_,
+               const fs::relpath       &fusepath_,
                const char           *attrname_,
                char                 *attrvalue_,
                size_t                attrvalue_size_)
 {
-  const fs::path fusepath{fusepath_};
 
-  if(Config::is_ctrl_file(fusepath))
+  if(Config::is_ctrl_file(fusepath_))
     return ::_getxattr_ctrl_file(cfg,
                                  attrname_,
                                  attrvalue_,
@@ -198,7 +197,7 @@ FUSE::getxattr(const fuse_req_ctx_t *ctx_,
 
   return ::_getxattr(cfg.func.getxattr.policy,
                      cfg.branches,
-                     fusepath,
+                     fusepath_,
                      attrname_,
                      attrvalue_,
                      attrvalue_size_);

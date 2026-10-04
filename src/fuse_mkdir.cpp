@@ -36,7 +36,7 @@
 static
 int
 _mkdir_core(const ugid_t    ugid_,
-            const fs::path &fullpath_,
+            const fs::relpath &fullpath_,
             mode_t          mode_,
             const mode_t    umask_)
 {
@@ -48,16 +48,16 @@ _mkdir_core(const ugid_t    ugid_,
 
 static
 int
-_mkdir_loop_core(const ugid_t    ugid_,
-                 const fs::path &createpath_,
-                 const fs::path &fusepath_,
-                 const mode_t    mode_,
-                 const mode_t    umask_)
+_mkdir_loop_core(const ugid_t       ugid_,
+                 const std::string &createpath_,
+                 const fs::relpath &fusepath_,
+                 const mode_t       mode_,
+                 const mode_t       umask_)
 {
   int rv;
-  fs::path fullpath;
+  fs::relpath fullpath;
 
-  fullpath = createpath_ / fusepath_;
+  fullpath.assign_concat(createpath_,fusepath_);
 
   rv = ::_mkdir_core(ugid_,fullpath,mode_,umask_);
 
@@ -69,8 +69,8 @@ int
 _mkdir_loop(const ugid_t                ugid_,
             const Branch               *existingbranch_,
             const std::vector<Branch*> &createbranches_,
-            const fs::path             &fusepath_,
-            const fs::path             &fusedirpath_,
+            const fs::relpath             &fusepath_,
+            const fs::relpath             &fusedirpath_,
             const mode_t                mode_,
             const mode_t                umask_)
 {
@@ -104,12 +104,12 @@ _mkdir(const ugid_t          ugid_,
        const Policy::Search &getattrPolicy_,
        const Policy::Create &mkdirPolicy_,
        const Branches::Ptr   branches_,
-       const fs::path       &fusepath_,
+       const fs::relpath       &fusepath_,
        const mode_t          mode_,
        const mode_t          umask_)
 {
   int rv;
-  fs::path fusedirpath;
+  fs::relpath fusedirpath;
   std::vector<Branch*> createbranches;
   std::vector<Branch*> existingbranches;
 
@@ -138,17 +138,16 @@ _mkdir(const ugid_t          ugid_,
 
 int
 FUSE::mkdir(const fuse_req_ctx_t *ctx_,
-            const char           *fusepath_,
+            const fs::relpath       &fusepath_,
             mode_t                mode_)
 {
   int rv;
-  const fs::path fusepath{fusepath_};
 
   rv = ::_mkdir(ctx_,
                 cfg.func.getattr.policy,
                 cfg.func.mkdir.policy,
                 cfg.branches,
-                fusepath,
+                fusepath_,
                 mode_,
                 ctx_->umask);
   if(rv == -EROFS)
@@ -158,7 +157,7 @@ FUSE::mkdir(const fuse_req_ctx_t *ctx_,
                     cfg.func.getattr.policy,
                     cfg.func.mkdir.policy,
                     cfg.branches,
-                    fusepath,
+                    fusepath_,
                     mode_,
                     ctx_->umask);
     }

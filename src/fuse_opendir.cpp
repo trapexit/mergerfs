@@ -26,7 +26,7 @@
 
 int
 FUSE::opendir(const fuse_req_ctx_t *ctx_,
-              const char           *fusepath_,
+              const fs::relpath       &fusepath_,
               fuse_file_info_t     *ffi_)
 {
   DirInfo *di;

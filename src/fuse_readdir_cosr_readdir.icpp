@@ -32,7 +32,7 @@
 
 struct DirRV
 {
-  const fs::path *branch_path;
+  const std::string *branch_path;
   DIR *dir;
   int  err;
 };
@@ -55,7 +55,7 @@ inline
 std::vector<std::future<DirRV>>
 _opendir(ThreadPool          &tp_,
          const Branches::Ptr &branches_,
-         const fs::path      &rel_dirpath_)
+         const fs::relpath      &rel_dirpath_)
 {
   std::vector<std::future<DirRV>> futures;
 
@@ -67,7 +67,7 @@ _opendir(ThreadPool          &tp_,
         [&branch,&rel_dirpath_]()
         {
           DIR *dir;
-          fs::path abs_dirpath;
+          fs::relpath abs_dirpath;
 
           abs_dirpath = branch.path / rel_dirpath_;
 
@@ -89,7 +89,7 @@ static
 inline
 int
 _readdir(std::vector<std::future<DirRV>> &dh_futures_,
-         const fs::path                  &rel_dirpath_,
+         const fs::relpath                  &rel_dirpath_,
          fuse_dirents_t                  *dirents_)
 {
   Err err;

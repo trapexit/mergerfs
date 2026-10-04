@@ -46,16 +46,16 @@ int
 Config::CfgConfigFile::from_string(const std::string_view s_)
 {
   int rv;
-  fs::path cfg_file;
+  std::string cfg_file;
 
   if(_depth > 5)
     return -ELOOP;
   _depth++;
   struct DepthGuard { int &d; ~DepthGuard() { --d; } } guard{_depth};
 
-  cfg_file = (s_.empty() ? _cfg_file : s_);
+  cfg_file = (s_.empty() ? std::string_view(_cfg_file) : s_);
 
-  rv = cfg.from_file(cfg_file);
+  rv = cfg.from_file(cfg_file.c_str());
   if(rv == 0)
     _cfg_file = cfg_file;
 
@@ -426,7 +426,7 @@ Config::from_stream(std::istream &istrm_)
 }
 
 int
-Config::from_file(const std::string &filepath_)
+Config::from_file(const char *filepath_)
 {
   std::ifstream ifstrm;
 
@@ -449,13 +449,13 @@ Config::finish_initializing()
 }
 
 bool
-Config::is_rootdir(const fs::path &fusepath_)
+Config::is_rootdir(const fs::relpath &fusepath_)
 {
   return fusepath_.empty();
 }
 
 bool
-Config::is_ctrl_file(const fs::path &fusepath_)
+Config::is_ctrl_file(const fs::relpath &fusepath_)
 {
   return (fusepath_ == ".mergerfs");
 }

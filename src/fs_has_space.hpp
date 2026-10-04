@@ -26,6 +26,15 @@
 namespace fs
 {
   bool
-  has_space(const std::string &str,
-            cs64                 size);
+  has_space(const char *str,
+            cs64        size);
+
+  static
+  inline
+  bool
+  has_space(const std::string &path,
+            cs64               size)
+  {
+    return fs::has_space(path.c_str(),size);
+  }
 }

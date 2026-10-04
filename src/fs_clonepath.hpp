@@ -20,11 +20,16 @@
 
 #include "fs_path.hpp"
 
+#include <string_view>
+
 
 namespace fs
 {
-  int clonepath(const fs::path &srcpath,
-                const fs::path &dstpath,
-                const fs::path &relpath,
-                const bool      return_metadata_errors = false);
+  // srcpath / dstpath are absolute base paths; relpath is the rel-form
+  // chain to walk and create. Accepts string_view so an fs::relpath
+  // holding an absolute fullpath also works without conversion.
+  int clonepath(const std::string_view srcpath,
+                const std::string_view dstpath,
+                const fs::relpath     &relpath,
+                const bool             return_metadata_errors = false);
 }

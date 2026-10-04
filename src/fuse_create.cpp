@@ -165,7 +165,7 @@ _config_to_ffi_flags(const int         tid_,
 static
 int
 _create_core(const ugid_t    ugid_,
-             const fs::path &fullpath_,
+             const fs::relpath &fullpath_,
              mode_t          mode_,
              const mode_t    umask_,
              const int       flags_)
@@ -180,16 +180,16 @@ static
 int
 _create_core(const ugid_t      ugid_,
              const Branch     *branch_,
-             const fs::path   &fusepath_,
+             const fs::relpath   &fusepath_,
              fuse_file_info_t *ffi_,
              const mode_t      mode_,
              const mode_t      umask_)
 {
   int rv;
   FileInfo *fi;
-  fs::path fullpath;
+  fs::relpath fullpath;
 
-  fullpath = branch_->path / fusepath_;
+  fullpath.assign_concat(branch_->path,fusepath_);
 
   rv = ::_create_core(ugid_,fullpath,mode_,umask_,ffi_->flags);
   if(rv < 0)
@@ -208,14 +208,14 @@ _create(const ugid_t          ugid_,
         const Policy::Search &searchFunc_,
         const Policy::Create &createFunc_,
         const Branches::Ptr   branches_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         fuse_file_info_t     *ffi_,
         const mode_t          mode_,
         const mode_t          umask_)
 {
   int rv;
-  fs::path fullpath;
-  fs::path fusedirpath;
+  fs::relpath fullpath;
+  fs::relpath fusedirpath;
   std::vector<Branch*> createpaths;
   std::vector<Branch*> existingpaths;
 
@@ -258,7 +258,7 @@ _(const PassthroughIOEnum e_,
 static
 int
 _create(const fuse_req_ctx_t *ctx_,
-        const fs::path       &fusepath_,
+        const fs::relpath       &fusepath_,
         mode_t                mode_,
         fuse_file_info_t     *ffi_)
 {
@@ -345,11 +345,10 @@ _create(const fuse_req_ctx_t *ctx_,
 
 int
 FUSE::create(const fuse_req_ctx_t *ctx_,
-             const char           *fusepath_,
+             const fs::relpath       &fusepath_,
              mode_t                mode_,
              fuse_file_info_t     *ffi_)
 {
-  const fs::path fusepath{fusepath_};
 
-  return ::_create(ctx_,fusepath,mode_,ffi_);
+  return ::_create(ctx_,fusepath_,mode_,ffi_);
 }

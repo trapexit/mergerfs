@@ -18,8 +18,7 @@
 
 #pragma once
 
-#include "fs_path.hpp"
-
+#include <string>
 #include <vector>
 
 
@@ -27,7 +26,7 @@ namespace fs
 {
   struct Mount
   {
-    fs::path    dir;
+    std::string dir;
     std::string fsname;
     std::string type;
     std::string opts;

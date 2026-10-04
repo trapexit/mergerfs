@@ -31,31 +31,22 @@
 
 static
 void
-_utimens_loop_core(const fs::path &basepath_,
-                   const fs::path &fusepath_,
-                   const timespec  ts_[2],
-                   PolicyRV       *prv_)
-{
-  int rv;
-  fs::path fullpath;
-
-  fullpath = basepath_ / fusepath_;
-
-  rv = fs::lutimens(fullpath,ts_);
-
-  prv_->insert(rv,basepath_);
-}
-
-static
-void
 _utimens_loop(const std::vector<Branch*> &branches_,
-              const fs::path             &fusepath_,
+              const fs::relpath             &fusepath_,
               const timespec              ts_[2],
               PolicyRV                   *prv_)
 {
+  fs::relpath fullpath = fusepath_;
+
   for(auto &branch : branches_)
     {
-      ::_utimens_loop_core(branch->path,fusepath_,ts_,prv_);
+      int rv;
+
+      fullpath.set_prefix(branch->path);
+
+      rv = fs::lutimens(fullpath,ts_);
+
+      prv_->insert(rv,branch->path);
     }
 }
 
@@ -64,7 +55,7 @@ int
 _utimens(const Policy::Action &utimensPolicy_,
          const Policy::Search &getattrPolicy_,
          const Branches::Ptr   branches_,
-         const fs::path       &fusepath_,
+         const fs::relpath       &fusepath_,
          const timespec        ts_[2])
 {
   int rv;
@@ -95,14 +86,13 @@ _utimens(const Policy::Action &utimensPolicy_,
 
 int
 FUSE::utimens(const fuse_req_ctx_t *ctx_,
-              const char           *fusepath_,
+              const fs::relpath       &fusepath_,
               const timespec        ts_[2])
 {
-  const fs::path fusepath{fusepath_};
 
   return ::_utimens(cfg.func.utimens.policy,
                     cfg.func.getattr.policy,
                     cfg.branches,
-                    fusepath,
+                    fusepath_,
                     ts_);
 }

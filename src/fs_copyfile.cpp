@@ -98,7 +98,7 @@ fs::copyfile(const int          src_fd_,
 
 s64
 fs::copyfile(const int                src_fd_,
-             const fs::path          &dst_filepath_,
+             const char              *dst_filepath_,
              const fs::CopyFileFlags &flags_)
 {
   s64 rv;
@@ -155,7 +155,7 @@ fs::copyfile(const int                src_fd_,
           continue;
         }
 
-      rv = fs::rename(dst_tmppath,dst_filepath_);
+      rv = fs::rename(dst_tmppath.c_str(),dst_filepath_);
       if((rv < 0) && (flags_.cleanup_failure))
         fs::unlink(dst_tmppath);
       break;
@@ -170,8 +170,8 @@ fs::copyfile(const int                src_fd_,
 #endif
 
 s64
-fs::copyfile(const fs::path          &src_filepath_,
-             const fs::path          &dst_filepath_,
+fs::copyfile(const char              *src_filepath_,
+             const char              *dst_filepath_,
              const fs::CopyFileFlags &flags_)
 {
   int src_fd;

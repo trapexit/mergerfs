@@ -50,14 +50,14 @@ _dirent_exact_namelen(const struct dirent *d_)
 static
 inline
 int
-_readdir(const fs::path &branch_path_,
-         const fs::path &rel_dirpath_,
+_readdir(const std::string &branch_path_,
+         const fs::relpath &rel_dirpath_,
          HashSet        &names_,
          fuse_dirents_t *dirents_,
          mutex_t        &mutex_)
 {
   DIR *dir;
-  fs::path abs_dirpath;
+  fs::relpath abs_dirpath;
 
   abs_dirpath = branch_path_ / rel_dirpath_;
 

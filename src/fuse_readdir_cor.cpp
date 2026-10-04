@@ -54,7 +54,7 @@ inline
 int
 _concurrent_readdir(ThreadPool          &tp_,
                      const Branches::Ptr  branches_,
-                    const fs::path      &rel_dirpath_,
+                    const fs::relpath      &rel_dirpath_,
                     fuse_dirents_t      *dirents_)
 {
   HashSet names;

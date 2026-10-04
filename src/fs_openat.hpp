@@ -62,7 +62,7 @@ namespace fs
   inline
   int
   openat(const int       dirfd_,
-         const fs::path &pathname_,
+         const fs::relpath &pathname_,
          const int       flags_,
          const mode_t    mode_ = 0)
   {
