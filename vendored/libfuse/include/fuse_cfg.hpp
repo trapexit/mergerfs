@@ -47,6 +47,11 @@ public:
   int read_thread_count = 0;
   int process_thread_count = -1;
   int process_thread_queue_depth = 2;
+  // After each request a sync FUSE reader polls /dev/fuse for up to this many
+  // microseconds before blocking in read(). Trades CPU while the mount is
+  // busy for lower per-request latency on synchronous request streams.
+  // 0 disables.
+  u64 read_spin_us = 0;
   std::string pin_threads = "false";
 
   u16 request_timeout = 0;

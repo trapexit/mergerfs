@@ -153,6 +153,7 @@ public:
   ConfigBOOL     posix_acl;
   TFSRef<int>    process_thread_count;
   TFSRef<int>    process_thread_queue_depth;
+  TFSRef<u64>    fuse_read_spin_us;
   ProxyIOPrio    proxy_ioprio;
   TFSRef<int>    read_thread_count;
   ConfigU64      readahead;

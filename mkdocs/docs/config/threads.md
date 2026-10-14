@@ -59,3 +59,26 @@ in the pool.
   block in order to limit memory growth.
 * `process-thread-queue-depth<=0`: Sets the queue depth to 2. May be
   used in the future to set dynamically.
+
+
+## fuse-read-spin-us
+
+Defaults to `0` (disabled)
+
+Applies only when `process-thread-count=-1` (read threads also process
+requests). After handling a request, each read thread polls for the
+next request for up to this many microseconds before going to sleep.
+
+This lowers per-request latency for synchronous, single-stream workloads
+(sequential reads, small writes, metadata-heavy walks such as `ls -l`,
+`find`, or `rsync` scans) at the cost of CPU: while requests keep
+arriving, a read thread stays busy instead of sleeping. On a quiet,
+low-rate request stream this costs roughly one CPU core's worth of
+polling with no benefit. An idle mount costs nothing.
+
+`50` is the only value tested. Larger values increase CPU use. Parallel
+multi-stream workloads and large (1MiB) writes showed no change.
+
+* `fuse-read-spin-us=0`: Disabled. Read threads block immediately.
+* `fuse-read-spin-us=N`: Poll for up to `N` microseconds after each
+  request.

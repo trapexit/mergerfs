@@ -155,6 +155,9 @@ config file.
   multiplied by the number of process threads plus read thread
   count. 0 sets the depth to the same as the process thread
   count. (default: 2)
+* **[fuse-read-spin-us](threads.md)=UINT**: Microseconds a read thread
+  polls for the next request before sleeping. Trades CPU for lower
+  latency on synchronous workloads. (default: 0)
 * **[pin-threads](pin-threads.md)=STR**: Selects a strategy to pin
   threads to CPUs (default: unset)
 * **[flush-on-close](flush-on-close.md)=never|always|opened-for-write**:

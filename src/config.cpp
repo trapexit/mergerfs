@@ -116,6 +116,7 @@ Config::Config()
   posix_acl(false),
   process_thread_count(fuse_cfg.process_thread_count),
   process_thread_queue_depth(fuse_cfg.process_thread_queue_depth),
+  fuse_read_spin_us(fuse_cfg.read_spin_us),
   proxy_ioprio(false),
   read_thread_count(fuse_cfg.read_thread_count),
   readahead(0),
@@ -172,6 +173,7 @@ Config::Config()
     posix_acl.ro =
     process_thread_count.ro =
     process_thread_queue_depth.ro =
+    fuse_read_spin_us.ro =
     read_thread_count.ro =
     scheduling_priority.ro =
     true;
@@ -276,6 +278,7 @@ Config::Config()
   _map["posix-acl"]                   = &posix_acl;
   _map["process-thread-count"]        = &process_thread_count;
   _map["process-thread-queue-depth"]  = &process_thread_queue_depth;
+  _map["fuse-read-spin-us"]           = &fuse_read_spin_us;
   _map["proxy-ioprio"]                = &proxy_ioprio;
   _map["read-thread-count"]           = &read_thread_count;
   _map["readahead"]                   = &readahead;

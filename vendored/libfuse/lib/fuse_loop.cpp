@@ -21,6 +21,8 @@
 #include <vector>
 
 #include <errno.h>
+#include <poll.h>
+#include <time.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -134,14 +136,17 @@ struct SyncWorker
   fuse_session *_se;
   int _fd;
   sem_t *_finished;
+  u64 _spin_us;
 
   SyncWorker(fuse_session *se_,
              int           fd_,
-             sem_t        *finished_)
+             sem_t        *finished_,
+             u64           spin_us_)
 
     : _se(se_),
       _fd(fd_),
-      _finished(finished_)
+      _finished(finished_),
+      _spin_us(spin_us_)
   {
   }
 
@@ -152,6 +157,7 @@ struct SyncWorker
     DEFER{ fuse_session_exit(_se); };
     DEFER{ sem_post(_finished); };
 
+    bool processed_one = false;
     while(!fuse_session_exited(_se))
       {
         int rv;
@@ -163,6 +169,35 @@ struct SyncWorker
             fmt::println(stderr,"mergerfs: failure to allocate msgbuf, exiting");
             return;
           }
+
+        /* After processing a request, poll /dev/fuse for up to _spin_us
+           before blocking in receive. On synchronous request streams (one
+           dd, one metadata walk) this measurably lowers per-request latency
+           versus blocking immediately; the exact scheduler mechanism is not
+           established. Cost: up to _spin_us of CPU per worker after each
+           request, so a busy-but-quiet mount pays roughly a core; nothing on
+           an idle mount. 0 disables. Cancellation stays disabled during the
+           spin (it is only enabled around the blocking receive) and the spin
+           is bounded, so shutdown is unaffected. */
+        if(processed_one && (_spin_us > 0))
+          {
+            struct pollfd pfd = {_fd,POLLIN,0};
+            struct timespec ts;
+            uint64_t end;
+
+            ::clock_gettime(CLOCK_MONOTONIC,&ts);
+            end = ((uint64_t)ts.tv_sec * 1000000000ULL +
+                   (uint64_t)ts.tv_nsec +
+                   (_spin_us * 1000ULL));
+            while(::poll(&pfd,1,0) == 0)
+              {
+                ::clock_gettime(CLOCK_MONOTONIC,&ts);
+                if(((uint64_t)ts.tv_sec * 1000000000ULL +
+                    (uint64_t)ts.tv_nsec) >= end)
+                  break;
+              }
+          }
+        processed_one = true;
 
         while(true)
           {
@@ -257,7 +292,8 @@ fuse_session_loop_mt(struct fuse_session *se_,
                      const int            raw_read_thread_count_,
                      const int            raw_process_thread_count_,
                      const int            raw_process_thread_queue_depth_,
-                     const std::string    pin_threads_type_)
+                     const std::string    pin_threads_type_,
+                     const u64            read_spin_us_)
 {
   sem_t finished;
   bool cloned_read_fds;
@@ -303,7 +339,8 @@ fuse_session_loop_mt(struct fuse_session *se_,
       for(auto i = 0; i < read_thread_count; i++)
         read_tp->enqueue_work(SyncWorker(se_,
                                          fuse_session_read_fd(se_,i),
-                                         &finished));
+                                         &finished,
+                                         read_spin_us_));
     }
 
   if(read_tp)
@@ -317,12 +354,14 @@ fuse_session_loop_mt(struct fuse_session *se_,
                "process-thread-count={}; "
                "process-thread-queue-depth={}; "
                "fuse-dev-ioc-clone={}; "
-               "pin-threads={};",
+               "pin-threads={}; "
+               "read-spin-us={};",
                read_thread_count,
                process_thread_count,
                process_thread_queue_depth,
                cloned_read_fds,
-               pin_threads_type_);
+               pin_threads_type_,
+               read_spin_us_);
 
   while(!fuse_session_exited(se_))
     sem_wait(&finished);
@@ -351,7 +390,8 @@ fuse_loop_mt(struct fuse *f_)
                              fuse_cfg.read_thread_count,
                              fuse_cfg.process_thread_count,
                              fuse_cfg.process_thread_queue_depth,
-                             fuse_cfg.pin_threads);
+                             fuse_cfg.pin_threads,
+                             fuse_cfg.read_spin_us);
 
   MaintenanceThread::stop();
 

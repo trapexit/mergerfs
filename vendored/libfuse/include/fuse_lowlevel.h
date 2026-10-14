@@ -572,7 +572,8 @@ int fuse_session_loop_mt(struct fuse_session *se,
                          const int            read_thread_count,
                          const int            process_thread_count,
                          const int            process_thread_queue_depth,
-                         const char          *pin_threads_type);
+                         const char          *pin_threads_type,
+                         const uint64_t       read_spin_us);
 
 /* Direct file descriptor and buffer size accessors
  * (channel fields inlined into session for single-mount simplicity) */
