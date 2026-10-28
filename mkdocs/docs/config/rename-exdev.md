@@ -14,6 +14,9 @@ The  `target`  value is determined by the value of  `rename-exdev`.
   mount point.
 * Defaults to `passthrough`.
 
+Relative targets are calculated within the pool's relative path
+namespace.
+
 **NOTE:** It is possible that some applications check the file they
 rename. In those cases it is possible it will error or complain.
 

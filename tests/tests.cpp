@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
+#include "fuse_rename.hpp"
 #include "from_string.hpp"
 #include "hashset.hpp"
 #include "num.hpp"
@@ -3119,6 +3120,212 @@ test_msp_create_relative_fallback()
   std::filesystem::remove_all(tmp_dir);
 }
 
+struct ExdevFixture
+{
+  std::vector<std::pair<ToFromString*,std::string>> saved;
+  const fs::path old_mountpoint = cfg.mountpoint;
+  const u64 old_minfreespace = cfg.branches.minfreespace;
+  fs::path root;
+  fs::path first;
+  fs::path second;
+  fs::path source = "source/nested/file";
+  fs::path destination = "destination/nested/file";
+  bool ready = false;
+
+  ExdevFixture(const bool root_source_ = false)
+  {
+    for(ToFromString *option : std::vector<ToFromString*>{&cfg.branches,
+                               &cfg.func.create,&cfg.func.symlink,
+                               &cfg.func.getattr,&cfg.func.open,
+                               &cfg.func.rename,&cfg.func.link,
+                               &cfg.ignorepponrename,&cfg.allow_idmap,
+                               &cfg.rename_exdev,&cfg.link_exdev,
+                               &cfg.follow_symlinks})
+      saved.emplace_back(option,option->to_string());
+
+    char tmp_template[] = "/tmp/mergerfs-test-exdev-XXXXXX";
+    const auto tmp = ::mkdtemp(tmp_template);
+    TEST_CHECK(tmp != nullptr);
+    if(tmp == nullptr)
+      return;
+    root = tmp;
+    first = root / "first";
+    second = root / "second";
+    if(root_source_)
+      source = "file";
+
+    for(const auto &path : {first / source.parent_path(),
+                           second / destination.parent_path()})
+      {
+        std::error_code ec;
+        std::filesystem::create_directories(path,ec);
+        TEST_CHECK(!ec);
+        if(ec)
+          return;
+      }
+    std::ofstream output(first / source);
+    output << "exdev payload";
+    output.close();
+    TEST_CHECK(!output.fail());
+    if(output.fail())
+      return;
+
+    cfg.branches.minfreespace = 0;
+    const int rv = cfg.branches.from_string(first.string() + ":" + second.string());
+    TEST_CHECK(rv == 0);
+    if(rv != 0)
+      return;
+    cfg.mountpoint = root / "pool";
+    cfg.func.create.from_string("epff");
+    cfg.func.symlink.from_string("epff");
+    cfg.func.getattr.from_string("ff");
+    cfg.func.open.from_string("ff");
+    cfg.func.rename.from_string("epall");
+    cfg.func.link.from_string("epall");
+    cfg.ignorepponrename = false;
+    cfg.allow_idmap = true;
+    cfg.follow_symlinks.from_string("never");
+    ready = true;
+  }
+
+  ~ExdevFixture()
+  {
+    cfg.branches.minfreespace = old_minfreespace;
+    for(auto &option : saved)
+      option.first->from_string(option.second);
+    cfg.mountpoint = old_mountpoint;
+    if(!root.empty())
+      {
+        std::error_code ec;
+        std::filesystem::remove_all(root,ec);
+        TEST_CHECK(!ec);
+      }
+  }
+
+  fs::path staged() const
+  {
+    return fs::path(".mergerfs_rename_exdev") / source;
+  }
+};
+
+static
+void
+check_exdev_absent(const fs::path &path_)
+{
+  struct stat st = {};
+  errno = 0;
+  TEST_CHECK(::lstat(path_.c_str(),&st) == -1);
+  TEST_CHECK(errno == ENOENT);
+}
+
+static
+void
+check_exdev_payload(const fs::path &path_,
+                    const char     *expected_ = "exdev payload")
+{
+  std::ifstream input(path_);
+  TEST_CHECK(input.is_open());
+  std::stringstream data;
+  data << input.rdbuf();
+  TEST_CHECK(data.str() == expected_);
+}
+
+static
+void
+check_exdev_symlink(const fs::path &path_,
+                    const fs::path &target_,
+                    const struct stat &source_st_)
+{
+  struct stat st = {};
+  const int rv = ::lstat(path_.c_str(),&st);
+  TEST_CHECK(rv == 0);
+  if(rv != 0)
+    return;
+  TEST_CHECK(S_ISLNK(st.st_mode));
+  TEST_CHECK(st.st_uid == source_st_.st_uid);
+  TEST_CHECK(st.st_gid == source_st_.st_gid);
+  std::error_code ec;
+  const auto target = std::filesystem::read_symlink(path_,ec);
+  TEST_CHECK(!ec);
+  TEST_CHECK(target == target_);
+}
+
+static
+fuse_req_ctx_t
+exdev_context(const unsigned invalid_fields_)
+{
+  fuse_req_ctx_t ctx = {};
+  ctx.uid = (invalid_fields_ & 1) ? FUSE_INVALID_UIDGID : ::geteuid();
+  ctx.gid = (invalid_fields_ & 2) ? FUSE_INVALID_UIDGID : ::getegid();
+  ctx.pid = ::getpid();
+  return ctx;
+}
+
+static
+void
+test_rename_exdev_case(const char *mode_,
+                       const bool root_source_,
+                       const unsigned invalid_fields_,
+                       const bool occupied_ = false,
+                       const bool distinct_owner_ = false)
+{
+  ExdevFixture fixture(root_source_);
+  if(!fixture.ready)
+    return;
+  TEST_CASE(mode_);
+  cfg.rename_exdev.from_string(mode_);
+  const auto ctx = exdev_context(invalid_fields_);
+  if(distinct_owner_)
+    {
+      TEST_CHECK(::chown((fixture.first / fixture.source).c_str(),12345,23456) == 0);
+      TEST_CHECK(::chown((fixture.second / fixture.destination.parent_path()).c_str(),0,34567) == 0);
+      TEST_CHECK(::chmod((fixture.second / fixture.destination.parent_path()).c_str(),02770) == 0);
+    }
+  struct stat source_st = {};
+  TEST_CHECK(::lstat((fixture.first / fixture.source).c_str(),&source_st) == 0);
+  check_exdev_absent(fixture.first / ".mergerfs_rename_exdev");
+  check_exdev_absent(fixture.second / fixture.source);
+  check_exdev_absent(fixture.first / fixture.destination.parent_path());
+  if(occupied_)
+    {
+      std::ofstream output(fixture.second / fixture.destination);
+      output << "existing destination";
+    }
+
+  const int rv = FUSE::rename(&ctx,fixture.source.c_str(),fixture.destination.c_str());
+  TEST_CHECK(rv == (occupied_ ? -EEXIST : 0));
+  if(occupied_)
+    {
+      check_exdev_payload(fixture.first / fixture.source);
+      check_exdev_payload(fixture.second / fixture.destination,"existing destination");
+      check_exdev_absent(fixture.first / fixture.staged());
+      struct stat restored = {};
+      TEST_CHECK(::lstat((fixture.first / fixture.source).c_str(),&restored) == 0);
+      TEST_CHECK(restored.st_ino == source_st.st_ino);
+      return;
+    }
+  if(rv != 0)
+    return;
+  check_exdev_absent(fixture.first / fixture.source);
+  check_exdev_absent(fixture.first / fixture.destination);
+  check_exdev_payload(fixture.first / fixture.staged());
+  struct stat staged_st = {};
+  TEST_CHECK(::lstat((fixture.first / fixture.staged()).c_str(),&staged_st) == 0);
+  TEST_CHECK(staged_st.st_ino == source_st.st_ino);
+  TEST_CHECK(staged_st.st_uid == source_st.st_uid);
+  TEST_CHECK(staged_st.st_gid == source_st.st_gid);
+  const fs::path expected = (std::string(mode_) == "rel-symlink") ?
+    fixture.staged().lexically_relative(fixture.destination.parent_path()) :
+    cfg.mountpoint / fixture.staged();
+  check_exdev_symlink(fixture.second / fixture.destination,expected,source_st);
+}
+
+void
+test_fuse_rename_exdev_relative_nested()
+{
+  test_rename_exdev_case("rel-symlink",false,0);
+}
+
 void
 test_fs_copyfile_basic()
 {
@@ -3913,6 +4120,7 @@ TEST_LIST =
    {"config_is_cmd_xattr",test_config_is_cmd_xattr},
     {"config_prune_ctrl_xattr",test_config_prune_ctrl_xattr},
     {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
+    {"fuse_rename_exdev_relative_nested",test_fuse_rename_exdev_relative_nested},
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"str_eq_nullptr",test_str_eq_nullptr},
