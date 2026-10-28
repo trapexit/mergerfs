@@ -3014,7 +3014,7 @@ fuse_lib_tmpfile(fuse_req_t                  *req_,
     req_->ctx.nodeid = new_nodeid;
   }
 
-  err = get_path_name(hdr_->nodeid,name,&fusepath);
+  err = get_path(hdr_->nodeid,&fusepath);
   if(!err)
     {
       err = f.ops.tmpfile(&req_->ctx,
