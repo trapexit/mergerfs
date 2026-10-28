@@ -86,7 +86,7 @@ _create(const Branches::Ptr  &branches_,
       branch = ::_create_1(branches_,fusepath,&error);
       if(branch)
         break;
-      if(fusepath == "/")
+      if(fusepath.empty())
         break;
       fusepath = fusepath.parent_path();
     }
