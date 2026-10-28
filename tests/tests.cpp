@@ -3327,6 +3327,13 @@ test_fuse_rename_exdev_relative_nested()
 }
 
 void
+test_fuse_rename_exdev_root_source()
+{
+  for(const auto mode : {"rel-symlink","abs-symlink"})
+    test_rename_exdev_case(mode,true,0);
+}
+
+void
 test_fs_copyfile_basic()
 {
   int rv;
@@ -4121,6 +4128,7 @@ TEST_LIST =
     {"config_prune_ctrl_xattr",test_config_prune_ctrl_xattr},
     {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
     {"fuse_rename_exdev_relative_nested",test_fuse_rename_exdev_relative_nested},
+    {"fuse_rename_exdev_root_source",test_fuse_rename_exdev_root_source},
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"str_eq_nullptr",test_str_eq_nullptr},
