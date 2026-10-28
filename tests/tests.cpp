@@ -6,6 +6,7 @@
 #include "from_string.hpp"
 #include "hashset.hpp"
 #include "num.hpp"
+#include "policies.hpp"
 #include "rapidhash/rapidhash.h"
 #include "rnd.hpp"
 #include "str.hpp"
@@ -18,6 +19,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <future>
+#include <limits>
 #include <mutex>
 #include <numeric>
 #include <optional>
@@ -2963,6 +2965,160 @@ test_config_prune_cmd_xattr()
   TEST_CHECK(Config::prune_cmd_xattr("") == sv(""));
 }
 
+static
+void
+test_msp_create_rejected(const Policy::CreateImpl &policy_)
+{
+  char tmp_template[] = "/tmp/mergerfs-test-msp-rejected-XXXXXX";
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  const fs::path tmp_dir = tmp_template;
+  const fs::path first = tmp_dir / "first";
+  const fs::path second = tmp_dir / "second";
+  for(const auto &path : {first,second})
+    {
+      std::error_code ec;
+      const bool created = std::filesystem::create_directory(path,ec);
+      TEST_CHECK(created && !ec);
+      if(!created || ec)
+        {
+          std::filesystem::remove_all(tmp_dir);
+          return;
+        }
+    }
+
+  Branches branches;
+  branches.minfreespace = 0;
+  const int rv = branches.from_string(first.string() + ":" + second.string());
+  TEST_CHECK(rv == 0);
+  Branches::Ptr ptr = branches;
+  TEST_CHECK(ptr->size() == 2);
+  if((rv != 0) || (ptr->size() != 2))
+    {
+      std::filesystem::remove_all(tmp_dir);
+      return;
+    }
+
+  for(const auto mode : {Branch::Mode::RW,Branch::Mode::RO,Branch::Mode::NC})
+    {
+      for(auto &branch : *ptr)
+        {
+          branch.mode = mode;
+          branch.set_minfreespace(std::numeric_limits<u64>::max());
+        }
+
+      for(const auto &path : {fs::path("missing/child"),fs::path("")})
+        {
+          std::vector<Branch*> selected;
+          const int expected = (mode == Branch::Mode::RW) ? -ENOSPC : -EROFS;
+          TEST_CHECK(policy_(ptr,path,selected) == expected);
+          TEST_MSG("policy: %s; path: '%s'; mode: %d",
+                   policy_.name.c_str(),path.c_str(),static_cast<int>(mode));
+          TEST_CHECK(selected.empty());
+        }
+    }
+
+  std::filesystem::remove_all(tmp_dir);
+}
+
+void
+test_msppfrd_create_rejected_relative()
+{
+  test_msp_create_rejected(Policies::Create::msppfrd);
+}
+
+void
+test_mspmfs_create_rejected_relative()
+{
+  test_msp_create_rejected(Policies::Create::mspmfs);
+}
+
+void
+test_msplfs_create_rejected_relative()
+{
+  test_msp_create_rejected(Policies::Create::msplfs);
+}
+
+void
+test_msplus_create_rejected_relative()
+{
+  test_msp_create_rejected(Policies::Create::msplus);
+}
+
+void
+test_msp_create_relative_fallback()
+{
+  char tmp_template[] = "/tmp/mergerfs-test-msp-fallback-XXXXXX";
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  const fs::path tmp_dir = tmp_template;
+  const fs::path farther = tmp_dir / "farther";
+  const fs::path closer = tmp_dir / "closer";
+  for(const auto &path : {farther / "parent",closer / "parent/child",
+                         farther / "rejected/child",closer / "rejected"})
+    {
+      std::error_code ec;
+      const bool created = std::filesystem::create_directories(path,ec);
+      TEST_CHECK(created && !ec);
+      if(!created || ec)
+        {
+          std::filesystem::remove_all(tmp_dir);
+          return;
+        }
+    }
+
+  Branches branches;
+  branches.minfreespace = 0;
+  const int rv = branches.from_string(farther.string() + ":" + closer.string());
+  TEST_CHECK(rv == 0);
+  Branches::Ptr ptr = branches;
+  TEST_CHECK(ptr->size() == 2);
+  if((rv != 0) || (ptr->size() != 2))
+    {
+      std::filesystem::remove_all(tmp_dir);
+      return;
+    }
+
+  const Policy::CreateImpl *policies[] = {
+    &Policies::Create::msppfrd,
+    &Policies::Create::mspmfs,
+    &Policies::Create::msplfs,
+    &Policies::Create::msplus
+  };
+  for(const auto policy : policies)
+    {
+      (*ptr)[0].set_minfreespace(std::numeric_limits<u64>::max());
+      for(const auto &path : {fs::path("missing/child"),fs::path(""),
+                             fs::path("rejected/child")})
+        {
+          std::vector<Branch*> selected;
+          TEST_CHECK((*policy)(ptr,path,selected) == 0);
+          TEST_MSG("policy: %s; path: '%s'",policy->name.c_str(),path.c_str());
+          TEST_CHECK(selected.size() == 1);
+          if(selected.size() == 1)
+            TEST_CHECK(selected[0] == &(*ptr)[1]);
+        }
+
+      (*ptr)[0].set_minfreespace(0);
+      std::vector<Branch*> selected;
+      TEST_CHECK((*policy)(ptr,"parent/child/missing",selected) == 0);
+      TEST_MSG("policy: %s",policy->name.c_str());
+      TEST_CHECK(selected.size() == 1);
+      if(selected.size() == 1)
+        TEST_CHECK(selected[0] == &(*ptr)[1]);
+    }
+
+  std::filesystem::remove_all(tmp_dir);
+}
+
 void
 test_fs_copyfile_basic()
 {
@@ -3657,6 +3813,11 @@ TEST_LIST =
    {"hashset_put_and_size",test_hashset_put_and_size},
    {"rapidhash_withSeed_preserves_default_output",test_rapidhash_withSeed_preserves_default_output},
    {"config_branches",test_config_branches},
+   {"msppfrd_create_rejected_relative",test_msppfrd_create_rejected_relative},
+   {"mspmfs_create_rejected_relative",test_mspmfs_create_rejected_relative},
+   {"msplfs_create_rejected_relative",test_msplfs_create_rejected_relative},
+   {"msplus_create_rejected_relative",test_msplus_create_rejected_relative},
+   {"msp_create_relative_fallback",test_msp_create_relative_fallback},
    {"branch_default_ctor_mode",test_branch_default_ctor_mode},
    {"branch_to_string_modes",test_branch_to_string_modes},
    {"branch_to_string_with_minfreespace",test_branch_to_string_with_minfreespace},

@@ -91,7 +91,7 @@ _get_branchinfo(const Branches::Ptr &branches_,
       rv = ::_create_1(branches_,fusepath,branchinfo_,sum_);
       if(branchinfo_->size())
         break;
-      if(fusepath == "/")
+      if(fusepath.empty())
         break;
       fusepath = fusepath.parent_path();
     }
