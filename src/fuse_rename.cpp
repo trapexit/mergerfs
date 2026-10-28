@@ -264,7 +264,7 @@ _rename_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
     return rv;
 
   linkpath  = newfusepath_;
-  target    = "/.mergerfs_rename_exdev";
+  target    = ".mergerfs_rename_exdev";
   target   /= oldfusepath_;
   target    = target.lexically_relative(linkpath.parent_path());
 
