@@ -22,10 +22,13 @@
 #include "errno.hpp"
 #include "error.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_lchown.hpp"
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 #include "fs_inode.hpp"
+#include "fs_symlink.hpp"
 #include "fs_symlink_as.hpp"
+#include "fs_unlink.hpp"
 #include "fuse_getattr.hpp"
 #include "ugid.hpp"
 
@@ -34,21 +37,48 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+enum class SymlinkMode
+{
+  CREATE_AS,
+  PRESERVE_OWNER
+};
+
 
 static
 int
-_symlink_loop_core(const ugid_t    ugid_,
-                   const fs::path &newbranch_,
-                   const char     *target_,
-                   const fs::path &linkpath_,
-                   struct stat    *st_)
+_symlink_loop_core(const ugid_t      ugid_,
+                   const SymlinkMode mode_,
+                   const fs::path   &newbranch_,
+                   const char       *target_,
+                   const fs::path   &linkpath_,
+                   struct stat      *st_)
 {
   int rv;
   fs::path fullnewpath;
 
   fullnewpath = newbranch_ / linkpath_;
 
-  rv = fs::symlink_as(ugid_,target_,fullnewpath);
+  if(mode_ == SymlinkMode::PRESERVE_OWNER)
+    {
+      struct stat owner{};
+
+      owner.st_uid = ugid_.uid;
+      owner.st_gid = ugid_.gid;
+
+      rv = fs::symlink(target_,fullnewpath.native());
+      if(rv < 0)
+        return rv;
+
+      rv = fs::lchown_check_on_error(fullnewpath.native(),owner);
+      if(rv < 0)
+        {
+          fs::unlink(fullnewpath.native());
+          return rv;
+        }
+    }
+  else
+    rv = fs::symlink_as(ugid_,target_,fullnewpath);
+
   if((rv >= 0) && (st_ != NULL) && (st_->st_ino == 0))
     {
       fs::lstat(fullnewpath,st_);
@@ -64,6 +94,7 @@ _symlink_loop_core(const ugid_t    ugid_,
 static
 int
 _symlink_loop(const ugid_t                ugid_,
+              const SymlinkMode          mode_,
               const fs::path             &existingbranch_,
               const std::vector<Branch*> &newbranches_,
               const char                 *target_,
@@ -83,6 +114,7 @@ _symlink_loop(const ugid_t                ugid_,
         err = rv;
       else
         err = ::_symlink_loop_core(ugid_,
+                                   mode_,
                                    newbranch->path,
                                    target_,
                                    linkpath_,
@@ -95,6 +127,7 @@ _symlink_loop(const ugid_t                ugid_,
 static
 int
 _symlink(const ugid_t          ugid_,
+         const SymlinkMode     mode_,
          const Policy::Search &searchFunc_,
          const Policy::Create &createFunc_,
          const Branches::Ptr   branches_,
@@ -122,6 +155,7 @@ _symlink(const ugid_t          ugid_,
     return -ENOENT;
 
   return ::_symlink_loop(ugid_,
+                         mode_,
                          existingbranches[0]->path,
                          newbranches,
                          target_,
@@ -130,16 +164,19 @@ _symlink(const ugid_t          ugid_,
                          st_);
 }
 
+static
 int
-FUSE::symlink(const fuse_req_ctx_t *ctx_,
-              const char           *target_,
-              const fs::path       &linkpath_,
-              struct stat          *st_,
-              fuse_timeouts_t      *timeouts_)
+_symlink_with_config(const ugid_t      ugid_,
+                     const SymlinkMode mode_,
+                     const char       *target_,
+                     const fs::path   &linkpath_,
+                     struct stat      *st_,
+                     fuse_timeouts_t  *timeouts_)
 {
   int rv;
 
-  rv = ::_symlink(ctx_,
+  rv = ::_symlink(ugid_,
+                  mode_,
                   cfg.func.getattr.policy,
                   cfg.func.symlink.policy,
                   cfg.branches,
@@ -149,7 +186,8 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
   if(rv == -EROFS)
     {
       cfg.branches.find_and_set_mode_ro();
-      rv = ::_symlink(ctx_,
+      rv = ::_symlink(ugid_,
+                      mode_,
                       cfg.func.getattr.policy,
                       cfg.func.symlink.policy,
                       cfg.branches,
@@ -179,6 +217,21 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
 }
 
 int
+FUSE::symlink_owned(const ugid_t      owner_,
+                    const char       *target_,
+                    const fs::path   &linkpath_,
+                    struct stat      *st_,
+                    fuse_timeouts_t  *timeouts_)
+{
+  return ::_symlink_with_config(owner_,
+                                SymlinkMode::PRESERVE_OWNER,
+                                target_,
+                                linkpath_,
+                                st_,
+                                timeouts_);
+}
+
+int
 FUSE::symlink(const fuse_req_ctx_t *ctx_,
               const char           *target_,
               const char           *linkpath_,
@@ -187,9 +240,10 @@ FUSE::symlink(const fuse_req_ctx_t *ctx_,
 {
   const fs::path linkpath{linkpath_};
 
-  return FUSE::symlink(ctx_,
-                       target_,
-                       linkpath,
-                       st_,
-                       timeouts_);
+  return ::_symlink_with_config(ctx_,
+                                SymlinkMode::CREATE_AS,
+                                target_,
+                                linkpath,
+                                st_,
+                                timeouts_);
 }

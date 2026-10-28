@@ -3,8 +3,10 @@
 #include "config.hpp"
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
-#include "fuse_rename.hpp"
 #include "from_string.hpp"
+#include "fuse_link.hpp"
+#include "fuse_rename.hpp"
+#include "fuse_symlink.hpp"
 #include "hashset.hpp"
 #include "num.hpp"
 #include "policies.hpp"
@@ -29,6 +31,7 @@
 
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 template<typename Predicate>
@@ -3320,6 +3323,62 @@ test_rename_exdev_case(const char *mode_,
   check_exdev_symlink(fixture.second / fixture.destination,expected,source_st);
 }
 
+static
+void
+test_link_exdev_case(const char *mode_,
+                     const unsigned invalid_fields_,
+                     const bool occupied_ = false,
+                     const bool distinct_owner_ = false)
+{
+  ExdevFixture fixture;
+  if(!fixture.ready)
+    return;
+  TEST_CASE(mode_);
+  cfg.link_exdev.from_string(mode_);
+  const auto ctx = exdev_context(invalid_fields_);
+  if(distinct_owner_)
+    {
+      TEST_CHECK(::chown((fixture.first / fixture.source).c_str(),12345,23456) == 0);
+      TEST_CHECK(::chown((fixture.second / fixture.destination.parent_path()).c_str(),0,34567) == 0);
+      TEST_CHECK(::chmod((fixture.second / fixture.destination.parent_path()).c_str(),02770) == 0);
+    }
+  struct stat source_st = {};
+  TEST_CHECK(::lstat((fixture.first / fixture.source).c_str(),&source_st) == 0);
+  check_exdev_absent(fixture.second / fixture.source);
+  check_exdev_absent(fixture.first / fixture.destination.parent_path());
+  if(occupied_)
+    {
+      std::ofstream output(fixture.second / fixture.destination);
+      output << "existing destination";
+    }
+  struct stat output_st = {};
+  fuse_timeouts_t timeouts = {};
+  const int rv = FUSE::link(&ctx,fixture.source.c_str(),fixture.destination.c_str(),
+                            &output_st,&timeouts);
+  TEST_CHECK(rv == (occupied_ ? -EEXIST : 0));
+  check_exdev_payload(fixture.first / fixture.source);
+  check_exdev_absent(fixture.first / ".mergerfs_rename_exdev");
+  check_exdev_absent(fixture.first / fixture.destination);
+  if(occupied_)
+    {
+      check_exdev_payload(fixture.second / fixture.destination,"existing destination");
+      return;
+    }
+  if(rv != 0)
+    return;
+  TEST_CHECK(S_ISREG(output_st.st_mode));
+  TEST_CHECK(timeouts.attr == 0);
+  TEST_CHECK(timeouts.entry == 0);
+  fs::path expected;
+  if(std::string(mode_) == "rel-symlink")
+    expected = fixture.source.lexically_relative(fixture.destination.parent_path());
+  else if(std::string(mode_) == "abs-base-symlink")
+    expected = fixture.first / fixture.source;
+  else
+    expected = cfg.mountpoint / fixture.source;
+  check_exdev_symlink(fixture.second / fixture.destination,expected,source_st);
+}
+
 void
 test_fuse_rename_exdev_relative_nested()
 {
@@ -3331,6 +3390,130 @@ test_fuse_rename_exdev_root_source()
 {
   for(const auto mode : {"rel-symlink","abs-symlink"})
     test_rename_exdev_case(mode,true,0);
+}
+
+void
+test_fuse_rename_exdev_invalid_context()
+{
+  for(const auto mode : {"rel-symlink","abs-symlink"})
+    for(unsigned fields = 1; fields <= 3; ++fields)
+      test_rename_exdev_case(mode,false,fields);
+}
+
+void
+test_fuse_link_exdev_variants()
+{
+  for(const auto mode : {"rel-symlink","abs-base-symlink","abs-pool-symlink"})
+    test_link_exdev_case(mode,0);
+}
+
+void
+test_fuse_link_exdev_invalid_context()
+{
+  for(const auto mode : {"rel-symlink","abs-base-symlink","abs-pool-symlink"})
+    for(unsigned fields = 1; fields <= 3; ++fields)
+      test_link_exdev_case(mode,fields);
+}
+
+void
+test_fuse_exdev_existing_destination()
+{
+  for(const auto mode : {"rel-symlink","abs-symlink"})
+    test_rename_exdev_case(mode,false,3,true);
+  for(const auto mode : {"rel-symlink","abs-base-symlink","abs-pool-symlink"})
+    test_link_exdev_case(mode,3,true);
+}
+
+static
+bool
+exdev_distinct_ownership_available()
+{
+  if(::geteuid() != 0)
+    return false;
+
+  char tmp_template[] = "/tmp/mergerfs-test-exdev-ownership-XXXXXX";
+  const int fd = ::mkstemp(tmp_template);
+  TEST_CHECK(fd >= 0);
+  if(fd < 0)
+    return false;
+
+  // Namespace root may lack the mappings or capabilities for these IDs.
+  // Probe outside production callbacks, in a child so credentials cannot leak.
+  const pid_t child = ::fork();
+  if(child == 0)
+    {
+      if((::fchown(fd,12345,23456) != 0) ||
+         (::fchown(fd,0,34567) != 0) ||
+         (::setregid(-1,23456) != 0) ||
+         (::setreuid(-1,12345) != 0) ||
+         (::setreuid(-1,0) != 0) ||
+         (::setregid(-1,0) != 0))
+        ::_exit(77);
+      ::_exit(0);
+    }
+
+  TEST_CHECK(child > 0);
+  int status = 0;
+  pid_t waited = -1;
+  if(child > 0)
+    {
+      do
+        waited = ::waitpid(child,&status,0);
+      while((waited < 0) && (errno == EINTR));
+      TEST_CHECK(waited == child);
+      if(waited == child)
+        TEST_CHECK(WIFEXITED(status));
+    }
+  TEST_CHECK(::close(fd) == 0);
+  TEST_CHECK(::unlink(tmp_template) == 0);
+  return (child > 0) && (waited == child) &&
+    WIFEXITED(status) && (WEXITSTATUS(status) == 0);
+}
+
+void
+test_fuse_exdev_source_ownership()
+{
+  // Run only when distinct IDs and credential switching are really available.
+  if(!exdev_distinct_ownership_available())
+    return;
+  for(const auto mode : {"rel-symlink","abs-symlink"})
+    for(const unsigned fields : {0u,3u})
+      test_rename_exdev_case(mode,false,fields,false,true);
+  for(const auto mode : {"rel-symlink","abs-base-symlink","abs-pool-symlink"})
+    for(const unsigned fields : {0u,3u})
+      test_link_exdev_case(mode,fields,false,true);
+}
+
+void
+test_fuse_symlink_request_ownership()
+{
+  if(!exdev_distinct_ownership_available())
+    return;
+  ExdevFixture fixture;
+  if(!fixture.ready)
+    return;
+  // Unlike internal EXDEV fallbacks, normal SYMLINK uses the valid request UID
+  // and lets the destination directory's setgid bit choose the native group.
+  TEST_CHECK(::chmod(fixture.root.c_str(),0755) == 0);
+  const auto parent = fixture.second / fixture.destination.parent_path();
+  TEST_CHECK(::chmod(fixture.second.c_str(),0755) == 0);
+  TEST_CHECK(::chmod((fixture.second / "destination").c_str(),0755) == 0);
+  TEST_CHECK(::chown(parent.c_str(),0,34567) == 0);
+  TEST_CHECK(::chmod(parent.c_str(),02777) == 0);
+  auto ctx = exdev_context(0);
+  ctx.uid = 12345;
+  ctx.gid = 23456;
+  struct stat output_st = {};
+  fuse_timeouts_t timeouts = {};
+  const int rv = FUSE::symlink(&ctx,"target",fixture.destination.c_str(),&output_st,&timeouts);
+  TEST_CHECK(rv == 0);
+  if(rv == 0)
+    {
+      struct stat expected = {};
+      expected.st_uid = ctx.uid;
+      expected.st_gid = 34567;
+      check_exdev_symlink(fixture.second / fixture.destination,"target",expected);
+    }
 }
 
 void
@@ -4129,6 +4312,12 @@ TEST_LIST =
     {"config_prune_cmd_xattr",test_config_prune_cmd_xattr},
     {"fuse_rename_exdev_relative_nested",test_fuse_rename_exdev_relative_nested},
     {"fuse_rename_exdev_root_source",test_fuse_rename_exdev_root_source},
+    {"fuse_rename_exdev_invalid_context",test_fuse_rename_exdev_invalid_context},
+    {"fuse_link_exdev_variants",test_fuse_link_exdev_variants},
+    {"fuse_link_exdev_invalid_context",test_fuse_link_exdev_invalid_context},
+    {"fuse_exdev_existing_destination",test_fuse_exdev_existing_destination},
+    {"fuse_exdev_source_ownership",test_fuse_exdev_source_ownership},
+    {"fuse_symlink_request_ownership",test_fuse_symlink_request_ownership},
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"str_eq_nullptr",test_str_eq_nullptr},
