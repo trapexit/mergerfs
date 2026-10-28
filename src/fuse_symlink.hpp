@@ -21,6 +21,7 @@
 #include "fuse.h"
 
 #include "fs_path.hpp"
+#include "ugid.hpp"
 
 #include <string>
 
@@ -36,9 +37,9 @@ namespace FUSE
           fuse_timeouts_t      *timeouts = NULL);
 
   int
-  symlink(const fuse_req_ctx_t *ctx,
-          const char           *target,
-          const fs::path       &linkpath,
-          struct stat          *st       = NULL,
-          fuse_timeouts_t      *timeouts = NULL);
+  symlink_owned(const ugid_t      owner,
+                const char       *target,
+                const fs::path   &linkpath,
+                struct stat      *st       = NULL,
+                fuse_timeouts_t  *timeouts = NULL);
 }

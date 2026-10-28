@@ -261,6 +261,12 @@ As of v2.42.0 mergerfs now runs as root more generally. Either
 changing credentials when creating files (Linux) or chown'ing them
 after creation (FreeBSD).
 
+The optional EXDEV link and rename fallbacks create replacement
+symlinks under daemon credentials and then preserve the source inode's
+UID and GID. They do not use the link or rename request's UID/GID:
+these may be invalid with `allow-idmap`. Ordinary symlink creation
+continues to use the creation request's credentials.
+
 As a result of this change it is now necessary for the FUSE
 `default_permissions` feature be used for proper entitlements
 management. mergerfs does allow it to be disabled but it should only

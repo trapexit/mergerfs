@@ -194,11 +194,10 @@ _link(const fs::path &oldpath_,
 
 static
 int
-_link(const fuse_req_ctx_t *ctx_,
-      const fs::path       &oldpath_,
-      const fs::path       &newpath_,
-      struct stat          *st_,
-      fuse_timeouts_t      *timeouts_)
+_link(const fs::path  &oldpath_,
+      const fs::path  &newpath_,
+      struct stat     *st_,
+      fuse_timeouts_t *timeouts_)
 {
   int rv;
 
@@ -211,11 +210,11 @@ _link(const fuse_req_ctx_t *ctx_,
 
 static
 int
-_link_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
-                        const fs::path       &oldpath_,
-                        const fs::path       &newpath_,
-                        struct stat          *st_,
-                        fuse_timeouts_t      *timeouts_)
+_link_exdev_rel_symlink(const ugid_t      owner_,
+                        const fs::path   &oldpath_,
+                        const fs::path   &newpath_,
+                        struct stat      *st_,
+                        fuse_timeouts_t  *timeouts_)
 {
   int rv;
   fs::path target(oldpath_);
@@ -223,9 +222,9 @@ _link_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
 
   target = target.lexically_relative(linkpath.parent_path());
 
-  rv = FUSE::symlink(ctx_,target.c_str(),linkpath);
+  rv = FUSE::symlink_owned(owner_,target.c_str(),linkpath);
   if(rv == 0)
-    rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
+    rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
   // Disable caching since we created a symlink but should be a regular.
   timeouts_->attr  = 0;
@@ -236,29 +235,18 @@ _link_exdev_rel_symlink(const fuse_req_ctx_t *ctx_,
 
 static
 int
-_link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
-                              const Policy::Search &openPolicy_,
-                              const Branches::Ptr   ibranches_,
-                             const fs::path       &oldpath_,
-                             const fs::path       &newpath_,
-                             struct stat          *st_,
-                             fuse_timeouts_t      *timeouts_)
+_link_exdev_abs_base_symlink(const ugid_t      owner_,
+                             const fs::path   &target_,
+                             const fs::path   &oldpath_,
+                             const fs::path   &newpath_,
+                             struct stat      *st_,
+                             fuse_timeouts_t  *timeouts_)
 {
   int rv;
-  fs::path target;
-  std::vector<Branch*> obranches;
 
-  rv = openPolicy_(ibranches_,oldpath_,obranches);
-  if(rv < 0)
-    return rv;
-  if(obranches.empty())
-    return -ENOENT;
-
-  target = obranches[0]->path / oldpath_;
-
-  rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
+  rv = FUSE::symlink_owned(owner_,target_.c_str(),newpath_);
   if(rv == 0)
-    rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
+    rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
   // Disable caching since we created a symlink but should be a regular.
   timeouts_->attr  = 0;
@@ -269,22 +257,21 @@ _link_exdev_abs_base_symlink(const fuse_req_ctx_t *ctx_,
 
 static
 int
-_link_exdev_abs_pool_symlink(const fuse_req_ctx_t *ctx_,
-                             const fs::path       &mount_,
-                             const fs::path       &oldpath_,
-                             const fs::path       &newpath_,
-                             struct stat          *st_,
-                             fuse_timeouts_t      *timeouts_)
+_link_exdev_abs_pool_symlink(const ugid_t      owner_,
+                             const fs::path   &mount_,
+                             const fs::path   &oldpath_,
+                             const fs::path   &newpath_,
+                             struct stat      *st_,
+                             fuse_timeouts_t  *timeouts_)
 {
   int rv;
-  StrVec basepaths;
   fs::path target;
 
   target = mount_ / oldpath_;
 
-  rv = FUSE::symlink(ctx_,target.c_str(),newpath_);
+  rv = FUSE::symlink_owned(owner_,target.c_str(),newpath_);
   if(rv == 0)
-    rv = FUSE::getattr(ctx_,oldpath_,st_,timeouts_);
+    rv = FUSE::getattr(oldpath_,st_,timeouts_);
 
   // Disable caching since we created a symlink but should be a regular.
   timeouts_->attr  = 0;
@@ -295,32 +282,62 @@ _link_exdev_abs_pool_symlink(const fuse_req_ctx_t *ctx_,
 
 static
 int
-_link_exdev(const fuse_req_ctx_t *ctx_,
-            const fs::path       &oldpath_,
-            const fs::path       &newpath_,
-            struct stat          *st_,
-            fuse_timeouts_t      *timeouts_)
+_link_exdev(const fs::path  &oldpath_,
+            const fs::path  &newpath_,
+            struct stat     *st_,
+            fuse_timeouts_t *timeouts_)
 {
+  int rv;
+  struct stat source;
+  fs::path oldfullpath;
+  std::vector<Branch*> oldbranches;
+  const Policy::Search *sourcePolicy;
+
+  switch(cfg.link_exdev)
+    {
+    case LinkEXDEV::ENUM::REL_SYMLINK:
+    case LinkEXDEV::ENUM::ABS_POOL_SYMLINK:
+      sourcePolicy = &cfg.func.getattr.policy;
+      break;
+    case LinkEXDEV::ENUM::ABS_BASE_SYMLINK:
+      sourcePolicy = &cfg.func.open.policy;
+      break;
+    default:
+      return -EXDEV;
+    }
+
+  rv = (*sourcePolicy)(cfg.branches,oldpath_,oldbranches);
+  if(rv < 0)
+    return rv;
+  if(oldbranches.empty())
+    return -ENOENT;
+
+  oldfullpath = oldbranches[0]->path / oldpath_;
+  rv = fs::lstat(oldfullpath,&source);
+  if(rv < 0)
+    return rv;
+
+  const ugid_t owner{source.st_uid,source.st_gid};
+
   switch(cfg.link_exdev)
     {
     case LinkEXDEV::ENUM::PASSTHROUGH:
       return -EXDEV;
     case LinkEXDEV::ENUM::REL_SYMLINK:
-      return ::_link_exdev_rel_symlink(ctx_,
+      return ::_link_exdev_rel_symlink(owner,
                                        oldpath_,
                                        newpath_,
                                        st_,
                                        timeouts_);
     case LinkEXDEV::ENUM::ABS_BASE_SYMLINK:
-      return ::_link_exdev_abs_base_symlink(ctx_,
-                                            cfg.func.open.policy,
-                                            cfg.branches,
+      return ::_link_exdev_abs_base_symlink(owner,
+                                            oldfullpath,
                                             oldpath_,
                                             newpath_,
                                             st_,
                                             timeouts_);
     case LinkEXDEV::ENUM::ABS_POOL_SYMLINK:
-      return ::_link_exdev_abs_pool_symlink(ctx_,
+      return ::_link_exdev_abs_pool_symlink(owner,
                                             cfg.mountpoint,
                                             oldpath_,
                                             newpath_,
@@ -342,9 +359,9 @@ FUSE::link(const fuse_req_ctx_t *ctx_,
   const fs::path oldpath{oldpath_};
   const fs::path newpath{newpath_};
 
-  rv = ::_link(ctx_,oldpath,newpath,st_,timeouts_);
+  rv = ::_link(oldpath,newpath,st_,timeouts_);
   if(rv == -EXDEV)
-    rv = ::_link_exdev(ctx_,oldpath,newpath,st_,timeouts_);
+    rv = ::_link_exdev(oldpath,newpath,st_,timeouts_);
 
   return rv;
 }

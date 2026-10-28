@@ -12,6 +12,14 @@ the newpath. The target value is determined by the value of
 * `link-exdev=abs-pool-symlink`: An absolute value using the mergerfs
   mount point.
 * Defaults to `passthrough`.
+
+Replacement symlinks retain the source inode's UID and GID, read without
+following a source symlink. Relative and pool targets use the first
+`getattr`-policy source branch; absolute branch targets use the source
+selected by the `open` policy. Creation uses daemon credentials, then
+sets the source ownership, rather than using the link request's UID/GID,
+which may be invalid when `allow-idmap` is enabled. A newly created
+replacement is removed if its ownership cannot be set.
   
 **NOTE:** It is possible that some applications check the file they
 link. In those cases, it is possible it will error or complain.
