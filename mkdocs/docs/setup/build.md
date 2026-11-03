@@ -33,6 +33,18 @@ $ su -
 # rpm -i rpmbuild/RPMS/<arch>/mergerfs-<version>.<arch>.rpm
 ```
 
+Fedora 45 rejects unsigned RPMs by default. When installing a locally
+built RPM that you trust, pass `--nosignature` to `rpm` to allow that
+unsigned package.
+
+## Container packages
+
+Package build targets are defined in `buildtools/containerfiles/`, with
+the standard distro targets listed in `buildtools/target-containers.txt`.
+These include Fedora 45 on `amd64` and `arm64`, and Ubuntu 26.10 on
+`amd64`, `arm64`, `armhf`, and `riscv64`. Foreign-architecture builds
+require QEMU/binfmt support.
+
 ## Generic Linux
 
 Have git, g++ or clang, make, python installed.
