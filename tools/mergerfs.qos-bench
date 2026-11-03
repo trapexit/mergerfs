@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""
+Measure the throughput of each branch in a mergerfs pool and emit the
+`capacity` lines a QoS ruleset needs to turn percentage rates into
+numbers.
+
+A percentage rate ("give the scanner 10% of this disk") is meaningless
+until something knows what 100% is. This measures it.
+
+Defaults are chosen to be safe to run against a pool that is in use:
+
+  * Reads only. No file is created or modified unless --allow-write is
+    given, and nothing is ever written into the pool itself.
+  * O_DIRECT, so the measurement neither reads stale numbers out of the
+    page cache nor evicts anything the running services still want.
+    The system-wide cache is never dropped.
+  * Idle I/O priority and nice 19, so a benchmark that collides with
+    playback yields rather than competes. Note this also means the
+    number produced is a floor when the pool is busy -- for a true
+    ceiling, measure when it is quiet.
+  * Short samples (3s per branch by default).
+"""
+
+import argparse
+import ctypes
+import errno
+import mmap
+import os
+import random
+import sys
+import time
+
+BLOCK = 4 * 1024 * 1024          # O_DIRECT reads must be sector aligned
+MIN_PROBE_SIZE = 256 * 1024 * 1024
+MAX_SCAN_ENTRIES = 20000
+
+IOPRIO_WHO_PROCESS = 1
+IOPRIO_CLASS_IDLE = 3
+IOPRIO_CLASS_SHIFT = 13
+
+
+def be_polite():
+    """Drop to idle I/O priority and nice 19."""
+    try:
+        os.nice(19)
+    except OSError:
+        pass
+    try:
+        libc = ctypes.CDLL("libc.so.6", use_errno=True)
+        libc.syscall(251, IOPRIO_WHO_PROCESS, 0,
+                     IOPRIO_CLASS_IDLE << IOPRIO_CLASS_SHIFT)
+    except Exception:
+        pass
+
+
+def human(n):
+    for unit in ("B", "K", "M", "G", "T"):
+        if n < 1024 or unit == "T":
+            return f"{n:.0f}{unit}" if unit == "B" else f"{n:.1f}{unit}"
+        n /= 1024.0
+
+
+def branches_of(mountpoint):
+    """Read the branch list out of a live mergerfs mount."""
+    try:
+        raw = os.getxattr(os.path.join(mountpoint, ".mergerfs"),
+                          "user.mergerfs.branches")
+    except OSError as e:
+        sys.exit(f"{mountpoint}: cannot read branch list: {e}")
+
+    out = []
+    for spec in raw.decode().split(":"):
+        # Each entry is <path>=<mode>; mode is irrelevant here.
+        out.append(spec.split("=", 1)[0])
+    return out
+
+
+def find_probe_file(branch, min_size):
+    """
+    Find one file big enough to read a sample from.
+
+    Walks breadth-first with a hard cap on entries examined; on a 14TB
+    disk of media the first large file turns up almost immediately, and
+    the cap keeps a pathological layout from turning this into a full
+    tree walk.
+    """
+    seen = 0
+    queue = [branch]
+
+    while queue:
+        d = queue.pop(0)
+        try:
+            with os.scandir(d) as it:
+                for entry in it:
+                    seen += 1
+                    if seen > MAX_SCAN_ENTRIES:
+                        return None
+                    try:
+                        if entry.is_symlink():
+                            continue
+                        if entry.is_dir():
+                            queue.append(entry.path)
+                        elif entry.is_file():
+                            if entry.stat().st_size >= min_size:
+                                return entry.path
+                    except OSError:
+                        continue
+        except OSError:
+            continue
+
+    return None
+
+
+def measure_read(path, duration, block=BLOCK):
+    """
+    Sequential O_DIRECT read from a random aligned offset.
+
+    Returns bytes/sec, or None if the file could not be read directly.
+    """
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECT)
+    except OSError as e:
+        if e.errno in (errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP):
+            return None
+        raise
+
+    try:
+        size = os.fstat(fd).st_size
+        if size < block * 2:
+            return None
+
+        # Start somewhere other than the front of the file so repeated
+        # runs do not all measure the same tracks.
+        span = size - block
+        start = random.randrange(0, max(1, span // block)) * block
+
+        buf = mmap.mmap(-1, block)          # mmap is page aligned
+        total = 0
+        offset = start
+        deadline = time.monotonic() + duration
+        t0 = time.monotonic()
+
+        while time.monotonic() < deadline:
+            if offset + block > size:
+                offset = 0
+            n = os.preadv(fd, [buf], offset)
+            if n <= 0:
+                break
+            total += n
+            offset += block
+
+        elapsed = time.monotonic() - t0
+        buf.close()
+
+        if elapsed <= 0 or total == 0:
+            return None
+
+        return total / elapsed
+    finally:
+        os.close(fd)
+
+
+def measure_write(branch, duration, block=BLOCK):
+    """Sequential O_DIRECT write to a temp file on the branch."""
+    path = os.path.join(branch, f".mergerfs-qos-bench.{os.getpid()}")
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_DIRECT, 0o600)
+    except OSError as e:
+        print(f"  write: cannot create probe file: {e}", file=sys.stderr)
+        return None
+
+    try:
+        buf = mmap.mmap(-1, block)
+        buf.write(os.urandom(65536) * (block // 65536))
+        total = 0
+        deadline = time.monotonic() + duration
+        t0 = time.monotonic()
+
+        while time.monotonic() < deadline:
+            n = os.pwritev(fd, [buf], total)
+            if n <= 0:
+                break
+            total += n
+
+        elapsed = time.monotonic() - t0
+        buf.close()
+
+        if elapsed <= 0 or total == 0:
+            return None
+        return total / elapsed
+    finally:
+        os.close(fd)
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Measure per-branch throughput for a mergerfs QoS ruleset.")
+    ap.add_argument("target",
+                    help="a mergerfs mountpoint, or one or more branch paths")
+    ap.add_argument("extra", nargs="*",
+                    help="additional branch paths")
+    ap.add_argument("-d", "--duration", type=float, default=3.0,
+                    help="seconds to sample each branch (default: 3)")
+    ap.add_argument("-o", "--output",
+                    help="write the capacity block to this file instead of stdout")
+    ap.add_argument("--write", action="store_true",
+                    help="also measure write throughput (creates a temp file "
+                         "on each branch)")
+    ap.add_argument("--allow-write", action="store_true",
+                    help="permit creating a probe file when no existing file "
+                         "is large enough to read from")
+    ap.add_argument("--min-size", type=int, default=MIN_PROBE_SIZE,
+                    help="smallest file usable as a read probe, in bytes")
+    ap.add_argument("--full-speed", action="store_true",
+                    help="do not lower this process's priority; measures the "
+                         "true ceiling but competes with live traffic")
+    args = ap.parse_args()
+
+    if not args.full_speed:
+        be_polite()
+
+    # A single argument that is a mergerfs mount means "discover the
+    # branches yourself".
+    if not args.extra and os.path.exists(os.path.join(args.target, ".mergerfs")):
+        branches = branches_of(args.target)
+        print(f"# discovered {len(branches)} branches via {args.target}",
+              file=sys.stderr)
+    else:
+        branches = [args.target] + args.extra
+
+    results = {}
+
+    for branch in branches:
+        if not os.path.isdir(branch):
+            print(f"{branch}: not a directory, skipping", file=sys.stderr)
+            continue
+
+        print(f"{branch}:", file=sys.stderr, flush=True)
+
+        probe = find_probe_file(branch, args.min_size)
+        created = None
+
+        if probe is None:
+            if not args.allow_write:
+                print(f"  no file >= {human(args.min_size)} found; "
+                      f"skipping (use --allow-write to create a probe file)",
+                      file=sys.stderr)
+                continue
+            created = os.path.join(branch, f".mergerfs-qos-probe.{os.getpid()}")
+            try:
+                with open(created, "wb") as f:
+                    chunk = os.urandom(1 << 20)
+                    for _ in range(args.min_size >> 20):
+                        f.write(chunk)
+                    f.flush()
+                    os.fsync(f.fileno())
+                probe = created
+            except OSError as e:
+                print(f"  cannot create probe file: {e}", file=sys.stderr)
+                continue
+
+        try:
+            rd = measure_read(probe, args.duration)
+            if rd is None:
+                print("  read: O_DIRECT unavailable or file too small",
+                      file=sys.stderr)
+            else:
+                print(f"  read:  {human(rd)}/s   (probe: {probe})",
+                      file=sys.stderr)
+                results[branch] = rd
+
+            if args.write:
+                wr = measure_write(branch, args.duration)
+                if wr is not None:
+                    print(f"  write: {human(wr)}/s", file=sys.stderr)
+        finally:
+            if created:
+                try:
+                    os.unlink(created)
+                except OSError:
+                    pass
+
+    if not results:
+        sys.exit("no branches could be measured")
+
+    lines = ["# generated by mergerfs.qos-bench on "
+             + time.strftime("%Y-%m-%d %H:%M:%S"),
+             "# read throughput, O_DIRECT, "
+             f"{args.duration:g}s sample per branch"]
+    if not args.full_speed:
+        lines.append("# measured at idle priority: treat as a floor if the "
+                     "pool was busy")
+    for branch, rate in results.items():
+        lines.append(f"capacity {branch} {int(rate)}")
+
+    total = sum(results.values())
+    lines.append(f"capacity default {int(total / len(results))}")
+
+    block = "\n".join(lines) + "\n"
+
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(block)
+        print(f"\nwrote {args.output}", file=sys.stderr)
+    else:
+        sys.stdout.write(block)
+
+
+if __name__ == "__main__":
+    main()

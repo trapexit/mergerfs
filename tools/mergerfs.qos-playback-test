@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+"""
+Prove that playback survives competing load -- or show exactly where it
+does not.
+
+A rate limit that looks right in a config file is worth nothing if a
+film still stutters. This models a player: it reads a real file out of
+the pool at a fixed bitrate through a jitter buffer, and counts the
+moments the buffer ran dry, which is what a viewer experiences as a
+stutter. It can start and stop competing bulk load partway through, so
+one run shows three things at once:
+
+  1. baseline  -- what the buffer does with the pool to itself
+  2. contended -- whether bulk load empties it, and how far pressure
+                  had to rise to stop that
+  3. recovery  -- whether the yielding classes climb back to full speed
+                  once playback ends
+
+Both the player and the load generator rename themselves, so a ruleset
+can classify them by name:
+
+    class playback protect ioprio=rt:0
+    class bulk     yield=100 floor=5% ioprio=idle
+    match comm = qos-playback -> playback
+    match comm = qos-bulk     -> bulk
+"""
+
+import argparse
+import ctypes
+import os
+import statistics
+import sys
+import threading
+import time
+
+CHUNK = 1 << 20
+PR_SET_NAME = 15
+
+
+def set_comm(name):
+    """Rename this thread so mergerfs QoS rules can match on comm."""
+    try:
+        libc = ctypes.CDLL("libc.so.6", use_errno=True)
+        libc.prctl(PR_SET_NAME, ctypes.c_char_p(name.encode()[:15]), 0, 0, 0)
+    except Exception:
+        pass
+
+
+def human(n):
+    for unit in ("B", "K", "M", "G"):
+        if n < 1024 or unit == "G":
+            return f"{n:.1f}{unit}"
+        n /= 1024.0
+
+
+def parse_size(s):
+    s = s.strip()
+    mult = 1
+    if s and s[-1] in "kKmMgG":
+        mult = {"k": 1024, "m": 1024 ** 2, "g": 1024 ** 3}[s[-1].lower()]
+        s = s[:-1]
+    return int(float(s) * mult)
+
+
+class Player:
+    """
+    Reads `path` at `bitrate`, keeping a jitter buffer topped up.
+
+    The buffer is the whole point: a player does not care how fast a
+    read was, only whether the next frame was there in time. Every
+    moment the buffer hits zero is a stutter.
+    """
+
+    def __init__(self, path, bitrate, buffer_secs):
+        self.path = path
+        self.bitrate = bitrate
+        self.target = int(bitrate * buffer_secs)
+        self.underruns = 0
+        self.min_buffer = self.target
+        self.latencies = []
+        self.bytes_read = 0
+        self.stop = threading.Event()
+        self.samples = []          # (t, buffer_bytes)
+
+    def run(self):
+        set_comm("qos-playback")
+
+        fd = os.open(self.path, os.O_RDONLY)
+        size = os.fstat(fd).st_size
+        offset = 0
+
+        start = time.monotonic()
+        # Prefilled, as a player would be after it starts.
+        fetched = self.target
+        in_underrun = False
+
+        try:
+            while not self.stop.is_set():
+                now = time.monotonic()
+                elapsed = now - start
+                consumed = elapsed * self.bitrate
+                buffer = fetched - consumed
+
+                self.min_buffer = min(self.min_buffer, buffer)
+                self.samples.append((elapsed, buffer))
+
+                if buffer <= 0:
+                    # The buffer is empty: the viewer is looking at a
+                    # spinner. Count it once per drain, not once per
+                    # loop iteration.
+                    if not in_underrun:
+                        self.underruns += 1
+                        in_underrun = True
+                else:
+                    in_underrun = False
+
+                if buffer >= self.target:
+                    # Buffer is full; a real player would idle here
+                    # rather than race ahead.
+                    time.sleep(0.005)
+                    continue
+
+                if offset + CHUNK > size:
+                    offset = 0
+
+                t0 = time.monotonic()
+                data = os.pread(fd, CHUNK, offset)
+                dt = time.monotonic() - t0
+
+                if not data:
+                    offset = 0
+                    continue
+
+                self.latencies.append(dt)
+                fetched += len(data)
+                self.bytes_read += len(data)
+                offset += len(data)
+        finally:
+            os.close(fd)
+
+
+class Bulk:
+    """A greedy reader, standing in for a download or a library scan."""
+
+    def __init__(self, path):
+        self.path = path
+        self.bytes_read = 0
+        self.stop = threading.Event()
+
+    def run(self):
+        set_comm("qos-bulk")
+
+        fd = os.open(self.path, os.O_RDONLY)
+        size = os.fstat(fd).st_size
+        offset = 0
+        try:
+            while not self.stop.is_set():
+                if offset + CHUNK > size:
+                    offset = 0
+                data = os.pread(fd, CHUNK, offset)
+                if not data:
+                    offset = 0
+                    continue
+                self.bytes_read += len(data)
+                offset += len(data)
+        finally:
+            os.close(fd)
+
+
+def read_pressure(mountpoint):
+    """Pull the governor's view out of the live mount."""
+    if not mountpoint:
+        return {}
+    try:
+        raw = os.getxattr(os.path.join(mountpoint, ".mergerfs"),
+                          "user.mergerfs.qos.stats").decode()
+    except OSError:
+        return {}
+
+    out = {}
+    for line in raw.splitlines():
+        if line.startswith("resource "):
+            name = line.split()[1].rstrip(":")
+            fields = dict(f.split("=", 1) for f in line.split() if "=" in f)
+            out[name] = fields
+    return out
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Measure whether playback survives competing pool load.")
+    ap.add_argument("file", help="a media file inside the pool to play")
+    ap.add_argument("--bulk-file", action="append", default=[],
+                    help="file for a competing bulk reader (repeatable)")
+    ap.add_argument("-b", "--bitrate", default="25M",
+                    help="playback bitrate, e.g. 25M (default: 25M)")
+    ap.add_argument("--buffer", type=float, default=5.0,
+                    help="jitter buffer in seconds (default: 5)")
+    ap.add_argument("-d", "--duration", type=float, default=60.0,
+                    help="total run time in seconds (default: 60)")
+    ap.add_argument("--bulk-start", type=float, default=10.0,
+                    help="when to start the bulk load (default: 10s)")
+    ap.add_argument("--bulk-stop", type=float, default=None,
+                    help="when to stop it (default: 10s before the end)")
+    ap.add_argument("-m", "--mount",
+                    help="mergerfs mountpoint, to report governor pressure")
+    args = ap.parse_args()
+
+    bitrate = parse_size(args.bitrate)
+    bulk_stop = (args.bulk_stop if args.bulk_stop is not None
+                 else max(args.bulk_start, args.duration - 10.0))
+
+    if not args.bulk_file:
+        args.bulk_file = [args.file]
+
+    # Check up front: a missing file would otherwise surface as a
+    # traceback from a worker thread while the run carried on
+    # reporting zero bulk load, which reads like a passing test.
+    for path in [args.file] + args.bulk_file:
+        if not os.path.isfile(path):
+            sys.exit(f"{path}: not a file")
+
+    player = Player(args.file, bitrate, args.buffer)
+    pthread = threading.Thread(target=player.run, daemon=True)
+
+    print(f"playing {args.file} at {human(bitrate)}/s "
+          f"with a {args.buffer:g}s buffer for {args.duration:g}s")
+    print(f"bulk load: {len(args.bulk_file)} reader(s), "
+          f"{args.bulk_start:g}s -> {bulk_stop:g}s\n")
+    print(f"{'t':>6} {'phase':<10} {'buffer':>9} {'play':>10} {'bulk':>10} "
+          f"{'pressure':>9} {'under':>6}")
+
+    pthread.start()
+
+    bulks = []
+    bthreads = []
+    started = False
+    stopped = False
+
+    t0 = time.monotonic()
+    last_play = 0
+    last_bulk = 0
+    last_t = 0.0
+
+    while True:
+        now = time.monotonic() - t0
+        if now >= args.duration:
+            break
+
+        if (not started) and (now >= args.bulk_start):
+            for bf in args.bulk_file:
+                b = Bulk(bf)
+                t = threading.Thread(target=b.run, daemon=True)
+                bulks.append(b)
+                bthreads.append(t)
+                t.start()
+            started = True
+
+        if started and (not stopped) and (now >= bulk_stop):
+            for b in bulks:
+                b.stop.set()
+            stopped = True
+
+        time.sleep(1.0)
+
+        now = time.monotonic() - t0
+        dt = max(1e-9, now - last_t)
+
+        play_total = player.bytes_read
+        bulk_total = sum(b.bytes_read for b in bulks)
+
+        play_rate = (play_total - last_play) / dt
+        bulk_rate = (bulk_total - last_bulk) / dt
+
+        last_play, last_bulk, last_t = play_total, bulk_total, now
+
+        buffer = player.samples[-1][1] if player.samples else 0
+
+        press = read_pressure(args.mount)
+        # Report the most-pressured resource; that is the one doing the
+        # protecting.
+        pval = "-"
+        if press:
+            vals = []
+            for f in press.values():
+                try:
+                    vals.append(float(f.get("pressure", 0)))
+                except ValueError:
+                    pass
+            if vals:
+                pval = f"{max(vals):.2f}"
+
+        phase = ("baseline" if not started
+                 else ("recovery" if stopped else "contended"))
+
+        print(f"{now:6.0f} {phase:<10} {human(max(0,buffer)):>9} "
+              f"{human(play_rate)+'/s':>10} {human(bulk_rate)+'/s':>10} "
+              f"{pval:>9} {player.underruns:>6}")
+
+    player.stop.set()
+    for b in bulks:
+        b.stop.set()
+    pthread.join(timeout=5)
+
+    print()
+    lat = sorted(player.latencies)
+    if lat:
+        def pct(p):
+            return lat[min(len(lat) - 1, int(len(lat) * p))] * 1000
+
+        print(f"read latency: median {statistics.median(lat)*1000:.1f}ms  "
+              f"p95 {pct(0.95):.1f}ms  p99 {pct(0.99):.1f}ms  "
+              f"max {lat[-1]*1000:.1f}ms")
+
+    print(f"buffer low-water: {human(max(0,player.min_buffer))} "
+          f"of {human(player.target)}")
+    print(f"underruns (stutters): {player.underruns}")
+
+    # A stutter is the only failure that matters here.
+    sys.exit(1 if player.underruns else 0)
+
+
+if __name__ == "__main__":
+    main()

@@ -27,4 +27,14 @@ namespace procfs
   void init();
   void shutdown();
   std::string get_name(const int tid);
+
+  // Raw contents of /proc/<pid>/cgroup with the trailing newline
+  // removed. Empty when the process is gone or unreadable.
+  std::string get_cgroup(const int pid);
+
+  // /proc/<pid>/cmdline with the NUL separators turned into spaces.
+  // Truncated to a bounded length: the interesting part of a media
+  // server's command line is the input and output paths, and a full
+  // ffmpeg invocation can run to kilobytes.
+  std::string get_cmdline(const int pid);
 }
