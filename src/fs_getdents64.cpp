@@ -18,6 +18,7 @@
 
 #include "to_neg_errno.hpp"
 
+#include <algorithm>
 #include <sys/types.h>
 
 #if defined __linux__
@@ -36,7 +37,10 @@ namespace fs
 #if defined SYS_getdents64
     ssize_t rv;
 
-    rv = ::syscall(SYS_getdents64,fd_,dirp_,count_);
+    // Avoid oversized requests on virtiofs-backed branches.
+    const size_t count = std::min<size_t>(count_,128 * 1024);
+
+    rv = ::syscall(SYS_getdents64,fd_,dirp_,count);
 
     return ::to_neg_errno(rv);
 #else
