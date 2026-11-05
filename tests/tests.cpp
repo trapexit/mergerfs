@@ -1,6 +1,7 @@
 #include "acutest/acutest.h"
 
 #include "config.hpp"
+#include "fs_clonepath.hpp"
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
 #include "from_string.hpp"
@@ -4200,6 +4201,46 @@ test_rapidhash_withSeed_preserves_default_output()
     }
 }
 
+void
+test_clonepath_modes()
+{
+  char tmp[] = "/tmp/mergerfs-clonepath-XXXXXX";
+  TEST_ASSERT(::mkdtemp(tmp) != NULL);
+  const std::filesystem::path root(tmp);
+  const auto src = root / "src";
+  const auto dst = root / "dst";
+  std::filesystem::create_directories(src / "d" / "child");
+  std::filesystem::create_directory(dst);
+
+  // Use a different group when privileged to verify actual inheritance.
+  const gid_t group = (::geteuid() == 0) ? 1 : ::getegid();
+  TEST_ASSERT(::chown((src / "d").c_str(),::geteuid(),group) == 0);
+  TEST_ASSERT(::chmod((src / "d").c_str(),02770) == 0);
+  TEST_ASSERT(::chmod((src / "d" / "child").c_str(),0770) == 0);
+  TEST_CHECK(fs::clonepath(src.string(),dst.string(),"d/child",true) == 0);
+
+  struct stat st;
+  TEST_ASSERT(::stat((dst / "d").c_str(),&st) == 0);
+  TEST_CHECK((st.st_mode & 07777) == 02770);
+  TEST_CHECK(st.st_gid == group);
+  TEST_ASSERT(::stat((dst / "d" / "child").c_str(),&st) == 0);
+  TEST_CHECK((st.st_mode & 07777) == 0770);
+
+  const auto file = dst / "d" / "file";
+  const int fd = ::open(file.c_str(),O_CREAT|O_EXCL|O_WRONLY,0600);
+  TEST_ASSERT(fd >= 0);
+  TEST_ASSERT(::fstat(fd,&st) == 0);
+  TEST_CHECK(st.st_gid == group);
+  ::close(fd);
+
+  // Existing destination directories must remain untouched.
+  TEST_ASSERT(::chmod((dst / "d").c_str(),0700) == 0);
+  TEST_CHECK(fs::clonepath(src.string(),dst.string(),"d",true) == 0);
+  TEST_ASSERT(::stat((dst / "d").c_str(),&st) == 0);
+  TEST_CHECK((st.st_mode & 07777) == 0700);
+  std::filesystem::remove_all(root);
+}
+
 TEST_LIST =
   {
    {"nop",test_nop},
@@ -4394,5 +4435,6 @@ TEST_LIST =
    {"tp_heavy_repeated_construct_destroy",test_tp_heavy_repeated_construct_destroy},
    {"tp_heavy_enqueue_task_mixed_outcomes",test_tp_heavy_enqueue_task_mixed_outcomes},
    {"tp_heavy_add_remove_churn_under_enqueue",test_tp_heavy_add_remove_churn_under_enqueue},
+   {"clonepath_modes",test_clonepath_modes},
    {NULL,NULL}
   };

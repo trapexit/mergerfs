@@ -41,6 +41,13 @@ is chosen other parts of the system does what is necessary to
 accomplish the function. Such as the cloning of directories between
 branches.
 
+When a directory path is cloned onto another branch, mergerfs attempts
+to preserve its ownership, permissions (including setgid), timestamps,
+and extended attributes. Permissions are restored after ownership so
+new files in a setgid directory inherit its group on the new branch.
+Directories which already exist on the destination branch are left
+unchanged.
+
 When using policies which are based on a branch's available space the
 branch base path provided is used. Not the full path to the file or
 directory in question. Meaning that mounts within the branch will not
