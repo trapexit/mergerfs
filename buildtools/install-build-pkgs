@@ -113,7 +113,11 @@ elif [ -e /usr/bin/dnf ]; then
         dnf -y install \
             "gcc-toolset-${toolset}-gcc" \
             "gcc-toolset-${toolset}-gcc-c++"
-        write_toolset_env "/opt/rh/gcc-toolset-${toolset}/enable"
+        if [ -f "/usr/lib/gcc-toolset/${toolset}-env.source" ]; then
+            write_toolset_env "/usr/lib/gcc-toolset/${toolset}-env.source"
+        else
+            write_toolset_env "/opt/rh/gcc-toolset-${toolset}/enable"
+        fi
     else
         write_gcc_env gcc g++
     fi
