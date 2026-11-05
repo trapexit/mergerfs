@@ -23,6 +23,13 @@ $ make deb
 $ sudo dpkg -i ../mergerfs_<version>_<arch>.deb
 ```
 
+Debian package compilation uses the available CPUs by default. To limit
+parallelism, set `DEB_BUILD_OPTIONS`:
+
+```
+$ DEB_BUILD_OPTIONS=parallel=4 make deb
+```
+
 ## RHEL / CentOS / Rocky / Fedora
 
 ```
@@ -37,13 +44,19 @@ Fedora 45 rejects unsigned RPMs by default. When installing a locally
 built RPM that you trust, pass `--nosignature` to `rpm` to allow that
 unsigned package.
 
+Rocky Linux container builds activate newer GCC Toolsets when available.
+Both the Rocky 10 `/usr/lib/gcc-toolset/<version>-env.source` activation
+script and the older `/opt/rh/gcc-toolset-<version>/enable` layout are
+supported.
+
 ## Container packages
 
 Package build targets are defined in `buildtools/containerfiles/`, with
 the standard distro targets listed in `buildtools/target-containers.txt`.
-These include Fedora 45 on `amd64` and `arm64`, and Ubuntu 26.10 on
-`amd64`, `arm64`, `armhf`, and `riscv64`. Foreign-architecture builds
-require QEMU/binfmt support.
+Debian release builds target Debian 12 and 13. Other targets include
+Fedora 45 on `amd64` and `arm64`, and Ubuntu 26.10 on `amd64`, `arm64`,
+`armhf`, and `riscv64`. Foreign-architecture builds require QEMU/binfmt
+support.
 
 ## Generic Linux
 
