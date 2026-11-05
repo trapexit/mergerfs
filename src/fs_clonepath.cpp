@@ -21,6 +21,7 @@
 #include "errno.h"
 #include "fs_attr.hpp"
 #include "fs_clonepath.hpp"
+#include "fs_lchmod.hpp"
 #include "fs_lchown.hpp"
 #include "fs_lstat.hpp"
 #include "fs_lutimens.hpp"
@@ -108,6 +109,13 @@ fs::clonepath(const fs::path &srcpath_,
     return rv;
 
   rv = fs::lchown_check_on_error(dstpath,st);
+  if(return_metadata_errors_ && (rv < 0))
+    return rv;
+
+  // mkdir(2) on Linux ignores S_ISUID/S_ISGID in mode and may
+  // inherent S_ISGID from the parent. Explicitly set the mode after
+  // chown so the clone matches the source.
+  rv = fs::lchmod_check_on_error(dstpath,st.st_mode);
   if(return_metadata_errors_ && (rv < 0))
     return rv;
 
