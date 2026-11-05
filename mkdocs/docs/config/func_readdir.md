@@ -39,5 +39,9 @@ situations.
   [readdir](https://man7.org/linux/man-pages/man2/readdir.2.html) in
   order to leverage larger buffers for better performance on larger
   directory reads as well as have more control in concurrent policies.
+  Individual branch `getdents64` requests are capped at 128 KiB to work
+  around problems with larger requests on virtiofs. This applies to
+  `seq`, `cosr`, and `cor`; it does not limit the total directory listing
+  or change [fuse-msg-size](fuse-msg-size.md).
 * [readdir](https://man7.org/linux/man-pages/man2/readdir.2.html) is
   used on FreeBSD.
