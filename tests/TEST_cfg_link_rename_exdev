@@ -59,7 +59,9 @@ def setup_paths(branches, mount, rel_base, name, root=False):
 
 def main():
     try:
-        with mergerfs_mount(num_branches=2) as (mount, branches):
+        with mergerfs_mount(
+            num_branches=2, options="defaults,use_ino,category.create=mfs,minfreespace=0"
+        ) as (mount, branches):
             rel_base = f".mergerfs_exdev_test_{os.getpid()}_{uuid.uuid4().hex}"
             root_sources = []
             if len(branches) < 2:
