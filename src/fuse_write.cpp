@@ -182,9 +182,14 @@ _write(const fuse_req_ctx_t   *ctx_,
         return err;
 
       std::unique_lock<std::shared_mutex> ulk(fi->mutex);
-      // Re-check under exclusive lock as another move may have
-      // already run.
-      written = fs::pwriten(fi->fd,buf_,count_,offset_,&err);
+      // Re-check the remaining suffix under exclusive lock as another move
+      // may have already run. Replaying a written prefix would duplicate
+      // data on O_APPEND handles.
+      written += fs::pwriten(fi->fd,
+                             buf_ + written,
+                             count_ - written,
+                             offset_ + written,
+                             &err);
       if(err == 0)
         return written;
       if(err && not ::_out_of_space(err))

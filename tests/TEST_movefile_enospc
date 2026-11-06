@@ -1,84 +1,101 @@
 #!/usr/bin/env python3
 
-import errno
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 
-from posix_parity import cleanup_dir
 from posix_parity import fail
-from posix_parity import join
-from posix_parity import mergerfs_branches
-from posix_parity import mergerfs_get_option
-from posix_parity import mergerfs_mount
-from posix_parity import mergerfs_set_option
-from posix_parity import temp_dir
-from posix_parity import touch
+from posix_parity import find_fusermount
+from posix_parity import find_mergerfs
+from posix_parity import mount_mergerfs
+from posix_parity import unmount_mergerfs
 
 
 SKIP = 77
 
 
-def main():
-    try:
-        with mergerfs_mount(num_branches=2) as (mount, branches):
+def test_partial_append():
+    with tempfile.TemporaryDirectory(prefix="mergerfs-enospc-") as root:
+        source, destination, pool = [os.path.join(root, name) for name in ("source", "destination", "pool")]
+        for directory in (source, destination, pool):
+            os.mkdir(directory)
+
+        result = subprocess.run(
+            ["mount", "-t", "tmpfs", "-o", "size=1m", "tmpfs", source],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        if result.returncode:
+            print(f"constrained tmpfs unavailable: {result.stderr.decode(errors='replace')}", end="")
+            return SKIP
+
+        mounted = False
+        try:
+            block_size = os.statvfs(source).f_frsize
+            initial = b"initial\n" * (block_size // 8)
+            with open(os.path.join(source, "target"), "wb") as stream:
+                stream.write(initial)
+
+            stat = os.statvfs(source)
+            remaining = block_size
+            available = stat.f_bavail * stat.f_frsize
+            with open(os.path.join(source, "filler"), "wb") as stream:
+                stream.write(b"F" * (available - remaining))
+
+            mount_mergerfs(
+                [source, destination], pool,
+                "minfreespace=0,cache.files=full,cache.writeback=false,moveonenospc=mfs",
+            )
+            mounted = True
+
+            # The first write appends a prefix before ENOSPC. Relocation must
+            # preserve that progress instead of replaying it on the new branch.
+            payload = bytes(range(256)) * (block_size // 64)
+            fd = os.open(os.path.join(pool, "target"), os.O_WRONLY | os.O_APPEND)
             try:
-                orig_moveonenospc = mergerfs_get_option(mount, "moveonenospc")
-            except (PermissionError, FileNotFoundError):
-                print("moveonenospc runtime option unavailable", end="")
-                return SKIP
-            except OSError as exc:
-                if exc.errno == errno.EOPNOTSUPP:
-                    print("moveonenospc runtime option unsupported", end="")
-                    return SKIP
-                raise
-
-            if len(branches) < 2:
-                print("moveonenospc test requires at least 2 branches", end="")
-                return SKIP
-
-            merge_base = temp_dir(mount)
-
-            try:
-                mergerfs_set_option(mount, "moveonenospc", "mfs")
-                if mergerfs_get_option(mount, "moveonenospc") != "mfs":
-                    return fail("moveonenospc: failed to set documented policy value")
-
-                merge_file = join(merge_base, "enospc_test")
-                touch(merge_file, b"test data for enospc")
-
-                if not os.path.exists(merge_file):
-                    return fail("moveonenospc: file was not created")
-
-                fullpath = None
-                try:
-                    fullpath = os.getxattr(merge_file, "user.mergerfs.fullpath").decode()
-                except OSError:
-                    pass
-
-                if fullpath and not os.path.exists(fullpath):
-                    return fail(f"moveonenospc: fullpath does not exist on disk: {fullpath}")
-
-                with open(merge_file, "r") as f:
-                    content = f.read()
-
-                if content != "test data for enospc":
-                    return fail(f"moveonenospc: file content mismatch: got {content!r}")
-
-                mergerfs_set_option(mount, "moveonenospc", orig_moveonenospc)
-
-                print("moveonenospc ENOSPC path requires a constrained branch", end="")
-                return SKIP
-            except Exception as exc:
-                try:
-                    mergerfs_set_option(mount, "moveonenospc", orig_moveonenospc)
-                except Exception:
-                    pass
-                return fail(str(exc))
+                written = os.write(fd, payload)
             finally:
-                cleanup_dir(merge_base)
-    except RuntimeError as exc:
-        print(str(exc), end="")
-        return 77
+                os.close(fd)
+            if written != len(payload):
+                return fail(f"append returned {written}, expected {len(payload)}")
+
+            relocated = os.path.join(destination, "target")
+            if os.path.exists(os.path.join(source, "target")) or not os.path.isfile(relocated):
+                return fail("ENOSPC append did not relocate the file")
+            with open(relocated, "rb") as stream:
+                actual = stream.read()
+            expected = initial + payload
+            if actual != expected:
+                return fail(f"relocated append corrupted data: expected {len(expected)} bytes, got {len(actual)}")
+            with open(os.path.join(pool, "target"), "rb") as stream:
+                if stream.read() != expected:
+                    return fail("relocated append differs through the pool")
+            return 0
+        finally:
+            if mounted:
+                unmount_mergerfs(pool)
+            subprocess.run(["umount", source], check=True)
+
+
+def main():
+    if len(sys.argv) == 2 and sys.argv[1] == "--isolated":
+        return test_partial_append()
+
+    if find_mergerfs() is None or find_fusermount() is None:
+        print("mergerfs or fusermount unavailable", end="")
+        return SKIP
+    if any(shutil.which(tool) is None for tool in ("unshare", "mount", "umount")):
+        print("unshare/mount/umount unavailable", end="")
+        return SKIP
+
+    # Limit disk usage inside a private namespace, including for non-root runs.
+    namespace = ["unshare", "-Urnm"]
+    probe = subprocess.run(namespace + ["true"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if probe.returncode:
+        print("private user/mount namespaces unavailable", end="")
+        return SKIP
+    return subprocess.run(namespace + [sys.executable, os.path.realpath(__file__), "--isolated"]).returncode
 
 
 if __name__ == "__main__":

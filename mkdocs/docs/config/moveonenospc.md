@@ -23,7 +23,8 @@ will:
 1. Run the policy defined by `moveonenospc` to find a target branch.
 2. ["Move"](../faq/technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
    the file from the source branch to the target branch.
-3. Retry the `write` and continue on as normal.
+3. Retry only the unwritten portion of the request, so a partially
+   completed append is not duplicated.
 
 If at any point something fails the progress so far will be cleaned up
 as appropriate and the original error returned.
