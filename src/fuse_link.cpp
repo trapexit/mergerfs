@@ -306,7 +306,8 @@ _link_exdev(const fs::path  &oldpath_,
       return -EXDEV;
     }
 
-  rv = (*sourcePolicy)(cfg.branches,oldpath_,oldbranches);
+  const Branches::Ptr branches = cfg.branches;
+  rv = (*sourcePolicy)(branches,oldpath_,oldbranches);
   if(rv < 0)
     return rv;
   if(oldbranches.empty())

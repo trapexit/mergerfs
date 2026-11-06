@@ -20,6 +20,9 @@ selected by the `open` policy. Creation uses daemon credentials, then
 sets the source ownership, rather than using the link request's UID/GID,
 which may be invalid when `allow-idmap` is enabled. A newly created
 replacement is removed if its ownership cannot be set.
+
+Source branch selection and path construction retain the same branch
+snapshot, even when the branch list is updated at runtime.
   
 **NOTE:** It is possible that some applications check the file they
 link. In those cases, it is possible it will error or complain.
