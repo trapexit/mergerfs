@@ -254,6 +254,8 @@ FUSE::statx(const fuse_req_ctx_t *ctx_,
                   timeout_);
 }
 
+// See fgetattr in fuse.h for why a node with no `fh` and no open file
+// returns ENOENT.
 int
 FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
                const uint64_t        fh_,
@@ -267,7 +269,7 @@ FUSE::statx_fh(const fuse_req_ctx_t *ctx_,
 
   fi = state.get_fi(ctx_,fh_);
   if(not fi)
-    return -EBADF;
+    return -ENOENT;
 
   rv = ::_statx(fi,
                 flags_|AT_STATX_DONT_SYNC,

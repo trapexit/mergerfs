@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+
+# Issue #1693: once a file or directory is removed (unlink, rmdir, or a
+# rename over it), libfuse has no path for its node, but the kernel can
+# still hold it: an open dirfd, a cwd, an O_PATH fd, or a dentry it
+# resolved just before the removal. It then sends GETATTR or SETATTR with
+# no file handle, for example in the permission check of an *at() call.
+# Those requests used to fail with EBADF, so lstat() could return EBADF
+# and rm -rf reported "Bad file descriptor" and left entries behind.
+#
+# mergerfs now answers ENOENT. A local filesystem returns ENOENT for
+# *at() calls in a removed directory, so those must match it. It
+# succeeds on the removed object itself, but mergerfs has nothing left
+# on the branches to act on, so ENOENT is accepted there. EBADF and
+# ESTALE never are: the kernel retries ESTALE once, but a call through
+# a dirfd or cwd of a removed directory meets the same node again.
+#
+# cache.attr=0 makes the kernel send GETATTR every time, so this shows up
+# deterministically instead of only in a race.
+
+import os
+import stat
+import tempfile
+
+from posix_parity import cleanup_dir
+from posix_parity import errno_name
+from posix_parity import fail
+from posix_parity import mergerfs_mount
+
+
+OPTIONS = "defaults,use_ino,category.create=mfs,cache.attr=0"
+
+# A local filesystem returns ENOENT for these: the kernel refuses lookups
+# in a removed directory. Not compared against the native run since that
+# may be on NFS, which can return ESTALE.
+AT_CALLS = (
+    "unlinkat(dead, x)",
+    "rmdirat(dead, x)",
+    "fstatat(dead, x)",
+    "openat(dead, x, O_CREAT)",
+    "mkdirat(dead, x)",
+)
+
+# Must give the local filesystem's result or ENOENT.
+ON_REMOVED = (
+    "fstat(dead)",
+    "fchmod(dead)",
+    "readdir(dead)",
+    'lstat(".") in removed cwd',
+    "fstat(dir replaced by rename)",
+    "fstat(O_PATH fd of unlinked file)",
+)
+
+
+def outcome(func):
+    try:
+        rv = func()
+    except OSError as exc:
+        return errno_name(exc.errno)
+    if isinstance(rv, os.stat_result):
+        return ("ok", rv.st_nlink, stat.S_IFMT(rv.st_mode))
+    return ("ok", rv)
+
+
+def removed_dirfd(root, name):
+    path = os.path.join(root, name)
+    os.mkdir(path)
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    os.rmdir(path)
+    return fd
+
+
+def scenarios(root):
+    results = {}
+
+    fd = removed_dirfd(root, "dead")
+    try:
+        results["unlinkat(dead, x)"] = outcome(lambda: os.unlink("x", dir_fd=fd))
+        results["rmdirat(dead, x)"] = outcome(lambda: os.rmdir("x", dir_fd=fd))
+        results["fstatat(dead, x)"] = outcome(lambda: os.lstat("x", dir_fd=fd))
+        results["openat(dead, x, O_CREAT)"] = outcome(
+            lambda: os.close(os.open("x", os.O_CREAT | os.O_WRONLY, 0o644, dir_fd=fd)))
+        results["mkdirat(dead, x)"] = outcome(lambda: os.mkdir("x", dir_fd=fd))
+        results["fstat(dead)"] = outcome(lambda: os.fstat(fd))
+        results["fchmod(dead)"] = outcome(lambda: os.chmod(fd, 0o755))
+        results["readdir(dead)"] = outcome(lambda: os.listdir(fd))
+    finally:
+        os.close(fd)
+
+    path = os.path.join(root, "cwd")
+    os.mkdir(path)
+    here = os.getcwd()
+    os.chdir(path)
+    try:
+        os.rmdir(path)
+        results['lstat(".") in removed cwd'] = outcome(lambda: os.lstat("."))
+    finally:
+        os.chdir(here)
+
+    src = os.path.join(root, "src")
+    dst = os.path.join(root, "dst")
+    os.mkdir(src)
+    os.mkdir(dst)
+    fd = os.open(dst, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.rename(src, dst)
+        results["fstat(dir replaced by rename)"] = outcome(lambda: os.fstat(fd))
+    finally:
+        os.close(fd)
+        os.rmdir(dst)
+
+    # O_PATH sends no OPEN, so mergerfs has no open file to fall back on.
+    path = os.path.join(root, "file")
+    open(path, "w").close()
+    fd = os.open(path, os.O_PATH)
+    try:
+        os.unlink(path)
+        results["fstat(O_PATH fd of unlinked file)"] = outcome(lambda: os.fstat(fd))
+    finally:
+        os.close(fd)
+
+    return results
+
+
+def main():
+    try:
+        with mergerfs_mount(num_branches=1, options=OPTIONS) as (mount, branches):
+            native = tempfile.mkdtemp(dir=os.path.dirname(branches[0]))
+            try:
+                merged = scenarios(mount)
+                expected = scenarios(native)
+                for name in AT_CALLS:
+                    if merged[name] != "ENOENT":
+                        return fail(f"{name}: mergerfs={merged[name]} "
+                                    "expected ENOENT")
+                for name in ON_REMOVED:
+                    if merged[name] not in (expected[name], "ENOENT"):
+                        return fail(f"{name}: mergerfs={merged[name]} "
+                                    f"expected {expected[name]} or ENOENT")
+                return 0
+            except Exception as exc:
+                return fail(str(exc))
+            finally:
+                cleanup_dir(native)
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
