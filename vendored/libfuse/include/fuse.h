@@ -171,6 +171,18 @@ struct fuse_operations
   int (*ftruncate)(const fuse_req_ctx_t *,
                    const uint64_t,
                    off_t);
+  // libfuse calls the fh based ops (fgetattr, statx_fh, fchmod,
+  // fchown, ftruncate, futimens) with fh=0 when the node has no path,
+  // so the filesystem can use a file it has open for ctx->nodeid.
+  // With none the node was removed (unlink, rmdir, rename over it)
+  // while the kernel still held it: a dirfd, a cwd, an O_PATH fd, or
+  // a dentry resolved just before the removal. Return ENOENT, not
+  // EBADF, as the caller may not have used a descriptor at all: the
+  // kernel sends GETATTR in permission checks of path walks too.
+  // ENOENT is what a local filesystem gives *at() calls in a removed
+  // directory, and what rm -f ignores. ESTALE would make the kernel
+  // redo the lookup, but a call through a dirfd or cwd of a removed
+  // directory meets the same node again and gets ESTALE. See #1693.
   int (*fgetattr)(const fuse_req_ctx_t *,
                   const uint64_t,
                   struct stat *,

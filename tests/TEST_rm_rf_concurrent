@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+# The two cases reported in #1693. lstat() of a directory, or of a path
+# below it, while rm -rf removes it must succeed or return ENOENT. And
+# rm -rf of a directory together with rm -rf of the directory above it
+# must both succeed and leave nothing behind. When one rm removes a
+# directory the other still has open, the kernel sends GETATTR for it
+# in the other's permission checks, which mergerfs answered with EBADF,
+# so lstat() returned EBADF and rm failed with "Bad file descriptor".
+#
+# cache.attr=0 makes the kernel send GETATTR every time. The lstat()
+# case then fails in every run without the fix. The rm -rf case is a
+# narrower race met in only a few runs; TEST_use_dirfd_after_rmdir
+# covers its cause, a call through the dirfd of a removed directory,
+# without a race.
+
+import collections
+import os
+import subprocess
+import time
+
+from posix_parity import errno_name
+from posix_parity import fail
+from posix_parity import mergerfs_mount
+
+
+OPTIONS = "defaults,cache.attr=0"
+SECONDS = 2.0
+
+
+def make_tree(path, width=4, depth=3):
+    os.makedirs(path, exist_ok=True)
+    for k in range(width):
+        open(os.path.join(path, f"f{k}"), "w").close()
+    if depth > 0:
+        for k in range(width):
+            make_tree(os.path.join(path, f"d{k}"), width, depth - 1)
+
+
+def lstat_during_rm(mount):
+    counts = collections.Counter()
+    deadline = time.monotonic() + SECONDS
+    while time.monotonic() < deadline:
+        top = os.path.join(mount, "l")
+        make_tree(os.path.join(top, "inner", "sub"), width=3, depth=0)
+        rm = subprocess.Popen(["rm", "-rf", os.path.join(top, "inner")])
+        while rm.poll() is None:
+            for rel in ("inner", "inner/sub"):
+                try:
+                    os.lstat(os.path.join(top, rel))
+                    counts["ok"] += 1
+                except OSError as exc:
+                    counts[errno_name(exc.errno)] += 1
+    del counts["ok"]
+    counts.pop("ENOENT", None)
+    return counts
+
+
+def concurrent_rm(mount):
+    failures = collections.Counter()
+    deadline = time.monotonic() + SECONDS
+    while time.monotonic() < deadline:
+        top = os.path.join(mount, "c")
+        make_tree(os.path.join(top, "inner"))
+        procs = [subprocess.Popen(["rm", "-rf", path], stderr=subprocess.PIPE)
+                 for path in (os.path.join(top, "inner"), top)]
+        for proc in procs:
+            _, err = proc.communicate()
+            if proc.returncode != 0:
+                failures[err.decode().strip().splitlines()[-1].split(": ")[-1]] += 1
+        if os.path.lexists(top):
+            failures["left behind"] += 1
+            subprocess.run(["rm", "-rf", top])
+    return failures
+
+
+def main():
+    try:
+        with mergerfs_mount(num_branches=1, options=OPTIONS) as (mount, _):
+            errors = lstat_during_rm(mount)
+            if errors:
+                summary = " ".join(f"{k}={v}" for k, v in sorted(errors.items()))
+                return fail(f"lstat during rm -rf: {summary}")
+            failures = concurrent_rm(mount)
+            if failures:
+                summary = ", ".join(f"{k}: {v}" for k, v in sorted(failures.items()))
+                return fail(f"concurrent rm -rf: {summary}")
+            return 0
+    except RuntimeError as exc:
+        print(str(exc), end="")
+        return 77
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

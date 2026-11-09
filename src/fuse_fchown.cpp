@@ -48,6 +48,9 @@ _fchown(const int   fd_,
 // since the request is outstanding the kernel won't be releasing the
 // node and therefore the entry will be valid over the lifetime of
 // this function.
+//
+// With neither a `fh` nor an open file return ENOENT. See fgetattr in
+// fuse.h and #1693.
 int
 FUSE::fchown(const fuse_req_ctx_t *ctx_,
              cu64                  fh_,
@@ -58,7 +61,7 @@ FUSE::fchown(const fuse_req_ctx_t *ctx_,
 
   fi = state.get_fi(ctx_,fh_);
   if(not fi)
-    return -EBADF;
+    return -ENOENT;
 
   return ::_fchown(fi->fd,uid_,gid_);
 }

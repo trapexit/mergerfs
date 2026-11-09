@@ -188,6 +188,10 @@ def fail(msg):
     return 1
 
 
+def errno_name(err):
+    return errno.errorcode.get(err, str(err))
+
+
 def join(root, rel):
     return os.path.join(root, rel)
 
