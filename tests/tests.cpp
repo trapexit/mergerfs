@@ -16,6 +16,7 @@
 #include "str.hpp"
 #include "thread_pool.hpp"
 
+#include <boost/unordered/concurrent_flat_map.hpp>
 #include <atomic>
 #include <chrono>
 #include <cstring>
@@ -55,6 +56,15 @@ void
 test_nop()
 {
   TEST_CHECK(true);
+}
+
+void
+test_boost_concurrent_flat_map_empty_lookup()
+{
+  boost::concurrent_flat_map<int,int> map;
+
+  // An unallocated map uses dummy metadata; atomic reads must be safe on ARMv5.
+  TEST_CHECK(map.count(42) == 0);
 }
 
 void
@@ -4244,6 +4254,7 @@ test_clonepath_modes()
 TEST_LIST =
   {
    {"nop",test_nop},
+   {"boost_concurrent_flat_map_empty_lookup",test_boost_concurrent_flat_map_empty_lookup},
    {"config_bool",test_config_bool},
    {"config_uint64",test_config_uint64},
    {"config_int",test_config_int},

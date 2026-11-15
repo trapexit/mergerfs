@@ -15,3 +15,6 @@
   * ./bootstrap.sh
   * ./b2 tools/bcp
   * ./dist/bin/bcp unordered/concurrent_flat_map.hpp <target_dir>
+  * local patch: keep unordered dummy-group storage writable with C++20
+    `constinit`; ARMv5 atomic loads can write back to memory (#1695).
+    Preserve this change when updating Boost.
