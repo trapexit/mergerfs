@@ -949,13 +949,14 @@ Group* dummy_groups()
    * we are not allocating any dynamic memory and yet lookup can be implemented
    * without checking for groups==nullptr. This space won't ever be used for
    * insertion as the container's capacity is precisely zero.
+   * Keep the storage writable: atomic loads on ARMv5 can write back through
+   * compare-and-swap. constinit preserves static initialization without const.
    */
 
-  static constexpr typename Group::dummy_group_type
+  static constinit typename Group::dummy_group_type
   storage[Size]={typename Group::dummy_group_type(),};
 
-  return reinterpret_cast<Group*>(
-    const_cast<typename Group::dummy_group_type*>(storage));
+  return reinterpret_cast<Group*>(storage);
 }
 
 template<
