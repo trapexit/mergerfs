@@ -85,8 +85,12 @@ struct AsyncWorker
   void
   operator()() const
   {
-    DEFER{ fuse_session_exit(_se); };
-    DEFER{ sem_post(_finished); };
+    // Set exited before waking the main loop, which rechecks it.
+    DEFER
+    {
+      fuse_session_exit(_se);
+      sem_post(_finished);
+    };
 
     ThreadPool::PToken ptok(_process_tp->ptoken());
     while(!fuse_session_exited(_se))
@@ -149,8 +153,12 @@ struct SyncWorker
   void
   operator()() const
   {
-    DEFER{ fuse_session_exit(_se); };
-    DEFER{ sem_post(_finished); };
+    // Set exited before waking the main loop, which rechecks it.
+    DEFER
+    {
+      fuse_session_exit(_se);
+      sem_post(_finished);
+    };
 
     while(!fuse_session_exited(_se))
       {
