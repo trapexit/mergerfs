@@ -51,7 +51,9 @@ DEBUG_OPT_FLAGS += \
     -fno-omit-frame-pointer \
     $(SANITIZE)
 
-ifdef RELEASE
+ifeq ($(NDEBUG),1)
+OPT_FLAGS := -O3 -DNDEBUG $(COMMON_OPT_FLAGS)
+else ifdef RELEASE
 OPT_FLAGS := -O3 $(COMMON_OPT_FLAGS)
 else
 OPT_FLAGS ?= $(DEBUG_OPT_FLAGS) $(COMMON_OPT_FLAGS)
