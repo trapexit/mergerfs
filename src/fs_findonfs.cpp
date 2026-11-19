@@ -24,35 +24,44 @@
 #include "fs_lstat.hpp"
 #include "fs_path.hpp"
 
-#include <string>
 
+static
+bool
+_is_fd_file(const fs::path    &basepath_,
+            const fs::path    &fusepath_,
+            const struct stat &fdst_)
+{
+  int rv;
+  struct stat st;
+
+  rv = fs::lstat(basepath_ / fusepath_,&st);
+  if(rv < 0)
+    return false;
+
+  return ((st.st_dev == fdst_.st_dev) &&
+          (st.st_ino == fdst_.st_ino));
+}
 
 static
 int
 _findonfs(const Branches::Ptr &branches_,
           const fs::path      &fusepath_,
           const int            fd_,
-          std::string         *basepath_)
+          fs::path            *basepath_)
 {
   int rv;
-  dev_t dev;
   struct stat st;
-  fs::path fullpath;
 
   rv = fs::fstat(fd_,&st);
   if(rv < 0)
     return rv;
 
-  dev = st.st_dev;
+  if(::_is_fd_file(*basepath_,fusepath_,st))
+    return 0;
+
   for(const auto &branch : *branches_)
     {
-      fullpath = branch.path / fusepath_;
-
-      rv = fs::lstat(fullpath,&st);
-      if(rv < 0)
-        continue;
-
-      if(st.st_dev != dev)
+      if(not ::_is_fd_file(branch.path,fusepath_,st))
         continue;
 
       *basepath_ = branch.path;
@@ -66,9 +75,9 @@ _findonfs(const Branches::Ptr &branches_,
 
 int
 fs::findonfs(const Branches::Ptr &branches_,
-             const std::string   &fusepath_,
+             const fs::path      &fusepath_,
              const int            fd_,
-             std::string         *basepath_)
+             fs::path            *basepath_)
 {
   return ::_findonfs(branches_,fusepath_,fd_,basepath_);
 }

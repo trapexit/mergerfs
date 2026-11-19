@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -14,24 +15,41 @@ from posix_parity import unmount_mergerfs
 
 
 SKIP = 77
+CHUNK = 64 * 1024
 
 
-def test_partial_append():
+class Skip(Exception):
+    pass
+
+
+@contextlib.contextmanager
+def enospc_pool(options, extra_tmpfs=()):
+    """Mount mergerfs over `source`, the `extra_tmpfs` (name, size)
+    branches and an unconstrained `destination`, in that order.
+    `source` is a 1 MiB tmpfs holding `target` and is full except for
+    one block. `options` is the mount option string, or a function of
+    that block size returning it. Yields (branch paths by name, pool,
+    target content)."""
     with tempfile.TemporaryDirectory(prefix="mergerfs-enospc-") as root:
-        source, destination, pool = [os.path.join(root, name) for name in ("source", "destination", "pool")]
-        for directory in (source, destination, pool):
+        names = ["source"] + [name for name, _ in extra_tmpfs] + ["destination"]
+        branches = {name: os.path.join(root, name) for name in names}
+        pool = os.path.join(root, "pool")
+        for directory in list(branches.values()) + [pool]:
             os.mkdir(directory)
 
-        result = subprocess.run(
-            ["mount", "-t", "tmpfs", "-o", "size=1m", "tmpfs", source],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
-        if result.returncode:
-            print(f"constrained tmpfs unavailable: {result.stderr.decode(errors='replace')}", end="")
-            return SKIP
-
+        mounted_tmpfs = []
         mounted = False
         try:
+            for name, size in [("source", "1m")] + list(extra_tmpfs):
+                result = subprocess.run(
+                    ["mount", "-t", "tmpfs", "-o", f"size={size}", "tmpfs", branches[name]],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                )
+                if result.returncode:
+                    raise Skip(f"constrained tmpfs unavailable: {result.stderr.decode(errors='replace')}")
+                mounted_tmpfs.append(branches[name])
+
+            source = branches["source"]
             block_size = os.statvfs(source).f_frsize
             initial = b"initial\n" * (block_size // 8)
             with open(os.path.join(source, "target"), "wb") as stream:
@@ -43,44 +61,102 @@ def test_partial_append():
             with open(os.path.join(source, "filler"), "wb") as stream:
                 stream.write(b"F" * (available - remaining))
 
-            mount_mergerfs(
-                [source, destination], pool,
-                "minfreespace=0,cache.files=full,cache.writeback=false,moveonenospc=mfs",
-            )
+            if callable(options):
+                options = options(block_size)
+            mount_mergerfs([branches[name] for name in names], pool, options)
             mounted = True
-
-            # The first write appends a prefix before ENOSPC. Relocation must
-            # preserve that progress instead of replaying it on the new branch.
-            payload = bytes(range(256)) * (block_size // 64)
-            fd = os.open(os.path.join(pool, "target"), os.O_WRONLY | os.O_APPEND)
-            try:
-                written = os.write(fd, payload)
-            finally:
-                os.close(fd)
-            if written != len(payload):
-                return fail(f"append returned {written}, expected {len(payload)}")
-
-            relocated = os.path.join(destination, "target")
-            if os.path.exists(os.path.join(source, "target")) or not os.path.isfile(relocated):
-                return fail("ENOSPC append did not relocate the file")
-            with open(relocated, "rb") as stream:
-                actual = stream.read()
-            expected = initial + payload
-            if actual != expected:
-                return fail(f"relocated append corrupted data: expected {len(expected)} bytes, got {len(actual)}")
-            with open(os.path.join(pool, "target"), "rb") as stream:
-                if stream.read() != expected:
-                    return fail("relocated append differs through the pool")
-            return 0
+            yield branches, pool, initial
         finally:
             if mounted:
                 unmount_mergerfs(pool)
-            subprocess.run(["umount", source], check=True)
+            # The daemon may still hold branch fds while it exits after
+            # the unmount. Lazy unmount; the namespace dies with us.
+            for path in reversed(mounted_tmpfs):
+                subprocess.run(["umount", "--lazy", path], check=True)
+
+
+def holders(branches):
+    return [name for name, path in branches.items() if os.path.exists(os.path.join(path, "target"))]
+
+
+def check_relocated(branches, pool, expected):
+    if holders(branches) != ["destination"]:
+        return fail(f"target on {holders(branches)}, expected only destination")
+    with open(os.path.join(branches["destination"], "target"), "rb") as stream:
+        actual = stream.read()
+    if actual != expected:
+        return fail(f"relocated file corrupted: expected {len(expected)} bytes, got {len(actual)}")
+    with open(os.path.join(pool, "target"), "rb") as stream:
+        if stream.read() != expected:
+            return fail("relocated file differs through the pool")
+    return 0
+
+
+def test_partial_append():
+    with enospc_pool("minfreespace=0,cache.files=full,cache.writeback=false,moveonenospc=mfs") as (
+        branches, pool, initial,
+    ):
+        # The first write appends a prefix before ENOSPC. Relocation must
+        # preserve that progress instead of replaying it on the new branch.
+        block_size = len(initial)
+        payload = bytes(range(256)) * (block_size // 64)
+        fd = os.open(os.path.join(pool, "target"), os.O_WRONLY | os.O_APPEND)
+        try:
+            written = os.write(fd, payload)
+        finally:
+            os.close(fd)
+        if written != len(payload):
+            return fail(f"append returned {written}, expected {len(payload)}")
+        return check_relocated(branches, pool, initial + payload)
+
+
+def test_second_relocation():
+    # lfs over branches with at least minfreespace free picks `middle`
+    # first; once it fills too only `destination` is left. The same open
+    # handle has to move twice. Sizes follow the block size: a chunk
+    # must not fit in the block left free on `source`, and the two
+    # blocks the first move frees there must stay below minfreespace.
+    # With 64K pages fixed 64K values fail both.
+    def options(block_size):
+        return (f"minfreespace={max(CHUNK, 4 * block_size)},"
+                "cache.files=full,cache.writeback=false,moveonenospc=lfs")
+
+    with enospc_pool(options, extra_tmpfs=[("middle", "512k")]) as (branches, pool, initial):
+        chunk_size = max(CHUNK, 2 * len(initial))
+        expected = bytearray(initial)
+        fd = os.open(os.path.join(pool, "target"), os.O_WRONLY | os.O_APPEND)
+        try:
+            for i in range(16):
+                chunk = bytes([i]) * chunk_size
+                try:
+                    written = os.write(fd, chunk)
+                except OSError as e:
+                    return fail(f"chunk {i} failed with {e.strerror}; target on {holders(branches)}")
+                if written != len(chunk):
+                    return fail(f"chunk {i} returned {written}, expected {len(chunk)}")
+                expected += chunk
+                if i == 0 and holders(branches) != ["middle"]:
+                    return fail(f"first relocation put target on {holders(branches)}, expected middle")
+        finally:
+            os.close(fd)
+        return check_relocated(branches, pool, bytes(expected))
+
+
+TESTS = (test_partial_append, test_second_relocation)
 
 
 def main():
     if len(sys.argv) == 2 and sys.argv[1] == "--isolated":
-        return test_partial_append()
+        for test in TESTS:
+            try:
+                rv = test()
+            except Skip as e:
+                print(e, end="")
+                return SKIP
+            if rv:
+                print(f" ({test.__name__})", end="")
+                return rv
+        return 0
 
     if find_mergerfs() is None or find_fusermount() is None:
         print("mergerfs or fusermount unavailable", end="")

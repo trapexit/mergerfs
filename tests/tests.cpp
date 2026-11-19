@@ -4,6 +4,7 @@
 #include "fs_clonepath.hpp"
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
+#include "fs_movefile_and_open.hpp"
 #include "from_string.hpp"
 #include "fuse_link.hpp"
 #include "fuse_rename.hpp"
@@ -3666,6 +3667,101 @@ test_fs_copyfile_source_changes_cleanup_tmpfiles()
   std::filesystem::remove_all(tmp_dir);
 }
 
+static
+std::string
+_file_contents(const fs::path &path_)
+{
+  std::ifstream stream(path_,std::ios::binary);
+  std::ostringstream contents;
+
+  contents << stream.rdbuf();
+
+  return contents.str();
+}
+
+// moveonenospc's create policy can pick the branch the file is already
+// on, by its own path or by another path to the same directory (a bind
+// mount; a symlink stands in for one here). The copy would be renamed
+// over the file and then unlinked, so such a move must be refused.
+void
+test_fs_movefile_and_open_same_branch()
+{
+  char tmp_template[] = "/tmp/mergerfs-test-movefile-same-XXXXXX";
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  const fs::path tmp_dir = tmp_template;
+  const fs::path src = tmp_dir / "src";
+  const fs::path alias = tmp_dir / "alias";
+  const fs::path other = tmp_dir / "other";
+  const std::string data = "moveonenospc same branch\n";
+  const Policy::Create ff(&Policies::Create::ff);
+  std::error_code ec;
+  struct stat before;
+  struct stat after;
+  int fd;
+  int rv;
+
+  std::filesystem::create_directory(src,ec);
+  if(!ec)
+    std::filesystem::create_directory(other,ec);
+  if(!ec)
+    std::filesystem::create_directory_symlink(src,alias,ec);
+  if(!ec)
+    std::ofstream(src / "file",std::ios::binary) << data;
+  fd = ::open((src / "file").c_str(),O_RDWR);
+  if(!TEST_CHECK(!ec && (fd >= 0) && (::fstat(fd,&before) == 0)))
+    {
+      if(fd >= 0)
+        ::close(fd);
+      std::filesystem::remove_all(tmp_dir);
+      return;
+    }
+
+  // ff picks the first branch. Branches resolves symlinks while
+  // parsing, so the first path is set afterwards.
+  auto move = [&](const std::string &list_,
+                  const fs::path    &first_)
+  {
+    Branches branches;
+    branches.minfreespace = 0;
+    TEST_CHECK(branches.from_string(list_) == 0);
+    Branches::Ptr ptr = branches;
+    ptr->front().path = first_;
+
+    return fs::movefile_and_open(ff,ptr,src,"file",fd);
+  };
+
+  for(const auto &first : {src,alias})
+    {
+      rv = move(src.string() + ":" + other.string(),first);
+      TEST_CHECK(rv == -ENOSPC);
+      TEST_MSG("first branch: %s; rv: %d",first.c_str(),rv);
+      if(rv >= 0)
+        ::close(rv);
+
+      if(TEST_CHECK(::stat((src / "file").c_str(),&after) == 0))
+        TEST_CHECK(after.st_ino == before.st_ino);
+      TEST_CHECK(_file_contents(src / "file") == data);
+      TEST_CHECK(!std::filesystem::exists(other / "file"));
+    }
+
+  // Control: a different first branch still relocates.
+  rv = move(other.string() + ":" + src.string(),other);
+  TEST_CHECK(rv >= 0);
+  TEST_MSG("rv: %d",rv);
+  if(rv >= 0)
+    ::close(rv);
+  TEST_CHECK(!std::filesystem::exists(src / "file"));
+  TEST_CHECK(_file_contents(other / "file") == data);
+
+  ::close(fd);
+  std::filesystem::remove_all(tmp_dir);
+}
+
 void
 test_hashset_put_and_size()
 {
@@ -4372,6 +4468,7 @@ TEST_LIST =
     {"fuse_symlink_request_ownership",test_fuse_symlink_request_ownership},
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
+    {"fs_movefile_and_open_same_branch",test_fs_movefile_and_open_same_branch},
     {"str_eq_nullptr",test_str_eq_nullptr},
     {"str_startswith_char_nullptr",test_str_startswith_char_nullptr},
     {"str_from_u64_suffixes",test_str_from_u64_suffixes},

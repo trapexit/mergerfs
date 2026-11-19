@@ -19,15 +19,17 @@
 #pragma once
 
 #include "branches.hpp"
-
-#include <string>
+#include "fs_path.hpp"
 
 
 namespace fs
 {
+  // Find the branch where `fusepath` is the file open as `fd`, trying
+  // `*basepath` first. Device and inode must both match so branches
+  // sharing a filesystem are told apart.
   int
   findonfs(const Branches::Ptr &branches,
-           const std::string   &fusepath,
+           const fs::path      &fusepath,
            const int            fd,
-           std::string         *basepath);
+           fs::path            *basepath);
 }

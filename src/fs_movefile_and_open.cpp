@@ -59,6 +59,37 @@ _cleanup_flags(const int flags_)
   return rv;
 }
 
+// Copying onto the source directory would rename the copy over the
+// file and then unlink it. Match by device and inode so another path
+// to the same directory, such as a bind mount, is caught too. A
+// destination that can't be stat'd is dropped as well.
+static
+int
+_drop_src_branch(const fs::path       &src_branch_,
+                 std::vector<Branch*> *dst_branches_)
+{
+  int rv;
+  struct stat src_st;
+
+  rv = fs::stat(src_branch_,&src_st);
+  if(rv < 0)
+    return rv;
+
+  std::erase_if(*dst_branches_,
+                [&](const Branch *branch_)
+                {
+                  struct stat st;
+
+                  if(fs::stat(branch_->path,&st) < 0)
+                    return true;
+
+                  return ((st.st_dev == src_st.st_dev) &&
+                          (st.st_ino == src_st.st_ino));
+                });
+
+  return 0;
+}
+
 static
 int
 _movefile_and_open(const Policy::Create &createFunc_,
@@ -77,9 +108,17 @@ _movefile_and_open(const Policy::Create &createFunc_,
   fs::path dst_filepath;
   std::vector<Branch*> dst_branch;
 
+  // `branchpath_` is where the file was opened. An earlier move on the
+  // same handle leaves the fd on another branch.
   src_branch = branchpath_;
+  rv = fs::findonfs(branches_,fusepath_,origfd_,&src_branch);
+  if(rv < 0)
+    return rv;
 
   rv = createFunc_(branches_,fusepath_,dst_branch);
+  if(rv < 0)
+    return rv;
+  rv = ::_drop_src_branch(src_branch,&dst_branch);
   if(rv < 0)
     return rv;
   if(dst_branch.empty())
