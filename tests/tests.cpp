@@ -7,6 +7,7 @@
 #include "fs_movefile_and_open.hpp"
 #include "from_string.hpp"
 #include "fuse_link.hpp"
+#include "fuse_readdir_factory.hpp"
 #include "fuse_rename.hpp"
 #include "fuse_symlink.hpp"
 #include "hashset.hpp"
@@ -3762,6 +3763,18 @@ test_fs_movefile_and_open_same_branch()
   std::filesystem::remove_all(tmp_dir);
 }
 
+// Counts that don't fit an int, or whose queue depth product
+// overflows, must be rejected rather than throw or wrap.
+void
+test_readdir_factory_rejects_oversized_counts()
+{
+  TEST_CHECK(FUSE::ReadDirFactory::valid("cor:4:2"));
+  TEST_CHECK(!FUSE::ReadDirFactory::valid("cor:99999999999"));
+  TEST_CHECK(!FUSE::ReadDirFactory::valid("cosr:2:99999999999"));
+  TEST_CHECK(!FUSE::ReadDirFactory::valid("cor:2147483647:2147483647"));
+  TEST_CHECK(FUSE::ReadDirFactory::make("cor:99999999999") == nullptr);
+}
+
 void
 test_hashset_put_and_size()
 {
@@ -4469,6 +4482,7 @@ TEST_LIST =
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"fs_movefile_and_open_same_branch",test_fs_movefile_and_open_same_branch},
+    {"readdir_factory_rejects_oversized_counts",test_readdir_factory_rejects_oversized_counts},
     {"str_eq_nullptr",test_str_eq_nullptr},
     {"str_startswith_char_nullptr",test_str_startswith_char_nullptr},
     {"str_from_u64_suffixes",test_str_from_u64_suffixes},

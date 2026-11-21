@@ -22,11 +22,14 @@
 #include "fuse_readdir_cosr.hpp"
 #include "fuse_readdir_seq.hpp"
 
+#include "from_string.hpp"
+
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <regex>
 
 // Regex:
@@ -56,11 +59,18 @@ _read_cfg(const std::string_view  str_,
                              re);
   if(matched)
     {
-      type = match[1];
+      int rv = 0;
+
+      // A count too large for an int leaves type empty, so the value
+      // is rejected as invalid instead of throwing.
       if(match[2].matched)
-        concurrency = std::stoi(match[2]);
-      if(match[3].matched)
-        max_queue_depth = std::stoi(match[3]);
+        rv = str::from(std::string_view(match[2].first,match[2].length()),
+                       &concurrency);
+      if((rv == 0) && match[3].matched)
+        rv = str::from(std::string_view(match[3].first,match[3].length()),
+                       &max_queue_depth);
+      if(rv == 0)
+        type = match[1];
     }
 
   if(concurrency == 0)
@@ -80,7 +90,11 @@ _read_cfg(const std::string_view  str_,
   if(max_queue_depth <= 0)
     max_queue_depth = 2;
 
-  max_queue_depth *= concurrency;
+  // Reject a queue depth whose product overflows instead of wrapping.
+  if(max_queue_depth > (std::numeric_limits<int>::max() / concurrency))
+    type.clear();
+  else
+    max_queue_depth *= concurrency;
 
   type_            = type;
   concurrency_     = concurrency;
