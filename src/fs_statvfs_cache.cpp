@@ -90,19 +90,27 @@ fs::statvfs_cache(const std::string &path_,
       }
   }
 
-  int rv = 0;
   std::unique_lock<std::shared_mutex> lk(g_cache_mutex);
 
+  // Only a successful statvfs refreshes the entry. A failure is
+  // returned to the caller and retried on the next call.
   Element &e = g_cache[path_];
   if((now - e.time) > g_timeout)
     {
+      int rv;
+      struct statvfs st;
+
+      rv = fs::statvfs(path_,&st);
+      if(rv < 0)
+        return rv;
+
       e.time = now;
-      rv = fs::statvfs(path_,&e.st);
+      e.st   = st;
     }
 
   *st_ = e.st;
 
-  return rv;
+  return 0;
 }
 
 int

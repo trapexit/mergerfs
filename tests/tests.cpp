@@ -5,6 +5,7 @@
 #include "fs_copyfile.hpp"
 #include "fs_inode.hpp"
 #include "fs_movefile_and_open.hpp"
+#include "fs_statvfs_cache.hpp"
 #include "from_string.hpp"
 #include "fuse_link.hpp"
 #include "fuse_readdir_factory.hpp"
@@ -3775,6 +3776,24 @@ test_readdir_factory_rejects_oversized_counts()
   TEST_CHECK(FUSE::ReadDirFactory::make("cor:99999999999") == nullptr);
 }
 
+// A failed statvfs must not be served from the cache as a success.
+void
+test_statvfs_cache_does_not_cache_failure()
+{
+  int rv;
+  struct statvfs st;
+  const std::string path = "/nonexistent/mergerfs-statvfs-cache-test";
+
+  fs::statvfs_cache_timeout(60);
+  rv = fs::statvfs_cache(path,&st);
+  TEST_CHECK(rv == -ENOENT);
+  TEST_MSG("first rv: %d",rv);
+  rv = fs::statvfs_cache(path,&st);
+  TEST_CHECK(rv == -ENOENT);
+  TEST_MSG("second rv: %d",rv);
+  fs::statvfs_cache_timeout(0);
+}
+
 void
 test_hashset_put_and_size()
 {
@@ -4483,6 +4502,7 @@ TEST_LIST =
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"fs_movefile_and_open_same_branch",test_fs_movefile_and_open_same_branch},
     {"readdir_factory_rejects_oversized_counts",test_readdir_factory_rejects_oversized_counts},
+    {"statvfs_cache_does_not_cache_failure",test_statvfs_cache_does_not_cache_failure},
     {"str_eq_nullptr",test_str_eq_nullptr},
     {"str_startswith_char_nullptr",test_str_startswith_char_nullptr},
     {"str_from_u64_suffixes",test_str_from_u64_suffixes},
