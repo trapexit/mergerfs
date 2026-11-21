@@ -347,6 +347,8 @@ namespace options
     ::_set_subtype(args_);
     ::_cleanup_options();
 
+    fs::statvfs_cache_timeout(cfg.cache_statfs);
+
     cfg.finish_initializing();
   }
 }
