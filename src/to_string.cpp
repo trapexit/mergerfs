@@ -42,6 +42,12 @@ str::to(cu64 uint64_)
 }
 
 std::string
+str::to(const std::atomic<u64> &uint64_)
+{
+  return str::to(uint64_.load(std::memory_order_relaxed));
+}
+
+std::string
 str::to(cs64 int64_)
 {
   return fmt::format("{}",int64_);

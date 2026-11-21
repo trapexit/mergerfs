@@ -31,7 +31,7 @@ Branch::Branch(const Branch &branch_)
 {
 }
 
-Branch::Branch(const u64 &default_minfreespace_)
+Branch::Branch(const std::atomic<u64> &default_minfreespace_)
   : _minfreespace(&default_minfreespace_)
 {
 }
@@ -75,8 +75,8 @@ Branch::set_minfreespace(const u64 minfreespace_)
 u64
 Branch::minfreespace(void) const
 {
-  if(std::holds_alternative<const u64*>(_minfreespace))
-    return *std::get<const u64*>(_minfreespace);
+  if(std::holds_alternative<const std::atomic<u64>*>(_minfreespace))
+    return std::get<const std::atomic<u64>*>(_minfreespace)->load(std::memory_order_relaxed);
   return std::get<u64>(_minfreespace);
 }
 

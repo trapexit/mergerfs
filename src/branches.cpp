@@ -36,7 +36,7 @@
 #include <fnmatch.h>
 
 
-Branches::Impl::Impl(const u64 *default_minfreespace_)
+Branches::Impl::Impl(const std::atomic<u64> *default_minfreespace_)
   : _default_minfreespace(default_minfreespace_)
 {
 }
@@ -56,7 +56,7 @@ Branches::Impl::operator=(Branches::Impl &rval_)
   // Impl's _default_minfreespace.
   for(auto &branch : *this)
     {
-      if(std::holds_alternative<const u64*>(branch._minfreespace))
+      if(std::holds_alternative<const std::atomic<u64>*>(branch._minfreespace))
         branch._minfreespace = _default_minfreespace;
     }
 
@@ -78,7 +78,7 @@ Branches::Impl::operator=(Branches::Impl &&rval_)
   // Impl's _default_minfreespace.
   for(auto &branch : *this)
     {
-      if(std::holds_alternative<const u64*>(branch._minfreespace))
+      if(std::holds_alternative<const std::atomic<u64>*>(branch._minfreespace))
         branch._minfreespace = _default_minfreespace;
     }
 
@@ -86,7 +86,7 @@ Branches::Impl::operator=(Branches::Impl &&rval_)
 }
 
 const
-u64&
+std::atomic<u64>&
 Branches::Impl::minfreespace(void) const
 {
   return *_default_minfreespace;

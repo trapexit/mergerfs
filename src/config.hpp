@@ -140,7 +140,7 @@ public:
   ConfigBOOL     link_cow;
   LinkEXDEV      link_exdev;
   LogFile        log_file;
-  TFSRef<u64>    minfreespace;
+  TFSRef<std::atomic<u64>> minfreespace;
   fs::path       mountpoint;
   MoveOnENOSPC   moveonenospc;
   NFSOpenHack    nfsopenhack;

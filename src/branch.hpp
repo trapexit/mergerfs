@@ -22,6 +22,7 @@
 #include "strvec.hpp"
 #include "fs_path.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -41,14 +42,16 @@ public:
     };
 
 public:
-  std::variant<u64,const u64*> _minfreespace;
+  // A default held by pointer can be changed at runtime while
+  // requests read it.
+  std::variant<u64,const std::atomic<u64>*> _minfreespace;
   Mode mode;
   fs::path path;
 
 public:
   Branch();
   Branch(const Branch&);
-  Branch(const u64 &default_minfreespace);
+  Branch(const std::atomic<u64> &default_minfreespace);
 
 public:
   Branch& operator=(const Branch&) = default;

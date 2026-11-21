@@ -23,6 +23,7 @@
 #include "strvec.hpp"
 #include "tofrom_string.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <shared_mutex>
@@ -39,20 +40,20 @@ public:
                      public std::vector<Branch>
   {
   private:
-    const u64 *_default_minfreespace;
+    const std::atomic<u64> *_default_minfreespace;
 
   public:
     using Ptr  = std::shared_ptr<Impl>;
 
   public:
-    Impl(const u64 *default_minfreespace);
+    Impl(const std::atomic<u64> *default_minfreespace);
 
   public:
     int from_string(const std::string_view str) final;
     std::string to_string(void) const final;
 
   public:
-    const u64 &minfreespace(void) const;
+    const std::atomic<u64> &minfreespace(void) const;
     void to_paths(StrVec &strvec) const;
     std::vector<fs::path> to_paths() const;
 
@@ -66,7 +67,8 @@ public:
   using Ptr = Branches::Impl::Ptr;
 
 public:
-  u64 minfreespace = MINFREESPACE_DEFAULT;
+  // Set by runtime config changes while requests read it.
+  std::atomic<u64> minfreespace{MINFREESPACE_DEFAULT};
 
 private:
   Branches::Ptr _impl;

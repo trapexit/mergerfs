@@ -21,6 +21,7 @@
 #include "base_types.h"
 #include "fs_path.hpp"
 
+#include <atomic>
 #include <filesystem>
 #include <string>
 
@@ -30,6 +31,7 @@ namespace str
   std::string to(const bool);
   std::string to(const int);
   std::string to(cu64);
+  std::string to(const std::atomic<u64>&);
   std::string to(cs64);
   std::string to(const std::string&);
   std::string to(const fs::path&);

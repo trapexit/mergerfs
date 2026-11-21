@@ -417,7 +417,7 @@ test_branch_default_ctor_mode()
 void
 test_branch_to_string_modes()
 {
-  uint64_t global = 0;
+  std::atomic<u64> global{0};
   Branch b(global);
 
   b.path = "/mnt/disk1";
@@ -435,7 +435,7 @@ test_branch_to_string_modes()
 void
 test_branch_to_string_with_minfreespace()
 {
-  uint64_t global = 0;
+  std::atomic<u64> global{0};
   Branch b(global);
 
   b.path = "/mnt/disk1";
@@ -482,7 +482,7 @@ test_branch_mode_predicates()
 void
 test_branch_minfreespace_pointer_vs_value()
 {
-  uint64_t global = 9999;
+  std::atomic<u64> global{9999};
   Branch b(global);
 
   // Reads through the pointer
@@ -504,7 +504,7 @@ test_branch_minfreespace_pointer_vs_value()
 void
 test_branch_copy_constructor()
 {
-  uint64_t global = 100;
+  std::atomic<u64> global{100};
   Branch orig(global);
   orig.path = "/orig";
   orig.mode = Branch::Mode::RO;
@@ -518,7 +518,7 @@ test_branch_copy_constructor()
 void
 test_branch_copy_assignment()
 {
-  uint64_t global = 77;
+  std::atomic<u64> global{77};
   Branch a(global);
   a.path = "/a";
   a.mode = Branch::Mode::NC;
@@ -759,7 +759,7 @@ test_branches_srcmounts_empty()
 void
 test_branch_to_string_1t()
 {
-  uint64_t global = 0;
+  std::atomic<u64> global{0};
   Branch b(global);
   b.path = "/mnt/disk1";
   b.mode = Branch::Mode::RW;
@@ -775,7 +775,7 @@ void
 test_branch_to_string_non_exact_multiple()
 {
   // 1536 = 1.5K: not divisible by any tier, emitted as raw decimal
-  uint64_t global = 0;
+  std::atomic<u64> global{0};
   Branch b(global);
   b.path = "/mnt/disk1";
   b.mode = Branch::Mode::RW;
@@ -804,7 +804,7 @@ test_branch_copy_pointer_aliasing()
 {
   // A copy of a pointer-backed Branch shares the same pointer —
   // mutating the original global value is seen by both.
-  uint64_t global = 1024;
+  std::atomic<u64> global{1024};
   Branch orig(global);
   orig.path = "/mnt/a";
   orig.mode = Branch::Mode::RW;
@@ -4262,8 +4262,8 @@ test_rnd_shrink_to_rand_elem()
 void
 test_branch_copy_assignment_relinks_default_minfreespace()
 {
-  uint64_t default_a = 1234;
-  uint64_t default_b = 5678;
+  std::atomic<u64> default_a{1234};
+  std::atomic<u64> default_b{5678};
   Branches::Impl impl_a(&default_a);
   Branches::Impl impl_b(&default_b);
 
@@ -4275,16 +4275,16 @@ test_branch_copy_assignment_relinks_default_minfreespace()
   TEST_CHECK(impl_a.size() == 1);
   for(auto &branch : impl_a)
     {
-      if(std::holds_alternative<const u64*>(branch._minfreespace))
-        TEST_CHECK(std::get<const u64*>(branch._minfreespace) == &default_a);
+      if(std::holds_alternative<const std::atomic<u64>*>(branch._minfreespace))
+        TEST_CHECK(std::get<const std::atomic<u64>*>(branch._minfreespace) == &default_a);
     }
 }
 
 void
 test_branch_move_assignment_relinks_default_minfreespace()
 {
-  uint64_t default_a = 1234;
-  uint64_t default_b = 5678;
+  std::atomic<u64> default_a{1234};
+  std::atomic<u64> default_b{5678};
   Branches::Impl impl_a(&default_a);
   Branches::Impl impl_b(&default_b);
 
@@ -4296,8 +4296,8 @@ test_branch_move_assignment_relinks_default_minfreespace()
   TEST_CHECK(impl_a.size() == 1);
   for(auto &branch : impl_a)
     {
-      if(std::holds_alternative<const u64*>(branch._minfreespace))
-        TEST_CHECK(std::get<const u64*>(branch._minfreespace) == &default_a);
+      if(std::holds_alternative<const std::atomic<u64>*>(branch._minfreespace))
+        TEST_CHECK(std::get<const std::atomic<u64>*>(branch._minfreespace) == &default_a);
     }
 }
 

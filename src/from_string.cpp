@@ -192,6 +192,22 @@ str::from(const std::string_view  val_,
 }
 
 int
+str::from(const std::string_view  val_,
+          std::atomic<u64>       *rv_)
+{
+  int rv;
+  u64 tmp;
+
+  rv = str::from(val_,&tmp);
+  if(rv < 0)
+    return rv;
+
+  rv_->store(tmp,std::memory_order_relaxed);
+
+  return 0;
+}
+
+int
 str::from(const std::string_view  value_,
           std::string            *str_)
 {
