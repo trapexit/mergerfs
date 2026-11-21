@@ -199,7 +199,8 @@ struct SyncWorker
 
 static
 int
-_calculate_thread_count(const int raw_thread_count_)
+_calculate_thread_count(const int raw_thread_count_,
+                        const char *option_)
 {
   int thread_count = 1;
 
@@ -210,12 +211,20 @@ _calculate_thread_count(const int raw_thread_count_)
     }
   else if(raw_thread_count_ < 0)
     {
-      thread_count = (::_nproc() / -raw_thread_count_);
+      thread_count = (::_nproc() / -(long long)raw_thread_count_);
       thread_count = std::max(1,thread_count);
     }
   else if(raw_thread_count_ > 0)
     {
       thread_count = raw_thread_count_;
+    }
+
+  if(thread_count > ThreadPool::max_thread_count())
+    {
+      SysLog::warning("{}={} requests {} threads; limiting pool to {}",
+                      option_,raw_thread_count_,thread_count,
+                      ThreadPool::max_thread_count());
+      thread_count = ThreadPool::max_thread_count();
     }
 
   return thread_count;
@@ -246,13 +255,16 @@ _calculate_thread_counts(int *read_thread_count_,
   else if((*read_thread_count_ == 0) && (*process_thread_count_ != -1))
     {
       *read_thread_count_    = 2;
-      *process_thread_count_ = ::_calculate_thread_count(*process_thread_count_);
+      *process_thread_count_ = ::_calculate_thread_count(*process_thread_count_,
+                                                        "process-thread-count");
     }
   else
     {
-      *read_thread_count_    = ::_calculate_thread_count(*read_thread_count_);
+      *read_thread_count_    = ::_calculate_thread_count(*read_thread_count_,
+                                                        "read-thread-count");
       if(*process_thread_count_ != -1)
-        *process_thread_count_ = ::_calculate_thread_count(*process_thread_count_);
+        *process_thread_count_ = ::_calculate_thread_count(*process_thread_count_,
+                                                          "process-thread-count");
     }
 
   if(*process_thread_queue_depth_ <= 0)

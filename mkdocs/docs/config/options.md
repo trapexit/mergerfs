@@ -140,21 +140,24 @@ config file.
   thread count is set negative it will look up the number of cores
   then divide by the absolute value. ie. threads=-2 on an 8 core
   machine will result in 8 / 2 = 4 threads. There will always be at
-  least 1 thread. If set to -1 in combination with
-  `process-thread-count` then it will try to pick reasonable values
-  based on CPU thread count. NOTE: higher number of threads increases
-  parallelism but usually decreases throughput. (default: 0)
+  least 1 thread and at most 64, including counts resolved from automatic
+  or negative settings. Counts above 64 are clamped with a syslog warning
+  (`LOG_WARNING`). If set to -1 in combination with `process-thread-count`
+  then it will try to pick reasonable values based on CPU thread count. NOTE:
+  higher number of threads increases parallelism but usually
+  decreases throughput. (default: 0)
 * **[process-thread-count](threads.md)=INT**: Enables separate thread
   pool to asynchronously process FUSE requests. In this mode
   `read-thread-count` refers to the number of threads reading FUSE
   messages which are dispatched to process threads. -1 means disabled
-  otherwise acts like `read-thread-count`. (default: -1)
+  otherwise acts like `read-thread-count`, including the 64-thread cap
+  and warning when clamped. (default: -1)
 * **[process-thread-queue-depth](threads.md)=UINT**: Sets the number
   of requests any single process thread can have queued up at one
   time. Meaning the total memory usage of the queues is queue depth
   multiplied by the number of process threads plus read thread
   count. 0 sets the depth to the same as the process thread
-  count. (default: 2)
+  count. Queue depths are not capped to 64. (default: 2)
 * **[pin-threads](pin-threads.md)=STR**: Selects a strategy to pin
   threads to CPUs (default: unset)
 * **[flush-on-close](flush-on-close.md)=never|always|opened-for-write**:
@@ -171,9 +174,13 @@ config file.
 * **[func.FUNC](functions_categories_policies.md)=POLICY**: Sets the
   specific FUSE function's policy. See below for the list of value
   types. Example: **func.getattr=newest**
-* **[func.readdir](func_readdir.md)=seq|cosr|cor|cosr:INT|cor:INT**:
-  Sets `readdir` policy. INT value sets the number of threads to use
-  for concurrency. (default: seq)
+* **[func.readdir](func_readdir.md)**: `seq` (default), `cosr[:N[:M]]`,
+  or `cor[:N[:M]]`. `N` (threads) and `M` (queue slots per thread) accept
+  decimal digits only. Values above `INT_MAX` (2147483647) are rejected.
+  Omitted or zero values use the core count (at most 8) for `N` and 2 for `M`. Valid
+  thread counts above 64 are clamped to 64 with a syslog warning; `M` is
+  not capped at 64. If the effective `N * M` exceeds `INT_MAX`, the entire
+  setting is rejected.
 * **[category.action](functions_categories_policies.md)=POLICY**: Sets
   policy of all FUSE functions in the action category. (default:
   epall)

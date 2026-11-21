@@ -23,7 +23,10 @@
 #include "fuse_readdir_seq.hpp"
 
 #include "from_string.hpp"
+#include "syslog.hpp"
+#include "thread_pool.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -42,7 +45,8 @@ void
 _read_cfg(const std::string_view  str_,
           std::string            &type_,
           int                    &concurrency_,
-          int                    &max_queue_depth_)
+          int                    &max_queue_depth_,
+          const bool              warn_)
 {
   std::string type;
   int concurrency;
@@ -86,6 +90,8 @@ _read_cfg(const std::string_view  str_,
 
   if(concurrency <= 0)
     concurrency = 1;
+  const bool clamped = (concurrency > ThreadPool::max_thread_count());
+  concurrency = std::min(concurrency,ThreadPool::max_thread_count());
 
   if(max_queue_depth <= 0)
     max_queue_depth = 2;
@@ -95,6 +101,10 @@ _read_cfg(const std::string_view  str_,
     type.clear();
   else
     max_queue_depth *= concurrency;
+
+  if(warn_ && clamped && ((type == "cor") || (type == "cosr")))
+    SysLog::warning("func.readdir={} exceeds the thread limit; clamping to {} threads",
+                    str_,ThreadPool::max_thread_count());
 
   type_            = type;
   concurrency_     = concurrency;
@@ -108,7 +118,7 @@ FUSE::ReadDirFactory::valid(const std::string_view str_)
   int max_queue_depth;
   std::string type;
 
-  ::_read_cfg(str_,type,concurrency,max_queue_depth);
+  ::_read_cfg(str_,type,concurrency,max_queue_depth,false);
 
   return ((type == "seq") ||
           (type == "cosr") ||
@@ -122,7 +132,7 @@ FUSE::ReadDirFactory::make(const std::string_view str_)
   int max_queue_depth;
   std::string type;
 
-  ::_read_cfg(str_,type,concurrency,max_queue_depth);
+  ::_read_cfg(str_,type,concurrency,max_queue_depth,true);
 
   if(type == "seq")
     return std::make_shared<FUSE::ReadDirSeq>();

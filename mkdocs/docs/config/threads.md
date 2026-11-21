@@ -3,6 +3,13 @@
 There are multiple thread pools used in mergerfs to provide
 parallel behaviors.
 
+Each thread pool is limited to 64 threads. This applies to
+`read-thread-count`, `process-thread-count` and the pool size in
+[func.readdir](func_readdir.md). Counts resolved from automatic or
+negative settings are also capped. When an applied setting exceeds
+the limit, mergerfs reduces the count to 64 and logs a syslog warning
+(`LOG_WARNING`). Queue depths are not capped to 64.
+
 
 ## read-thread-count
 

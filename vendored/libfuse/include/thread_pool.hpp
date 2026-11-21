@@ -111,6 +111,9 @@ public:
   enqueue_task(FuncType&& func_);
 
 public:
+  static constexpr int max_thread_count();
+
+public:
   std::vector<pthread_t> threads() const;
   ThreadPool::PToken ptoken();
 
@@ -123,6 +126,15 @@ private:
   mutable Mutex          _threads_mutex;
 };
 
+
+
+// Cap configured pools to bound their memory and thread creation costs.
+inline
+constexpr int
+ThreadPool::max_thread_count()
+{
+  return 64;
+}
 
 
 inline
