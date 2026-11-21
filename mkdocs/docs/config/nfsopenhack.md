@@ -2,8 +2,8 @@
 
 * `nfsopenhack=off`: No hack applied.
 * `nfsopenhack=git`: Apply hack if path includes `/.git/`.
-* `nfsopenhack=all`: Apply hack on all empty read-only files opened
-  for writing.
+* `nfsopenhack=all`: Apply hack on all regular files with no write
+  permission bits when opened for writing.
 * Defaults to `off`.
 
 NFS is not fully POSIX compliant and historically certain behaviors,
@@ -22,5 +22,12 @@ writable.
 Even though it's a more niche situation this hack breaks normal
 security and behavior and as such is `off` by default. If set to `git`
 it will only perform the hack when the path in question includes
-`/.git/`.  `all` will result in it applying anytime a read-only file
-which is empty is opened for writing.
+`/.git/`. `all` applies the same behavior regardless of file name or size.
+
+After a write open is denied, mergerfs pins the regular file without
+following a final symlink. It temporarily adds owner and group write
+permission and retries the open on that inode. It restores the original
+mode after the retry, even if the retry fails. A failure to restore the
+mode is returned as an error. If the file cannot be pinned, the open
+stays denied; mergerfs never looks up the branch pathname again to
+change permissions.

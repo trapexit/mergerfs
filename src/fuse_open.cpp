@@ -93,15 +93,17 @@
 #include "fs_close.hpp"
 #include "fs_cow.hpp"
 #include "fs_fchmod.hpp"
-#include "fs_lchmod.hpp"
-#include "fs_open.hpp"
+#include "fs_fchmodat.hpp"
+#include "fs_fstat.hpp"
 #include "fs_open_fd.hpp"
 #include "fs_openat.hpp"
 #include "fs_path.hpp"
-#include "fs_stat.hpp"
 #include "fuse_passthrough.hpp"
 #include "procfs.hpp"
 #include "stat_util.hpp"
+
+#include "fmt/format.h"
+#include "scope_guard/scope_guard.hpp"
 
 #include "fuse.h"
 
@@ -123,30 +125,46 @@ _rdonly(const int flags_)
 
 static
 int
-_lchmod_and_open_if_not_writable_and_empty(const fs::path &fullpath_,
-                                           const int       flags_)
+_open_if_not_writable(const fs::path &fullpath_,
+                      const int       flags_)
 {
-  int rv;
   struct stat st;
 
-  rv = fs::lstat(fullpath_,&st);
+  // Pin without following a final symlink or requiring read permission.
+  const int pin = fs::openat(AT_FDCWD,fullpath_,O_PATH|O_NOFOLLOW|O_CLOEXEC);
+  if(pin < 0)
+    return -EACCES;
+  DEFER { fs::close(pin); };
+
+  if((fs::fstat(pin,&st) < 0) || !S_ISREG(st.st_mode) || StatUtil::writable(st))
+    return -EACCES;
+
+#if defined(__linux__)
+  // fchmod can't operate on O_PATH. Use its procfs link, which also
+  // works on kernels without fchmodat2(AT_EMPTY_PATH).
+  if(procfs::PROC_SELF_FD_FD <= 0)
+    return -EACCES;
+  const fmt::format_int name(pin);
+  const auto chmod_pin = [&name](const mode_t mode)
+    { return fs::fchmodat(procfs::PROC_SELF_FD_FD,name.c_str(),mode,0); };
+#elif defined(__FreeBSD__)
+  const auto chmod_pin = [pin](const mode_t mode)
+    { return fs::fchmodat(pin,"",mode,AT_EMPTY_PATH); };
+#endif
+
+  if(chmod_pin(st.st_mode|S_IWUSR|S_IWGRP) < 0)
+    return -EACCES;
+
+  const int fd = fs::open_fd(pin,flags_);
+  const int rv = ((fd < 0) ? chmod_pin(st.st_mode) : fs::fchmod(fd,st.st_mode));
   if(rv < 0)
-    return -EACCES;
+    {
+      if(fd >= 0)
+        fs::close(fd);
+      return rv;
+    }
 
-  if(StatUtil::writable(st))
-    return -EACCES;
-
-  rv = fs::lchmod(fullpath_,(st.st_mode|S_IWUSR|S_IWGRP));
-  if(rv < 0)
-    return -EACCES;
-
-  rv = fs::open(fullpath_,flags_);
-  if(rv < 0)
-    return -EACCES;
-
-  fs::fchmod(rv,st.st_mode);
-
-  return rv;
+  return ((fd < 0) ? -EACCES : fd);
 }
 
 static
@@ -165,11 +183,11 @@ _nfsopenhack(const fs::path    &fullpath_,
         return -EACCES;
       if(fullpath_.string().find("/.git/") == std::string::npos)
         return -EACCES;
-      return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+      return ::_open_if_not_writable(fullpath_,flags_);
     case NFSOpenHack::ENUM::ALL:
       if(::_rdonly(flags_))
         return -EACCES;
-      return ::_lchmod_and_open_if_not_writable_and_empty(fullpath_,flags_);
+      return ::_open_if_not_writable(fullpath_,flags_);
     }
 }
 
