@@ -44,6 +44,7 @@ _generate_tmp_path(const fs::path    &dirpath_,
                    const std::string &src_filename_)
 {
   long name_max;
+  long pad_len;
   size_t substr_len;
   std::string tmp_filename;
 
@@ -51,13 +52,16 @@ _generate_tmp_path(const fs::path    &dirpath_,
   if(name_max == -1)
     name_max = NAME_MAX;
 
+  // The name is '.' + prefix + '_' + random suffix. Where names are
+  // too short for the full suffix, shorten it so the name still fits.
+  pad_len    = std::clamp(name_max - 2L,1L,(long)PAD_LEN);
   substr_len = std::min(src_filename_.size(),
-                        (size_t)(name_max - PAD_LEN - 2ULL));
+                        (size_t)std::max(name_max - 2L - pad_len,0L));
 
   tmp_filename = '.';
   tmp_filename += src_filename_.substr(0,substr_len);
   tmp_filename += '_';
-  for(size_t i = 0; i < PAD_LEN; i++)
+  for(long i = 0; i < pad_len; i++)
     tmp_filename += CHARS[RND::rand64(CHARS_SIZE)];
 
   return dirpath_ / tmp_filename;
