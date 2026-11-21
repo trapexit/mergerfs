@@ -143,14 +143,36 @@ TMPFILE=$(mktemp)
 trap 'rm -f "$TMPFILE"' EXIT
 
 # Check if version is in tags
-if echo "$TAGS" | grep -q "^${VERSION}$"; then
+if printf '%s\n' "$TAGS" | grep -Fxq -- "$VERSION"; then
     # If version is a tag, start from that tag
+    VERSION_REF="$VERSION"
     echo "$TAGS" | awk -v ver="$VERSION" 'BEGIN{found=0} {if($0==ver)found=1; if(found)print}' > "$TMPFILE"
 else
     # If version is not a tag, use HEAD as starting point
+    VERSION_REF=HEAD
     echo "$VERSION HEAD" > "$TMPFILE"
     echo "$TAGS" >> "$TMPFILE"
 fi
+
+# A requested tag may have history even when HEAD is unborn.
+git rev-parse --verify "${VERSION_REF}^{commit}" >/dev/null || exit 1
+
+# Print one changelog entry: header, log lines, then author and time
+print_entry() {
+    local tag="$1"
+    local ref="$2"
+    local entries="$3"
+
+    printf "%s (%s%s) %s; urgency=%s\n\n" "$NAME" "$tag" "$VERSUFFIX" "$CODENAME" "$URGENCY"
+
+    echo "$entries" | while IFS= read -r entry; do
+        if [ -n "$entry" ]; then
+            printf "  * %s\n" "$entry"
+        fi
+    done
+
+    printf "\n %s\n\n" "$(git_author_and_time "$ref")"
+}
 
 # Process tags and generate changelog
 PREV_TAG=""
@@ -175,28 +197,22 @@ while IFS= read -r line; do
         # Get log entries between current and previous tag
         LOG_ENTRIES=$(git_log "$REF" "$PREV_REF")
 
-        # Skip if no changes
-        if [ -z "$LOG_ENTRIES" ] || [ "$LOG_ENTRIES" = "" ]; then
-            PREV_TAG="$TAG"
-            PREV_REF="$REF"
+        # Tags at the same revision have no changes between them. Keep the
+        # newer version for the next nonempty range.
+        if [ -z "$LOG_ENTRIES" ]; then
             continue
         fi
 
-        # Print package header
-        printf "%s (%s%s) %s; urgency=%s\n\n" "$NAME" "$PREV_TAG" "$VERSUFFIX" "$CODENAME" "$URGENCY"
-
-        # Print each log entry
-        echo "$LOG_ENTRIES" | while IFS= read -r entry; do
-            if [ -n "$entry" ]; then
-                printf "  * %s\n" "$entry"
-            fi
-        done
-
-        # Print author and time
-        AUTHOR_TIME=$(git_author_and_time "$PREV_REF")
-        printf "\n %s\n\n" "$AUTHOR_TIME"
+        print_entry "$PREV_TAG" "$PREV_REF" "$LOG_ENTRIES"
+        FIRST=0
     fi
 
     PREV_TAG="$TAG"
     PREV_REF="$REF"
 done < "$TMPFILE"
+
+# If no tag range produced an entry, list the requested version's history.
+if [ "$FIRST" = 1 ]; then
+    LOG_ENTRIES=$(git log --no-merges --oneline "$VERSION_REF" --) || exit 1
+    print_entry "$VERSION" "$VERSION_REF" "$LOG_ENTRIES"
+fi
