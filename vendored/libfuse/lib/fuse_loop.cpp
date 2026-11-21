@@ -96,9 +96,12 @@ struct AsyncWorker
     while(!fuse_session_exited(_se))
       {
         int rv;
-        fuse_msgbuf_t *msgbuf;
+        // Freed when this iteration ends, including the unwind when the
+        // thread is cancelled in receive_buf at shutdown, unless handed
+        // to the process pool.
+        std::unique_ptr<fuse_msgbuf_t,decltype(&msgbuf_free)> msgbuf(msgbuf_alloc(),
+                                                                     &msgbuf_free);
 
-        msgbuf = msgbuf_alloc();
         if(not msgbuf)
           {
             fmt::println(stderr,"mergerfs: failure to allocate msgbuf, exiting");
@@ -108,7 +111,7 @@ struct AsyncWorker
         while(true)
           {
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
-            rv = _se->receive_buf(_se,_fd,msgbuf);
+            rv = _se->receive_buf(_se,_fd,msgbuf.get());
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
 
             if(rv > 0)
@@ -116,7 +119,6 @@ struct AsyncWorker
             if(::_retriable_receive_error(rv))
               continue;
 
-            msgbuf_free(msgbuf);
             if((rv == 0) || (rv == -ENODEV))
               return;
 
@@ -124,7 +126,7 @@ struct AsyncWorker
           }
 
         _process_tp->enqueue_work(ptok,
-                                  [se = _se,fd = _fd,msgbuf]()
+                                  [se = _se,fd = _fd,msgbuf = msgbuf.release()]()
                                   {
                                     se->process_buf(se,fd,msgbuf);
                                     msgbuf_free(msgbuf);
@@ -163,9 +165,11 @@ struct SyncWorker
     while(!fuse_session_exited(_se))
       {
         int rv;
-        fuse_msgbuf_t *msgbuf;
+        // Freed when this iteration ends, including the unwind when the
+        // thread is cancelled in receive_buf at shutdown.
+        std::unique_ptr<fuse_msgbuf_t,decltype(&msgbuf_free)> msgbuf(msgbuf_alloc(),
+                                                                     &msgbuf_free);
 
-        msgbuf = msgbuf_alloc();
         if(not msgbuf)
           {
             fmt::println(stderr,"mergerfs: failure to allocate msgbuf, exiting");
@@ -175,23 +179,20 @@ struct SyncWorker
         while(true)
           {
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
-            rv = _se->receive_buf(_se,_fd,msgbuf);
+            rv = _se->receive_buf(_se,_fd,msgbuf.get());
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
             if(rv > 0)
               break;
             if(::_retriable_receive_error(rv))
               continue;
 
-            msgbuf_free(msgbuf);
             if((rv == 0) || (rv == -ENODEV))
               return;
 
             return ::_print_error(rv);
           }
 
-        _se->process_buf(_se,_fd,msgbuf);
-
-        msgbuf_free(msgbuf);
+        _se->process_buf(_se,_fd,msgbuf.get());
       }
   }
 };
