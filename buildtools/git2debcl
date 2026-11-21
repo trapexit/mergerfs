@@ -30,7 +30,9 @@ Generated debian/changelog from git log
 
 Options:
     --name NAME        Name of package (required)
-    --version VERSION  Place in git history to include upto (default: ::guess::)
+    --version VERSION  Package version (default: infer from Git). If it names
+                       a tag, end the changelog there; otherwise use HEAD.
+                       Required in shallow clones with no reachable tag.
     --distro DISTRO    Distribution name (default: ::guess::)
     --codename NAME    Distribution codename (default: ::guess::)
     --urgency URGENCY  Urgency (default: medium)
@@ -98,7 +100,15 @@ git_author_and_time() {
 
 # Function to get git version
 git_version() {
-    git describe --always --tags --dirty 2>/dev/null || echo "unknown"
+    git describe --tags --dirty 2>/dev/null || {
+        commit=$(git describe --always --dirty) || return 1
+        if [ "$(git rev-parse --is-shallow-repository)" != false ]; then
+            echo "Error: tagless snapshots need full history; fetch it or specify --version" >&2
+            return 1
+        fi
+        count=$(git rev-list --count HEAD) || return 1
+        printf '0~git.%s.%s\n' "$count" "$commit"
+    }
 }
 
 # Function to guess distribution
@@ -129,7 +139,7 @@ if [ "$CODENAME" = "::guess::" ]; then
 fi
 
 if [ "$VERSION" = "::guess::" ]; then
-    VERSION=$(git_version)
+    VERSION=$(git_version) || exit 1
 fi
 
 # Version suffix
