@@ -61,8 +61,8 @@ in the pool.
 
 * `process-thread-queue-depth=N` where `N>0`: Sets the number of
   outstanding requests that the process thread pool can have to `N *
-  process-thread-count`. If requests come in faster than can be
-  processed and the max queue depth hit then queuing the request will
-  block in order to limit memory growth.
+  process-thread-count`, at most 2147483647. If requests come in
+  faster than can be processed and the max queue depth hit then
+  queuing the request will block in order to limit memory growth.
 * `process-thread-queue-depth<=0`: Sets the queue depth to 2. May be
   used in the future to set dynamically.

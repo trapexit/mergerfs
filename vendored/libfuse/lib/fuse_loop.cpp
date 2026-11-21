@@ -17,6 +17,7 @@
 #include "fuse_msgbuf.hpp"
 
 #include <cassert>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -270,7 +271,13 @@ _calculate_thread_counts(int *read_thread_count_,
   if(*process_thread_queue_depth_ <= 0)
     *process_thread_queue_depth_ = 2;
 
-  *process_thread_queue_depth_ *= std::abs(*process_thread_count_);
+  // Saturate rather than overflow. A total this large is unbounded in
+  // practice anyway since the queue only counts free slots.
+  if(*process_thread_queue_depth_ >
+     (std::numeric_limits<int>::max() / std::abs(*process_thread_count_)))
+    *process_thread_queue_depth_ = std::numeric_limits<int>::max();
+  else
+    *process_thread_queue_depth_ *= std::abs(*process_thread_count_);
 }
 
 int
