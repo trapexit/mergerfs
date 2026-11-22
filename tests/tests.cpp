@@ -3785,6 +3785,85 @@ test_fs_movefile_and_open_same_branch()
   std::filesystem::remove_all(tmp_dir);
 }
 
+// The create policy is asked where the file goes, as create does, by
+// its parent directory. The existing path policies (ep*) only choose a
+// branch that already has the path, and the destination has the
+// directory but not the file yet. Given the file's own path they found
+// nothing, so the write kept failing with ENOSPC.
+void
+test_fs_movefile_and_open_existing_path_policies()
+{
+  char tmp_template[] = "/tmp/mergerfs-test-movefile-ep-XXXXXX";
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  const fs::path tmp_dir = tmp_template;
+  const fs::path src = tmp_dir / "src";
+  const fs::path other = tmp_dir / "other";
+  const std::string data = "moveonenospc existing path policy\n";
+  const struct
+  {
+    const char     *name;
+    Policy::CreateImpl *policy;
+  } policies[] = {
+    {"epall",&Policies::Create::epall},
+    {"epff",&Policies::Create::epff},
+    {"eplfs",&Policies::Create::eplfs},
+    {"eplus",&Policies::Create::eplus},
+    {"epmfs",&Policies::Create::epmfs},
+    {"eppfrd",&Policies::Create::eppfrd},
+    {"eprand",&Policies::Create::eprand},
+    {"newest",&Policies::Create::newest},
+  };
+  std::error_code ec;
+
+  std::filesystem::create_directories(src / "dir",ec);
+  TEST_CHECK(!ec);
+  if(ec)
+    {
+      std::filesystem::remove_all(tmp_dir);
+      return;
+    }
+
+  // A file in a directory, and one at the root, whose parent is empty.
+  for(const char *relpath : {"dir/file","rootfile"})
+    for(const auto &entry : policies)
+      {
+        int fd;
+        int rv;
+        Branches branches;
+        const Policy::Create policy(entry.policy);
+
+        std::filesystem::remove_all(other,ec);
+        std::filesystem::create_directories(other / "dir",ec);
+        std::ofstream(src / relpath,std::ios::binary|std::ios::trunc) << data;
+        fd = ::open((src / relpath).c_str(),O_RDWR);
+        TEST_CHECK(fd >= 0);
+        if(fd < 0)
+          continue;
+
+        branches.minfreespace = 0;
+        TEST_CHECK(branches.from_string(src.string() + ":" + other.string()) == 0);
+        Branches::Ptr ptr = branches;
+
+        rv = fs::movefile_and_open(policy,ptr,src,relpath,fd);
+        TEST_CHECK(rv >= 0);
+        TEST_MSG("policy: %s; path: %s; rv: %d",entry.name,relpath,rv);
+        if(rv >= 0)
+          ::close(rv);
+
+        TEST_CHECK(!std::filesystem::exists(src / relpath));
+        TEST_CHECK(_file_contents(other / relpath) == data);
+        TEST_MSG("policy: %s; path: %s",entry.name,relpath);
+        ::close(fd);
+      }
+
+  std::filesystem::remove_all(tmp_dir);
+}
+
 // Counts that don't fit an int, or whose queue depth product
 // overflows, must be rejected rather than throw or wrap.
 void
@@ -4588,6 +4667,7 @@ TEST_LIST =
     {"fs_copyfile_basic",test_fs_copyfile_basic},
     {"fs_copyfile_source_changes_cleanup_tmpfiles",test_fs_copyfile_source_changes_cleanup_tmpfiles},
     {"fs_movefile_and_open_same_branch",test_fs_movefile_and_open_same_branch},
+    {"fs_movefile_and_open_existing_path_policies",test_fs_movefile_and_open_existing_path_policies},
     {"readdir_factory_rejects_oversized_counts",test_readdir_factory_rejects_oversized_counts},
     {"statvfs_cache_does_not_cache_failure",test_statvfs_cache_does_not_cache_failure},
     {"statvfs_cache_keeps_failure_for_timeout",test_statvfs_cache_keeps_failure_for_timeout},

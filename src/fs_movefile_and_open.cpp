@@ -139,7 +139,12 @@ _movefile_and_open(const Policy::Create &createFunc_,
   if(!candidates)
     return -ENOSPC;
 
-  rv = createFunc_(candidates,fusepath_,dst_branch);
+  // Ask by the parent directory, as create does. The file isn't on the
+  // destination yet, and the existing path policies (ep*) only pick a
+  // branch that already has the path they are given.
+  fusedir = fusepath_.parent_path();
+
+  rv = createFunc_(candidates,fusedir,dst_branch);
   if(rv < 0)
     return rv;
   if(dst_branch.empty())
@@ -155,8 +160,6 @@ _movefile_and_open(const Policy::Create &createFunc_,
 
   if(fs::has_space(dst_branch[0]->path,src_size) == false)
     return -ENOSPC;
-
-  fusedir = fusepath_.parent_path();
 
   rv = fs::clonepath(src_branch,dst_branch[0]->path,fusedir);
   if(rv < 0)
