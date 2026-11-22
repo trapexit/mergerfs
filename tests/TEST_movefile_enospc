@@ -2,6 +2,7 @@
 
 import contextlib
 import errno
+import mmap
 import os
 import shutil
 import subprocess
@@ -140,6 +141,63 @@ def test_partial_without_move():
         return 0
 
 
+def flush_errors(calls):
+    """Run each (name, function) and return the names that raised ENOSPC."""
+    failed = []
+    for name, call in calls:
+        try:
+            call()
+        except OSError as e:
+            if e.errno != errno.ENOSPC:
+                raise
+            failed.append(name)
+    return failed
+
+
+def test_writeback_flush_reports_error():
+    with enospc_pool("minfreespace=0,cache.files=full,cache.writeback=true,moveonenospc=false") as (
+        branches, pool, initial,
+    ):
+        # The kernel flushes its page cache with writes whose reply size
+        # it ignores. The tail that doesn't fit is dropped, so the
+        # error has to reach fsync or close: a short count would hide it.
+        payload = bytes(range(1, 256)) * (len(initial) // 32)
+        failed = []
+        fd = os.open(os.path.join(pool, "target"), os.O_WRONLY)
+        try:
+            failed += flush_errors([
+                ("write", lambda: os.pwrite(fd, payload, len(initial))),
+                ("fsync", lambda: os.fsync(fd)),
+            ])
+        finally:
+            failed += flush_errors([("close", lambda: os.close(fd))])
+        if not failed:
+            return fail("write, fsync and close all succeeded but the data did not fit")
+        return 0
+
+
+def test_mmap_flush_reports_error():
+    with enospc_pool("minfreespace=0,cache.files=full,cache.writeback=false,moveonenospc=false") as (
+        branches, pool, initial,
+    ):
+        # Dirty shared mmap pages are flushed the same way even without
+        # writeback cache, so msync must report the error.
+        payload = bytes(range(1, 256)) * (len(initial) // 32)
+        total = len(initial) + len(payload)
+        failed = []
+        fd = os.open(os.path.join(pool, "target"), os.O_RDWR)
+        try:
+            os.ftruncate(fd, total)
+            with mmap.mmap(fd, total) as mapping:
+                mapping[len(initial):] = payload
+                failed += flush_errors([("msync", mapping.flush), ("fsync", lambda: os.fsync(fd))])
+        finally:
+            failed += flush_errors([("close", lambda: os.close(fd))])
+        if not failed:
+            return fail("msync, fsync and close all succeeded but the data did not fit")
+        return 0
+
+
 def test_second_relocation():
     # lfs over branches with at least minfreespace free picks `middle`
     # first; once it fills too only `destination` is left. The same open
@@ -217,6 +275,8 @@ def test_occupied_destination():
 
 TESTS = (test_partial_append,
          test_partial_without_move,
+         test_writeback_flush_reports_error,
+         test_mmap_flush_reports_error,
          test_second_relocation,
          test_occupied_destination)
 

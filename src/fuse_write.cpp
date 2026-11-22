@@ -48,12 +48,18 @@ _out_of_space(const ssize_t err_)
 // Bytes already written stay written. Report them as a short write,
 // as a local filesystem does, rather than the error: a caller that
 // retries the whole buffer would write them twice.
+//
+// Not for writes the kernel issues to flush its page cache (writeback
+// cache, dirty mmap pages). It ignores the size in the reply and
+// drops the pages, so a short count would lose the rest and hide the
+// error. Only the error reaches fsync, msync and close.
 static
 ssize_t
 _written_or_err(const ssize_t written_,
-                const ssize_t err_)
+                const ssize_t err_,
+                const bool    short_ok_)
 {
-  return ((written_ > 0) ? written_ : err_);
+  return (((written_ > 0) && short_ok_) ? written_ : err_);
 }
 
 static
@@ -93,13 +99,14 @@ _move_and_pwriten(char const    *buf_,
                   off_t const    offset_,
                   FileInfo      *fi_,
                   ssize_t const  err_,
-                  ssize_t const  written_)
+                  ssize_t const  written_,
+                  bool const     short_ok_)
 {
   int err;
   ssize_t rv;
 
   if(cfg.moveonenospc.enabled == false)
-    return ::_written_or_err(written_,err_);
+    return ::_written_or_err(written_,err_,short_ok_);
 
   rv = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
                                      cfg.branches,
@@ -107,12 +114,12 @@ _move_and_pwriten(char const    *buf_,
                                      fi_->fusepath,
                                      fi_->fd);
   if(rv < 0)
-    return ::_written_or_err(written_,err_);
+    return ::_written_or_err(written_,err_,short_ok_);
 
   err = fs::dup2(rv,fi_->fd);
   fs::close(rv);
   if(err < 0)
-    return ::_written_or_err(written_,err_);
+    return ::_written_or_err(written_,err_,short_ok_);
 
   rv = fs::pwriten(fi_->fd,
                    buf_ + written_,
@@ -120,7 +127,7 @@ _move_and_pwriten(char const    *buf_,
                    offset_ + written_,
                    &err);
   if(err < 0)
-    return ::_written_or_err(written_ + rv,err);
+    return ::_written_or_err(written_ + rv,err,short_ok_);
 
   return (written_ + rv);
 }
@@ -157,6 +164,7 @@ _write(const fuse_req_ctx_t   *ctx_,
   // `direct_io=true`
 
   ssize_t rv;
+  const bool short_ok = not ffi_->writepage;
 
   if(fi->direct_io)
     {
@@ -190,7 +198,7 @@ _write(const fuse_req_ctx_t   *ctx_,
       if(err == 0)
         return written;
       if(not ::_out_of_space(err))
-        return ::_written_or_err(written,err);
+        return ::_written_or_err(written,err,short_ok);
 
       std::unique_lock<std::shared_mutex> ulk(fi->mutex);
       // Re-check the remaining suffix under exclusive lock as another move
@@ -204,9 +212,9 @@ _write(const fuse_req_ctx_t   *ctx_,
       if(err == 0)
         return written;
       if(not ::_out_of_space(err))
-        return ::_written_or_err(written,err);
+        return ::_written_or_err(written,err,short_ok);
 
-      return ::_move_and_pwriten(buf_,count_,offset_,fi,err,written);
+      return ::_move_and_pwriten(buf_,count_,offset_,fi,err,written,short_ok);
     }
 }
 

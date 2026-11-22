@@ -36,7 +36,10 @@ will:
 If at any point something fails the progress so far will be cleaned up
 as appropriate and the original error returned. If part of the write
 already reached the file the bytes written are returned instead, as a
-short write, as with a local filesystem.
+short write, as with a local filesystem. The exception is data the
+kernel is flushing from its page cache (`cache.writeback` or dirty
+`mmap` pages). It can't act on a short write, so the error is returned
+and reaches `fsync`, `msync` or `close`.
 
 If `moveonenospc` is disabled the underlying error will be returned,
 or the bytes written if part of the write succeeded.
