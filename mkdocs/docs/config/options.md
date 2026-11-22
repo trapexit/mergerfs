@@ -136,16 +136,16 @@ config file.
   use. When used alone (`process-thread-count=-1`) it sets the number
   of threads reading and processing FUSE messages. When used together
   it sets the number of threads reading from FUSE. When set to zero it
-  will attempt to discover and use the number of logical cores. If the
-  thread count is set negative it will look up the number of cores
-  then divide by the absolute value. ie. threads=-2 on an 8 core
-  machine will result in 8 / 2 = 4 threads. There will always be at
-  least 1 thread and at most 64, including counts resolved from automatic
-  or negative settings. Counts above 64 are clamped with a syslog warning
-  (`LOG_WARNING`). If set to -1 in combination with `process-thread-count`
-  then it will try to pick reasonable values based on CPU thread count. NOTE:
-  higher number of threads increases parallelism but usually
-  decreases throughput. (default: 0)
+  uses the number of logical cores, up to 8, or 2 read threads when
+  `process-thread-count` is enabled as well. If the thread count is set
+  negative it will look up the number of cores then divide by the
+  absolute value. ie. threads=-2 on an 8 core machine will result in
+  8 / 2 = 4 threads. There will always be at least 1 thread and at
+  most 64, including counts resolved from automatic or negative
+  settings. Counts above 64 are clamped with a syslog warning
+  (`LOG_WARNING`). See [threads](threads.md) for how it combines with
+  `process-thread-count`. NOTE: higher number of threads increases
+  parallelism but usually decreases throughput. (default: 0)
 * **[process-thread-count](threads.md)=INT**: Enables separate thread
   pool to asynchronously process FUSE requests. In this mode
   `read-thread-count` refers to the number of threads reading FUSE
