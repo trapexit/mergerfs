@@ -45,6 +45,17 @@ _out_of_space(const ssize_t err_)
           (err_ == -EDQUOT));
 }
 
+// Bytes already written stay written. Report them as a short write,
+// as a local filesystem does, rather than the error: a caller that
+// retries the whole buffer would write them twice.
+static
+ssize_t
+_written_or_err(const ssize_t written_,
+                const ssize_t err_)
+{
+  return ((written_ > 0) ? written_ : err_);
+}
+
 static
 int
 _move_and_pwrite(const char   *buf_,
@@ -88,7 +99,7 @@ _move_and_pwriten(char const    *buf_,
   ssize_t rv;
 
   if(cfg.moveonenospc.enabled == false)
-    return err_;
+    return ::_written_or_err(written_,err_);
 
   rv = fs::movefile_and_open_as_root(cfg.moveonenospc.policy,
                                      cfg.branches,
@@ -96,12 +107,12 @@ _move_and_pwriten(char const    *buf_,
                                      fi_->fusepath,
                                      fi_->fd);
   if(rv < 0)
-    return err_;
+    return ::_written_or_err(written_,err_);
 
   err = fs::dup2(rv,fi_->fd);
   fs::close(rv);
   if(err < 0)
-    return err_;
+    return ::_written_or_err(written_,err_);
 
   rv = fs::pwriten(fi_->fd,
                    buf_ + written_,
@@ -109,7 +120,7 @@ _move_and_pwriten(char const    *buf_,
                    offset_ + written_,
                    &err);
   if(err < 0)
-    return err;
+    return ::_written_or_err(written_ + rv,err);
 
   return (written_ + rv);
 }
@@ -178,8 +189,8 @@ _write(const fuse_req_ctx_t   *ctx_,
 
       if(err == 0)
         return written;
-      if(err && not ::_out_of_space(err))
-        return err;
+      if(not ::_out_of_space(err))
+        return ::_written_or_err(written,err);
 
       std::unique_lock<std::shared_mutex> ulk(fi->mutex);
       // Re-check the remaining suffix under exclusive lock as another move
@@ -192,8 +203,8 @@ _write(const fuse_req_ctx_t   *ctx_,
                              &err);
       if(err == 0)
         return written;
-      if(err && not ::_out_of_space(err))
-        return err;
+      if(not ::_out_of_space(err))
+        return ::_written_or_err(written,err);
 
       return ::_move_and_pwriten(buf_,count_,offset_,fi,err,written);
     }

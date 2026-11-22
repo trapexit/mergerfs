@@ -111,6 +111,35 @@ def test_partial_append():
         return check_relocated(branches, pool, initial + payload)
 
 
+def test_partial_without_move():
+    with enospc_pool("minfreespace=0,cache.files=full,cache.writeback=false,moveonenospc=false") as (
+        branches, pool, initial,
+    ):
+        # Only one block fits. The bytes written before ENOSPC stay on
+        # disk, so the write must report them as a short write, not
+        # fail: a caller that retries the whole buffer would append
+        # them twice.
+        block_size = len(initial)
+        payload = bytes(range(256)) * (block_size // 64)
+        fd = os.open(os.path.join(pool, "target"), os.O_WRONLY | os.O_APPEND)
+        try:
+            try:
+                written = os.write(fd, payload)
+            except OSError as e:
+                return fail(f"append failed with {e.strerror} after writing a prefix")
+        finally:
+            os.close(fd)
+        if not 0 < written < len(payload):
+            return fail(f"append returned {written}, expected a short write")
+        with open(os.path.join(branches["source"], "target"), "rb") as stream:
+            actual = stream.read()
+        if actual != initial + payload[:written]:
+            return fail(f"source holds {len(actual)} bytes, expected {len(initial) + written}")
+        if holders(branches) != ["source"]:
+            return fail(f"target on {holders(branches)}, expected only source")
+        return 0
+
+
 def test_second_relocation():
     # lfs over branches with at least minfreespace free picks `middle`
     # first; once it fills too only `destination` is left. The same open
@@ -187,6 +216,7 @@ def test_occupied_destination():
 
 
 TESTS = (test_partial_append,
+         test_partial_without_move,
          test_second_relocation,
          test_occupied_destination)
 

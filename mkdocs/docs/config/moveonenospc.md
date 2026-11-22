@@ -34,9 +34,12 @@ will:
    completed append is not duplicated.
 
 If at any point something fails the progress so far will be cleaned up
-as appropriate and the original error returned.
+as appropriate and the original error returned. If part of the write
+already reached the file the bytes written are returned instead, as a
+short write, as with a local filesystem.
 
-If `moveonenospc` is disabled the underlying error will be returned.
+If `moveonenospc` is disabled the underlying error will be returned,
+or the bytes written if part of the write succeeded.
 
 NOTE: This feature has NO effect on policies. It ONLY applies to the
 literal write function. If the create function returns `ENOSPC` or the
