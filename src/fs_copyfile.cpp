@@ -33,11 +33,20 @@
 #include "fs_rename.hpp"
 #include "fs_unlink.hpp"
 #include "fs_xattr.hpp"
+#include "to_neg_errno.hpp"
 
 #include "scope_guard/scope_guard.hpp"
 
 #include <fcntl.h>
 #include <signal.h>
+#include <unistd.h>
+
+#ifdef __linux__
+#include <linux/fs.h>
+#endif
+#if defined(__linux__) || defined(__FreeBSD__)
+#include <sys/syscall.h>
+#endif
 
 
 static
@@ -55,6 +64,36 @@ _ignorable_error(const s64 err_)
     }
 
   return false;
+}
+
+static
+int
+_publish_noreplace(const char *tmppath_,
+                   const char *dstpath_)
+{
+  int rv;
+
+#if defined(SYS_renameat2) && defined(RENAME_NOREPLACE)
+  rv = ::to_neg_errno(::syscall(SYS_renameat2,AT_FDCWD,tmppath_,
+                                AT_FDCWD,dstpath_,RENAME_NOREPLACE));
+#elif defined(__APPLE__) && defined(RENAME_EXCL)
+  rv = ::to_neg_errno(::renamex_np(tmppath_,dstpath_,RENAME_EXCL));
+#else
+  rv = -ENOSYS;
+#endif
+  if((rv != -ENOSYS) && (rv != -EINVAL) &&
+     (rv != -ENOTSUP) && (rv != -EOPNOTSUPP))
+    return rv;
+
+  // Some filesystems reject the rename flag. The staging file is a
+  // regular file in the same directory, so link can publish it atomically
+  // without replacement. Never fall back to a replacing rename.
+  rv = ::to_neg_errno(::link(tmppath_,dstpath_));
+  if(rv < 0)
+    return rv;
+  // The destination is now published. A cleanup error cannot undo that.
+  fs::unlink(tmppath_);
+  return 0;
 }
 
 s64
@@ -155,7 +194,10 @@ fs::copyfile(const int                src_fd_,
           continue;
         }
 
-      rv = fs::rename(dst_tmppath,dst_filepath_);
+      if(flags_.no_replace)
+        rv = ::_publish_noreplace(dst_tmppath.c_str(),dst_filepath_.c_str());
+      else
+        rv = fs::rename(dst_tmppath.c_str(),dst_filepath_.c_str());
       if((rv < 0) && (flags_.cleanup_failure))
         fs::unlink(dst_tmppath);
       break;

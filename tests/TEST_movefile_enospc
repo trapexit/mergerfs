@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import contextlib
+import errno
 import os
 import shutil
 import subprocess
@@ -142,7 +143,52 @@ def test_second_relocation():
         return check_relocated(branches, pool, bytes(expected))
 
 
-TESTS = (test_partial_append, test_second_relocation)
+def test_occupied_destination():
+    options = "minfreespace=0,cache.files=off,func.open=ff,moveonenospc=ff"
+    with enospc_pool(options, extra_tmpfs=[("occupied", "1m")]) as (branches, pool, initial):
+        occupied = os.path.join(branches["occupied"], "target")
+        original = b"independent file\n"
+        with open(occupied, "wb") as stream:
+            stream.write(original)
+
+        payload = b"A" * (2 * len(initial))
+        fd = os.open(os.path.join(pool, "target"), os.O_RDWR | os.O_APPEND)
+        try:
+            if os.read(fd, len(initial)) != initial:
+                return fail("first-found open did not select the source target")
+            # Consume the fixture's last block. The target already ends on
+            # a block boundary, so even a short append requires relocation.
+            with open(os.path.join(branches["source"], "filler"), "ab") as stream:
+                stream.write(initial)
+            if os.statvfs(branches["source"]).f_bavail != 0:
+                return fail("source still has space before append")
+            try:
+                written = os.write(fd, payload)
+            except OSError as e:
+                if e.errno != errno.ENOSPC:
+                    raise
+            else:
+                return fail(f"append returned {written}, expected ENOSPC")
+        finally:
+            os.close(fd)
+        # A held handle can mask a change in what the pool name resolves to.
+        with open(os.path.join(pool, "target"), "rb") as stream:
+            if stream.read() != initial:
+                return fail("pool reopen did not return the original source contents")
+        with open(os.path.join(branches["source"], "target"), "rb") as stream:
+            if stream.read() != initial:
+                return fail("refused append changed the source target")
+        with open(occupied, "rb") as stream:
+            if stream.read() != original:
+                return fail("relocation overwrote an independent target")
+        if os.listdir(branches["destination"]):
+            return fail("refused relocation left a copy on the empty branch")
+        return 0
+
+
+TESTS = (test_partial_append,
+         test_second_relocation,
+         test_occupied_destination)
 
 
 def main():

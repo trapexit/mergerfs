@@ -31,6 +31,7 @@ namespace fs
   struct CopyFileFlags
   {
     int cleanup_failure:1;
+    bool no_replace:1 = false;
   };
 
   s64

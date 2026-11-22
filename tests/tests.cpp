@@ -3681,10 +3681,12 @@ _file_contents(const fs::path &path_)
   return contents.str();
 }
 
-// moveonenospc's create policy can pick the branch the file is already
-// on, by its own path or by another path to the same directory (a bind
-// mount; a symlink stands in for one here). The copy would be renamed
-// over the file and then unlinked, so such a move must be refused.
+// moveonenospc must never pick the branch the file is already on, by
+// its own path or by another path to the same directory (a bind mount;
+// a symlink stands in for one here). The copy would be renamed over
+// the file and then unlinked. Such branches are removed before the
+// create policy runs, so a policy that picks one branch (ff here)
+// chooses another one rather than nothing.
 void
 test_fs_movefile_and_open_same_branch()
 {
@@ -3712,55 +3714,74 @@ test_fs_movefile_and_open_same_branch()
     std::filesystem::create_directory(other,ec);
   if(!ec)
     std::filesystem::create_directory_symlink(src,alias,ec);
-  if(!ec)
-    std::ofstream(src / "file",std::ios::binary) << data;
-  fd = ::open((src / "file").c_str(),O_RDWR);
-  if(!TEST_CHECK(!ec && (fd >= 0) && (::fstat(fd,&before) == 0)))
+  TEST_CHECK(!ec);
+  if(ec)
     {
-      if(fd >= 0)
-        ::close(fd);
       std::filesystem::remove_all(tmp_dir);
       return;
     }
 
-  // ff picks the first branch. Branches resolves symlinks while
-  // parsing, so the first path is set afterwards.
-  auto move = [&](const std::string &list_,
-                  const fs::path    &first_)
+  auto reset = [&]()
+  {
+    std::filesystem::remove(other / "file",ec);
+    std::ofstream(src / "file",std::ios::binary|std::ios::trunc) << data;
+    fd = ::open((src / "file").c_str(),O_RDWR);
+    if(!TEST_CHECK(fd >= 0))
+      return false;
+    if(!TEST_CHECK(::fstat(fd,&before) == 0))
+      {
+        ::close(fd);
+        return false;
+      }
+    return true;
+  };
+
+  // Branches resolves symlinks while parsing, so the paths are set
+  // afterwards.
+  auto move = [&](const fs::path &first_,
+                  const fs::path &second_)
   {
     Branches branches;
     branches.minfreespace = 0;
-    TEST_CHECK(branches.from_string(list_) == 0);
+    TEST_CHECK(branches.from_string(src.string() + ":" + other.string()) == 0);
     Branches::Ptr ptr = branches;
     ptr->front().path = first_;
+    ptr->back().path  = second_;
 
     return fs::movefile_and_open(ff,ptr,src,"file",fd);
   };
 
-  for(const auto &first : {src,alias})
+  // Every branch is the source: refused, file left alone.
+  if(reset())
     {
-      rv = move(src.string() + ":" + other.string(),first);
+      rv = move(src,alias);
       TEST_CHECK(rv == -ENOSPC);
-      TEST_MSG("first branch: %s; rv: %d",first.c_str(),rv);
+      TEST_MSG("rv: %d",rv);
       if(rv >= 0)
         ::close(rv);
 
       if(TEST_CHECK(::stat((src / "file").c_str(),&after) == 0))
         TEST_CHECK(after.st_ino == before.st_ino);
       TEST_CHECK(_file_contents(src / "file") == data);
-      TEST_CHECK(!std::filesystem::exists(other / "file"));
+      ::close(fd);
     }
 
-  // Control: a different first branch still relocates.
-  rv = move(other.string() + ":" + src.string(),other);
-  TEST_CHECK(rv >= 0);
-  TEST_MSG("rv: %d",rv);
-  if(rv >= 0)
-    ::close(rv);
-  TEST_CHECK(!std::filesystem::exists(src / "file"));
-  TEST_CHECK(_file_contents(other / "file") == data);
+  // ff would pick the source listed first; it picks `other` instead.
+  for(const auto &first : {src,alias,other})
+    {
+      if(!reset())
+        break;
 
-  ::close(fd);
+      rv = move(first,((first == other) ? src : other));
+      TEST_CHECK(rv >= 0);
+      TEST_MSG("first branch: %s; rv: %d",first.c_str(),rv);
+      if(rv >= 0)
+        ::close(rv);
+      TEST_CHECK(!std::filesystem::exists(src / "file"));
+      TEST_CHECK(_file_contents(other / "file") == data);
+      ::close(fd);
+    }
+
   std::filesystem::remove_all(tmp_dir);
 }
 

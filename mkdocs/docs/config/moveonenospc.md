@@ -20,9 +20,16 @@ situation.
 When enabled and a `write` fails with `ENOSPC` or `EDQUOT` mergerfs
 will:
 
-1. Run the policy defined by `moveonenospc` to find a target branch.
+1. Check that the file's path is absent on every branch other than the
+   source and its aliases, including read-only and no-create branches.
+   If the path already exists (even as a dangling symlink), or a branch
+   cannot be checked, refuse the move: removing the source could make a
+   later open find a different file. Otherwise, use the `moveonenospc`
+   policy to choose a destination from the eligible branches.
 2. ["Move"](../faq/technical_behavior_and_limitations.md#how-does-mergerfs-handle-moving-and-copying-of-files)
-   the file from the source branch to the target branch.
+   the file from the source branch to the target branch. If another entry
+   appears at the destination during the copy, the move fails without
+   overwriting that entry or removing the source.
 3. Retry only the unwritten portion of the request, so a partially
    completed append is not duplicated.
 

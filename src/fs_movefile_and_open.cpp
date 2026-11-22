@@ -27,6 +27,7 @@
 #include "fs_findonfs.hpp"
 #include "fs_getfl.hpp"
 #include "fs_has_space.hpp"
+#include "fs_lstat.hpp"
 #include "fs_mktemp.hpp"
 #include "fs_open.hpp"
 #include "fs_path.hpp"
@@ -35,6 +36,7 @@
 #include "fs_unlink.hpp"
 #include "policy.hpp"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -59,14 +61,14 @@ _cleanup_flags(const int flags_)
   return rv;
 }
 
-// Copying onto the source directory would rename the copy over the
-// file and then unlink it. Match by device and inode so another path
-// to the same directory, such as a bind mount, is caught too. A
-// destination that can't be stat'd is dropped as well.
+// A duplicate on any branch could be exposed when the source is unlinked.
+// Check even branches that the create policy cannot select.
 static
 int
-_drop_src_branch(const fs::path       &src_branch_,
-                 std::vector<Branch*> *dst_branches_)
+_destination_candidates(const fs::path      &src_branch_,
+                        const fs::path      &fusepath_,
+                        const Branches::Ptr &branches_,
+                        Branches::Ptr       *candidates_)
 {
   int rv;
   struct stat src_st;
@@ -75,17 +77,32 @@ _drop_src_branch(const fs::path       &src_branch_,
   if(rv < 0)
     return rv;
 
-  std::erase_if(*dst_branches_,
-                [&](const Branch *branch_)
-                {
-                  struct stat st;
+  for(const Branch &branch : *branches_)
+    {
+      struct stat st;
 
-                  if(fs::stat(branch_->path,&st) < 0)
-                    return true;
+      rv = fs::stat(branch.path.c_str(),&st);
+      if(rv < 0)
+        return rv;
+      if((st.st_dev == src_st.st_dev) &&
+         (st.st_ino == src_st.st_ino))
+        continue;
 
-                  return ((st.st_dev == src_st.st_dev) &&
-                          (st.st_ino == src_st.st_ino));
-                });
+      rv = fs::lstat((branch.path / fusepath_).c_str(),&st);
+      if(rv == 0)
+        return -EEXIST;
+      if(rv != -ENOENT)
+        return rv;
+      if(branch.ro_or_nc())
+        continue;
+
+      if(!*candidates_)
+        {
+          *candidates_ = std::make_shared<Branches::Impl>(&branches_->minfreespace());
+          (*candidates_)->reserve(branches_->size());
+        }
+      (*candidates_)->push_back(branch);
+    }
 
   return 0;
 }
@@ -106,6 +123,7 @@ _movefile_and_open(const Policy::Create &createFunc_,
   fs::path src_branch;
   fs::path src_filepath;
   fs::path dst_filepath;
+  Branches::Ptr candidates;
   std::vector<Branch*> dst_branch;
 
   // `branchpath_` is where the file was opened. An earlier move on the
@@ -115,10 +133,13 @@ _movefile_and_open(const Policy::Create &createFunc_,
   if(rv < 0)
     return rv;
 
-  rv = createFunc_(branches_,fusepath_,dst_branch);
+  rv = ::_destination_candidates(src_branch,fusepath_,branches_,&candidates);
   if(rv < 0)
     return rv;
-  rv = ::_drop_src_branch(src_branch,&dst_branch);
+  if(!candidates)
+    return -ENOSPC;
+
+  rv = createFunc_(candidates,fusepath_,dst_branch);
   if(rv < 0)
     return rv;
   if(dst_branch.empty())
@@ -144,7 +165,8 @@ _movefile_and_open(const Policy::Create &createFunc_,
   src_filepath = src_branch / fusepath_;
   dst_filepath = dst_branch[0]->path / fusepath_;
 
-  rv = fs::copyfile(src_filepath,dst_filepath,{.cleanup_failure = true});
+  rv = fs::copyfile(src_filepath,dst_filepath,
+                    {.cleanup_failure = true, .no_replace = true});
   if(rv < 0)
     return -ENOSPC;
 
