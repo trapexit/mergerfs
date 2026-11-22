@@ -146,13 +146,13 @@ $(BUILDDIR)/libfuse.a: $(OBJS) | $(BUILDDIR)/stamp
 utils: mergerfs-fusermount mount.mergerfs
 
 $(BUILDDIR)/mergerfs-fusermount: util/fusermount.cpp | $(BUILDDIR)/stamp
-	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -Ilib -o $(BUILDDIR)/mergerfs-fusermount util/fusermount.cpp
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(FUSE_FLAGS) -Ilib -o $(BUILDDIR)/mergerfs-fusermount util/fusermount.cpp $(LDFLAGS)
 
 mergerfs-fusermount: $(BUILDDIR)/mergerfs-fusermount
 
 $(BUILDDIR)/mount.mergerfs: $(BUILDDIR)/libfuse.a util/mount.mergerfs.cpp
 	echo STATIC=$(STATIC) $(STATIC_FLAGS)
-	$(CXX) $(CXXFLAGS) $(FUSE_FLAGS) -o $(BUILDDIR)/mount.mergerfs util/mount.mergerfs.cpp $(BUILDDIR)/libfuse.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(FUSE_FLAGS) -o $(BUILDDIR)/mount.mergerfs util/mount.mergerfs.cpp $(BUILDDIR)/libfuse.a $(LDFLAGS)
 
 mount.mergerfs: $(BUILDDIR)/mount.mergerfs
 
