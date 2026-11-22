@@ -28,7 +28,9 @@ from posix_parity import fail
 from posix_parity import mergerfs_mount
 
 
-OPTIONS = "defaults,use_ino,category.create=mfs,cache.attr=0"
+# minfreespace=0: the default 4G would fail every create with ENOSPC
+# wherever the test tree has less free space.
+OPTIONS = "defaults,use_ino,category.create=mfs,minfreespace=0,cache.attr=0"
 
 # A local filesystem returns ENOENT for these: the kernel refuses lookups
 # in a removed directory. Not compared against the native run since that
