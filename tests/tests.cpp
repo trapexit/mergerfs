@@ -3815,6 +3815,72 @@ test_statvfs_cache_does_not_cache_failure()
   fs::statvfs_cache_timeout(0);
 }
 
+// A failure is kept for the timeout like a success, so a branch that
+// fails slowly isn't asked again on every call. Create the directory
+// after the first failure: a cached failure still shows ENOENT, an
+// uncached call would succeed.
+void
+test_statvfs_cache_keeps_failure_for_timeout()
+{
+  int rv;
+  struct statvfs st;
+  char tmp_template[] = "/tmp/mergerfs-test-statvfs-cache-XXXXXX";
+
+  if(::mkdtemp(tmp_template) == nullptr)
+    {
+      TEST_CHECK(false);
+      return;
+    }
+
+  const std::string path = std::string(tmp_template) + "/later";
+
+  fs::statvfs_cache_timeout(60);
+  rv = fs::statvfs_cache(path,&st);
+  TEST_CHECK(rv == -ENOENT);
+  TEST_MSG("first rv: %d",rv);
+
+  TEST_CHECK(::mkdir(path.c_str(),0700) == 0);
+  rv = fs::statvfs_cache(path,&st);
+  TEST_CHECK(rv == -ENOENT);
+  TEST_MSG("cached rv: %d",rv);
+
+  fs::statvfs_cache_timeout(0);
+  rv = fs::statvfs_cache(path,&st);
+  TEST_CHECK(rv == 0);
+  TEST_MSG("uncached rv: %d",rv);
+
+  ::rmdir(path.c_str());
+  ::rmdir(tmp_template);
+}
+
+// A timeout of at least the current time in seconds made a new entry
+// look fresh before any statvfs had run, so every branch reported no
+// free space and a failure was reported as success.
+void
+test_statvfs_cache_huge_timeout()
+{
+  int rv;
+  struct statvfs st;
+
+  for(const u64 timeout : {(u64)4294967295ULL,(u64)~0ULL})
+    {
+      fs::statvfs_cache_timeout(timeout);
+
+      memset(&st,0,sizeof(st));
+      rv = fs::statvfs_cache("/",&st);
+      TEST_CHECK(rv == 0);
+      TEST_CHECK(st.f_blocks > 0);
+      TEST_MSG("timeout: %llu; rv: %d; blocks: %lu",
+               (unsigned long long)timeout,rv,(unsigned long)st.f_blocks);
+
+      rv = fs::statvfs_cache("/nonexistent/mergerfs-statvfs-huge-timeout",&st);
+      TEST_CHECK(rv == -ENOENT);
+      TEST_MSG("timeout: %llu; missing rv: %d",(unsigned long long)timeout,rv);
+    }
+
+  fs::statvfs_cache_timeout(0);
+}
+
 void
 test_hashset_put_and_size()
 {
@@ -4524,6 +4590,8 @@ TEST_LIST =
     {"fs_movefile_and_open_same_branch",test_fs_movefile_and_open_same_branch},
     {"readdir_factory_rejects_oversized_counts",test_readdir_factory_rejects_oversized_counts},
     {"statvfs_cache_does_not_cache_failure",test_statvfs_cache_does_not_cache_failure},
+    {"statvfs_cache_keeps_failure_for_timeout",test_statvfs_cache_keeps_failure_for_timeout},
+    {"statvfs_cache_huge_timeout",test_statvfs_cache_huge_timeout},
     {"str_eq_nullptr",test_str_eq_nullptr},
     {"str_startswith_char_nullptr",test_str_startswith_char_nullptr},
     {"str_from_u64_suffixes",test_str_from_u64_suffixes},

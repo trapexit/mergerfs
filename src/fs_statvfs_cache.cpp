@@ -22,19 +22,25 @@
 #include "statvfs_util.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
 
 #include <sys/statvfs.h>
-#include <time.h>
 
 
+// The result of the last statvfs: the data, or the negative errno it
+// failed with. `valid` is false until the first statvfs has run, so a
+// freshly inserted entry is never taken for a fresh result whatever the
+// timeout.
 struct Element
 {
-  u64            time;
-  struct statvfs st;
+  u64            time  = 0;
+  bool           valid = false;
+  int            rv    = 0;
+  struct statvfs st    = {};
 };
 
 typedef std::unordered_map<std::string,Element> statvfs_cache;
@@ -52,11 +58,8 @@ static
 u64
 _get_time(void)
 {
-  u64 rv;
-
-  rv = ::time(NULL);
-
-  return rv;
+  using namespace std::chrono;
+  return duration_cast<seconds>(steady_clock::now().time_since_epoch()).count();
 }
 
 u64
@@ -71,51 +74,62 @@ fs::statvfs_cache_timeout(cu64 timeout_)
   g_timeout.store(timeout_,std::memory_order_relaxed);
 }
 
+static
+bool
+_fresh(const Element &e_,
+       const u64      now_,
+       const u64      timeout_)
+{
+  return (e_.valid && ((now_ - e_.time) <= timeout_));
+}
+
+static
+int
+_result(const Element  &e_,
+        struct statvfs *st_)
+{
+  if(e_.rv < 0)
+    return e_.rv;
+
+  *st_ = e_.st;
+
+  return 0;
+}
+
 int
 fs::statvfs_cache(const std::string &path_,
                   struct statvfs    *st_)
 {
-  u64 now;
   u64 timeout;
 
   timeout = g_timeout.load(std::memory_order_relaxed);
   if(timeout == 0)
     return fs::statvfs(path_,st_);
 
-  now = ::_get_time();
-
   {
     std::shared_lock<std::shared_mutex> lk(g_cache_mutex);
 
     auto it = g_cache.find(path_);
-    if((it != g_cache.end()) && ((now - it->second.time) <= timeout))
-      {
-        *st_ = it->second.st;
-        return 0;
-      }
+    if((it != g_cache.end()) && ::_fresh(it->second,::_get_time(),timeout))
+      return ::_result(it->second,st_);
   }
 
   std::unique_lock<std::shared_mutex> lk(g_cache_mutex);
 
-  // Only a successful statvfs refreshes the entry. A failure is
-  // returned to the caller and retried on the next call.
+  // Another caller may have refreshed the entry while we waited.
   Element &e = g_cache[path_];
-  if((now - e.time) > timeout)
+  if(not ::_fresh(e,::_get_time(),timeout))
     {
-      int rv;
-      struct statvfs st;
-
-      rv = fs::statvfs(path_,&st);
-      if(rv < 0)
-        return rv;
-
-      e.time = now;
-      e.st   = st;
+      // A failure is kept for the timeout like a success. Retrying it on
+      // every call would hold this lock for a slow failing branch,
+      // such as an unreachable network mount, one caller at a time.
+      // It is never stored as zeroed space.
+      e.rv    = fs::statvfs(path_,&e.st);
+      e.time  = ::_get_time();
+      e.valid = true;
     }
 
-  *st_ = e.st;
-
-  return 0;
+  return ::_result(e,st_);
 }
 
 int

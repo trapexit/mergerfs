@@ -118,7 +118,9 @@ A number of policies require looking up the available space of the
 branches being considered. This is accomplished by calling
 [statfs](https://man7.org/linux/man-pages/man2/statfs.2.html). This
 call however is a bit expensive so this cache reduces the overhead by
-limiting how often the calls are actually made.
+limiting how often the calls are actually made. Successful and failed
+lookups are cached for the same timeout. The timeout starts when the
+lookup finishes and is unaffected by changes to the system clock.
 
 This will mean that if the available space of branches changed
 somewhat rapidly there is a risk of `create` or `mkdir` calls made
