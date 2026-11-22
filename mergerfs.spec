@@ -26,7 +26,7 @@ management of files across numerous commodity storage devices. It is
 similar to mhddfs, unionfs, and aufs.
 
 %build
-make %{?_smp_mflags} CFLAGS="%{optflags}" CXXFLAGS="%{optflags}" LDFLAGS="%{__global_ldflags}"
+make %{?_smp_mflags} release CFLAGS="%{optflags}" CXXFLAGS="%{optflags}" LDFLAGS="%{__global_ldflags}"
 
 %install
 make install PREFIX=%{_prefix} DESTDIR=%{buildroot}
