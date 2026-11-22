@@ -156,8 +156,8 @@ config file.
   of requests any single process thread can have queued up at one
   time. Meaning the total memory usage of the queues is queue depth
   multiplied by the number of process threads plus read thread
-  count. 0 sets the depth to the same as the process thread
-  count. Queue depths are not capped to 64. (default: 2)
+  count. 0 sets the depth to 2. Queue depths are not capped
+  to 64. (default: 2)
 * **[pin-threads](pin-threads.md)=STR**: Selects a strategy to pin
   threads to CPUs (default: unset)
 * **[flush-on-close](flush-on-close.md)=never|always|opened-for-write**:
